@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "lib": ["DOM", "ESNEXT"],
+    "module": "ES2015",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "strict": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "target": "ES2020",
+  },
+  "include": ["src/*.ts", "src/*/*.ts", "__tests__/*.ts"]
+}

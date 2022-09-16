@@ -1,0 +1,54 @@
+export const prefix = 'proxy:';
+export const proxyMap = new WeakMap<object, object>();
+
+export interface StorageLike {
+  [x: string]: any;
+  clear(): void
+  getItem(key: string): string | null
+  key(key: number): string | null
+  setItem(key: string, value: string): void
+  removeItem(key: string): void
+  length: number
+}
+export type StorageValue = string | object | null;
+
+export interface TargetObject {
+  type: string
+  value: string | object
+  expires?: expiresType
+}
+
+export interface ActiveEffect {
+  storage: object
+  key: string
+  proxy: any
+}
+export const activeEffect: ActiveEffect = { storage: {}, key: '', proxy: {} };
+
+export let shouldTrack = true;
+export function pauseTracking() {
+  shouldTrack = false
+}
+export function enableTracking() {
+  shouldTrack = true
+}
+
+export type EffectFn<V = any, OV = any> = (
+  value?: V,
+  oldValue?: OV
+) => any
+export interface Effect {
+  ctx: any,
+  fn: EffectFn
+}
+export type EffectMap = Map<string, Effect[]>;
+
+export type expiresType = string | number | Date;
+export function createExpiredFunc(
+  target: object,
+  key: string
+) {
+  return function() {
+    delete target[key];
+  }
+}
