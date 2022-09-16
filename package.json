@@ -1,8 +1,8 @@
 {
-  "name": "proxyStorage",
+  "name": "proxy-web-storage",
   "version": "1.0.0",
   "description": "A more convenient way to use storage through proxy. Get what you set and change array and object directly. Includes listen for changes and set expires.",
-  "main": "dist/proxyStorage.js",
+  "main": "dist/proxy-web-storage.js",
   "scripts": {
     "build": "rollup -c",
     "format": "prettier --write --parser typescript \"src/*.ts\"",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/KID-joker/proxyStorage.git"
+    "url": "git+https://github.com/KID-joker/proxy-web-storage.git"
   },
   "keywords": [
     "localStorage",
@@ -25,9 +25,9 @@
   "author": "KID-joker",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/KID-joker/proxyStorage/issues"
+    "url": "https://github.com/KID-joker/proxy-web-storage/issues"
   },
-  "homepage": "https://github.com/KID-joker/proxyStorage#readme",
+  "homepage": "https://github.com/KID-joker/proxy-web-storage#readme",
   "devDependencies": {
     "@types/jest": "^28.1.7",
     "@types/node": "^18.7.10",

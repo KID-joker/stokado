@@ -4,9 +4,9 @@ import { terser } from 'rollup-plugin-terser';
 export default {
   input: 'src/index.ts',
   output: {
-    file: 'dist/proxyStorage.js',
+    file: 'dist/proxy-web-storage.js',
     format: 'umd',
-    name: 'proxyStorage'
+    name: 'proxyWebStorage'
   },
   plugins: [
     typescript2(),

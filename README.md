@@ -1,11 +1,11 @@
-# proxyStorage
+# proxy-web-storage
 
 A more convenient way to use storage through proxy.
 
 ## Install
 
 ```shell
-npm i proxyStorage
+npm i proxy-web-storage
 ```
 
 ## Features
@@ -15,9 +15,9 @@ npm i proxyStorage
 Get what you set and change array and object directly.
 
 ```js
-import { local, session } from 'proxyStorage';
+import { local, session } from 'proxy-web-storage';
 
-local.test = 'Hello proxyStorage'; // works
+local.test = 'Hello proxy-web-storage'; // works
 delete local.test; // works
 
 // number
@@ -38,11 +38,11 @@ local.test === null; // true
 
 // object
 local.test = { hello: 'world' };
-local.test.hello = 'proxyStorage'; // works
+local.test.hello = 'proxy-web-storage'; // works
 
 // array
 local.test = ['hello'];
-local.test.push('proxyStorage'); // works
+local.test.push('proxy-web-storage'); // works
 local.test.length // 2
 
 // Date
@@ -55,9 +55,9 @@ local.test.test("cdbbdbsbz"); // true
 
 // function
 local.test = function() {
-  return 'Hello proxyStorage!';
+  return 'Hello proxy-web-storage!';
 };
-local.test() === 'Hello proxyStorage!'; // true
+local.test() === 'Hello proxy-web-storage!'; // true
 ```
 
 ### Subscribe
@@ -65,7 +65,7 @@ local.test() === 'Hello proxyStorage!'; // true
 listen for changes.
 
 ```js
-import { local } from 'proxyStorage';
+import { local } from 'proxy-web-storage';
 
 local.on('test', function(newVal, oldVal) {
   console.log('test', newVal, oldVal);
@@ -107,9 +107,9 @@ Unsubscribe from an item or all items.
 set expires for items.
 
 ```js
-import { local } from 'proxyStorage';
+import { local } from 'proxy-web-storage';
 
-local.test = 'hello proxyStorage';
+local.test = 'hello proxy-web-storage';
 local.setExpires('test', Date.now() + 10000);
 
 // after 10's

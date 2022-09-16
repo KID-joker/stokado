@@ -4,11 +4,11 @@
  */
 import { local } from '../src/index'; 
 
-describe('proxyStorage', () => {
+describe('proxy-web-storage', () => {
   it('Can set, read and remove', () => {
     expect(local.test).toBe(undefined);
-    local.test = 'Hello proxyStorage';
-    expect(local.test).toBe('Hello proxyStorage');
+    local.test = 'Hello proxy-web-storage';
+    expect(local.test).toBe('Hello proxy-web-storage');
     delete local.test;
     expect(local.test).toBe(undefined);
   })
@@ -98,14 +98,14 @@ describe('proxyStorage', () => {
   it('Object', () => {
     // JSON.stringify don't know how to serialize a BigInt
     local.test = {
-      '$string': 'Hello proxyStorage',
+      '$string': 'Hello proxy-web-storage',
       '$number': 0,
       '$boolean': true,
       '$null': null,
       '$undefined': undefined
     }
     expect(local.test).toEqual({
-      '$string': 'Hello proxyStorage',
+      '$string': 'Hello proxy-web-storage',
       '$number': 0,
       '$boolean': true,
       '$null': null,
@@ -123,10 +123,10 @@ describe('proxyStorage', () => {
     local.test.length = 0;
     expect(local.test).toEqual([]);
 
-    local.test.push('hello', 'proxyStorage');
-    expect(local.test).toEqual(['hello', 'proxyStorage']);
+    local.test.push('hello', 'proxy-web-storage');
+    expect(local.test).toEqual(['hello', 'proxy-web-storage']);
 
-    expect(local.test.pop()).toBe('proxyStorage');
+    expect(local.test.pop()).toBe('proxy-web-storage');
   })
 
   it('Date', () => {
@@ -144,23 +144,23 @@ describe('proxyStorage', () => {
 
   it('Function', () => {
     local.test = function() {
-      return 'Hello proxyStorage!';
+      return 'Hello proxy-web-storage!';
     };
-    expect(local.test()).toEqual('Hello proxyStorage!');
+    expect(local.test()).toEqual('Hello proxy-web-storage!');
 
     local.test = () => {
-      return 'Hello proxyStorage!';
+      return 'Hello proxy-web-storage!';
     };
-    expect(local.test()).toEqual('Hello proxyStorage!');
+    expect(local.test()).toEqual('Hello proxy-web-storage!');
   })
 
   it('Set', () => {
-    local.test = new Set(['Hello proxyStorage']);
-    expect(local.test).toEqual(new Set(['Hello proxyStorage']));
+    local.test = new Set(['Hello proxy-web-storage']);
+    expect(local.test).toEqual(new Set(['Hello proxy-web-storage']));
   })
 
   it('Map', () => {
-    local.test = new Map([['hello', 'proxyStorage'], ['foo', 'bar']]);
-    expect(local.test).toEqual(new Map([['hello', 'proxyStorage'], ['foo', 'bar']]));
+    local.test = new Map([['hello', 'proxy-web-storage'], ['foo', 'bar']]);
+    expect(local.test).toEqual(new Map([['hello', 'proxy-web-storage'], ['foo', 'bar']]));
   })
 })
