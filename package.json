@@ -1,6 +1,6 @@
 {
   "name": "proxy-web-storage",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A more convenient way to use storage through proxy. Get what you set and change array and object directly. Includes listen for changes and set expires.",
   "main": "dist/proxy-web-storage.js",
   "scripts": {
