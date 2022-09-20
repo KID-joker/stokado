@@ -12,7 +12,7 @@ npm i proxy-web-storage
 
 ### Base
 
-Get what you set and change array and object directly.
+Keep the type of storage value unchanged and change array and object directly.
 
 ```js
 import { local, session } from 'proxy-web-storage';
@@ -59,6 +59,9 @@ local.test = function() {
 };
 local.test() === 'Hello proxy-web-storage!'; // true
 ```
+
+`test` is the key in localStorage. The value is also saved to localStorage.
+The `local`, `session` also have the same methods and properties: `key()`, `getItem()`, `setItem()`, `removeItem()`, `clear()` and `length`.
 
 ### Subscribe
 
@@ -112,9 +115,16 @@ import { local } from 'proxy-web-storage';
 local.test = 'hello proxy-web-storage';
 local.setExpires('test', Date.now() + 10000);
 
+// within 10's
+local.test // 'hello proxy-web-storage'
+
 // after 10's
 local.test // undefined
 ```
+
+The expires is saved to localStorage.
+So no matter how you reload it within 10's, the value still exists.
+But after 10's, it has been removed.
 
 #### setExpires
 
