@@ -1,7 +1,7 @@
 {
   "name": "proxy-web-storage",
-  "version": "1.0.1",
-  "description": "Keep the type of storage value unchanged and change array and object directly. Supports listening for changes and setting expires.",
+  "version": "1.0.2",
+  "description": "Keep the type of storage value unchanged and change array and object directly. Supports listening to changes and setting expires.",
   "main": "dist/proxy-web-storage.js",
   "scripts": {
     "build": "rollup -c",
