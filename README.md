@@ -65,7 +65,7 @@ The `local`, `session` also have the same methods and properties: `key()`, `getI
 
 ### Subscribe
 
-listen for changes.
+listen to the changes.
 
 ```js
 import { local } from 'proxy-web-storage';
