@@ -2,6 +2,8 @@
 
 A more convenient way to use storage through proxy.
 
+try it on [codesandbox](https://codesandbox.io/s/proxy-web-storage-demo-3w6uex).
+
 ## Install
 
 ```shell
