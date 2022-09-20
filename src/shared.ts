@@ -1,4 +1,7 @@
-export const prefix = 'proxy:';
+export let prefix = '';
+export function setPrefix(str: string) {
+  prefix = `${str}:`;
+}
 export const proxyMap = new WeakMap<object, object>();
 
 export interface StorageLike {
