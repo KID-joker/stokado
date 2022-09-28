@@ -1,5 +1,5 @@
 import { getExpires, removeExpires, setExpires } from '../extends/expires';
-import { activeEffect, createExpiredFunc, EffectFn, expiresType, prefix, proxyMap, shouldTrack, StorageLike } from '../shared';
+import { activeEffect, createExpiredFunc, prefix, proxyMap, shouldTrack, StorageLike } from '../shared';
 import { hasChanged, hasOwn, propertyIsInPrototype } from '../utils';
 import { emit, off, on, once } from '../extends/watch';
 import { decode, encode } from './transform';
@@ -14,35 +14,30 @@ function createInstrumentations(
     instrumentations[key] = target[key].bind(target);
   });
 
-  instrumentations.getItem = function(keyName: string) {
-    return get(target, keyName, receiver);
-  };
-  instrumentations.removeItem = function(keyName: string) {
-    return deleteProperty(target, keyName);
-  };
-  instrumentations.setItem = function(keyName: string, keyValue: any) {
-    return set(target, keyName, keyValue, receiver);
-  };
+  const needReceiverFuncMap = {
+    getItem: get,
+    setItem: set,
+    setExpires,
+    removeExpires
+  }
+  Object.keys(needReceiverFuncMap).forEach(key => {
+    instrumentations[key] = function(...args: unknown[]) {
+      return needReceiverFuncMap[key](target, ...args, receiver);
+    }
+  });
 
-  instrumentations.getExpires = function(keyName: string) {
-    return getExpires(target, keyName);
+  const notNeedReceiverFuncMap = {
+    removeItem: deleteProperty,
+    getExpires,
+    off,
+    on,
+    once
   }
-  instrumentations.removeExpires = function(keyName: string) {
-    return removeExpires(target, keyName, receiver);
-  }
-  instrumentations.setExpires = function(keyName: string, keyValue: expiresType) {
-    return setExpires(target, keyName, keyValue, receiver);
-  }
-
-  instrumentations.off = function(key?: string, fn?: EffectFn) {
-    off(target, key, fn);
-  }
-  instrumentations.on = function(key: string, fn: EffectFn) {
-    on(target, key, fn);
-  }
-  instrumentations.once = function(key: string, fn: EffectFn) {
-    once(target, key, fn);
-  }
+  Object.keys(notNeedReceiverFuncMap).forEach(key => {
+    instrumentations[key] = function(...args: unknown[]) {
+      return notNeedReceiverFuncMap[key](target, ...args);
+    }
+  });
 
   return instrumentations;
 }
