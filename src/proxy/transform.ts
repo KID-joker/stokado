@@ -1,6 +1,65 @@
 import { TargetObject } from '../shared';
-import { isObject, toRawType, transformEval, transformJSON } from '../utils';
+import { isObject, getRawType, transformEval, transformJSON } from '../utils';
 import { createProxyObject } from './object';
+
+interface Serializer<T> {
+  read(raw: string | object): T,
+  write(value: T): string | object
+}
+const StorageSerializers: Record<'String' | 'Number' | 'BigInt' | 'Boolean' | 'Null' | 'Undefined' | 'Object' | 'Array' | 'Set' | 'Map' | 'Date' | 'RegExp' | 'Function', Serializer<any>> = {
+  String: {
+    read: (v: string) => v,
+    write: (v: string) => v
+  },
+  Number: {
+    read: (v: string) => Number.parseFloat(v),
+    write: (v: number) => String(v)
+  },
+  BigInt: {
+    read: (v: string) => BigInt(v),
+    write: (v: bigint) => String(v)
+  },
+  Boolean: {
+    read: (v: string) => v === 'true',
+    write: (v: boolean) => String(v)
+  },
+  Null: {
+    read: () => null,
+    write: (v: null) => String(v)
+  },
+  Undefined: {
+    read: () => undefined,
+    write: (v: undefined) => String(v)
+  },
+  Object: {
+    read: (v: object) => createProxyObject(v),
+    write: (v: object) => v
+  },
+  Array: {
+    read: (v: object) => createProxyObject(v),
+    write: (v: object) => v
+  },
+  Set: {
+    read: (v: Array<any>) => new Set(v),
+    write: (v: Set<any>) => Array.from(v)
+  },
+  Map: {
+    read: (v: Array<[any, any]>) => new Map(v),
+    write: (v: Map<any, any>) => Array.from(v)
+  },
+  Date: {
+    read: (v: string) => new Date(v),
+    write: (v: Date) => String(v)
+  },
+  RegExp: {
+    read: (v: string) => transformEval(v),
+    write: (v: RegExp) => String(v)
+  },
+  Function: {
+    read: (v: string) => transformEval(`(function() { return ${v} })()`),
+    write: (v: Function) => String(v)
+  }
+}
 
 export function decode(
   data: string,
@@ -20,84 +79,33 @@ export function decode(
     return undefined;
   }
 
-  let result: any;
-  switch(originalData.type) {
-    case 'Number':
-      result = +originalData.value;
-      break;
-    case 'BigInt':
-      result = BigInt(originalData.value as string);
-      break;
-    case 'Boolean':
-      result = originalData.value === 'true';
-      break;
-    case 'Null':
-      result = null;
-      break;
-    case 'Undefined':
-      result = undefined;
-      break;
-    case 'Object':
-    case 'Array':
-      result = createProxyObject(originalData.value as object);
-      break;
-    case 'Set':
-      result = new Set(originalData.value as Array<any>);
-      break;
-    case 'Map':
-      result = new Map(originalData.value as Array<[any, any]>);
-      break;
-    case 'Date':
-      result = new Date(originalData.value as string);
-      break;
-    case 'RegExp':
-      result = transformEval(originalData.value as string);
-      break;
-    case 'Function':
-      result = transformEval(`(function() { return ${originalData.value} })()`);
-      break;
-    default:
-      result = originalData.value;
+  const serializer = StorageSerializers[originalData.type];
+  if(!serializer) {
+    return originalData.value;
   }
-  return result;
+
+  return serializer.read(originalData.value);
 }
 
 export function encode(
   data: any,
   expires?: string
 ) {
-  const rawType = toRawType(data);
+  const rawType = getRawType(data);
+
+  const serializer = StorageSerializers[rawType];
+  if(!serializer) {
+    throw new Error(`can't set "${rawType}" property.`);
+  }
+
   let targetObject: TargetObject = {
     type: rawType,
-    value: data
+    value: serializer.write(data)
   };
 
   if(expires) {
     targetObject.expires = expires;
   }
 
-  switch(rawType) {
-    case 'String':
-    case 'Number':
-    case 'BigInt':
-    case 'Boolean':
-    case 'Null':
-    case 'Undefined':
-    case 'Date':
-    case 'RegExp':
-    case 'Function':
-      targetObject.value = '' + data;
-      break;
-    case 'Object':
-    case 'Array':
-      // JSON.stringify don't know how to serialize a BigInt
-      break;
-    case 'Set':
-    case 'Map':
-      targetObject.value = Array.from(data);
-      break;
-    default:
-      throw new Error(`can't set "${rawType}" property.`);
-  }
   return JSON.stringify(targetObject);
 }

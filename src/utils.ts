@@ -1,11 +1,11 @@
 import { TargetObject } from './shared';
 
 export const isArray = Array.isArray;
-export const isSet = (val: unknown): val is Set<any> => toTypeString(val) === '[object Set]';
-export const isMap = (val: unknown): val is Map<any, any> => toTypeString(val) === '[object Map]';
+export const isSet = (val: unknown): val is Set<any> => getTypeString(val) === '[object Set]';
+export const isMap = (val: unknown): val is Map<any, any> => getTypeString(val) === '[object Map]';
 
-export const isDate = (val: unknown): val is Date => toTypeString(val) === '[object Date]';
-export const isRegExp = (val: unknown): val is Date => toTypeString(val) === '[object RegExp]';
+export const isDate = (val: unknown): val is Date => getTypeString(val) === '[object Date]';
+export const isRegExp = (val: unknown): val is Date => getTypeString(val) === '[object RegExp]';
 export const isFunction = (val: unknown): val is Function => typeof val === 'function';
 export const isNumber = (val: unknown): val is number => typeof val === 'number';
 export const isString = (val: unknown): val is string => typeof val === 'string';
@@ -17,10 +17,10 @@ export const isIntegerKey = (key: unknown) =>
   key[0] !== '-' &&
   '' + parseInt(key, 10) === key
 
-export const toTypeString = (value: unknown): string => Object.prototype.toString.call(value);
+export const getTypeString = (value: unknown): string => Object.prototype.toString.call(value);
 
-export const toRawType = (value: unknown): string => {
-  return toTypeString(value).slice(8, -1)
+export const getRawType = (value: unknown): string => {
+  return getTypeString(value).slice(8, -1)
 }
 
 export const hasChanged = (value: any, oldValue: any): boolean =>

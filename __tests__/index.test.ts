@@ -55,6 +55,9 @@ describe('proxy-web-storage', () => {
 
     local.test = '-Infinity';
     expect(local.test).toBe('-Infinity');
+
+    local.test = new Number(3.14);
+    expect(local.test).toBe(3.14);
   })
 
   it('BigInt', () => {
@@ -77,6 +80,9 @@ describe('proxy-web-storage', () => {
     
     local.test = 'false';
     expect(local.test).toBe('false');
+
+    local.test = new Boolean(false);
+    expect(local.test).toBe(false);
   })
 
   it('Null', () => {
