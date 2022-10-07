@@ -117,7 +117,7 @@ function deleteProperty(
 
 export function createProxyStorage(storage: StorageLike) {
   if(!storage) {
-    return {};
+    return null;
   }
 
   const proxy = new Proxy(storage, {
