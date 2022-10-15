@@ -1,5 +1,7 @@
 # proxy-web-storage
 
+**English | [中文](./README.zh.md)**
+
 A more convenient way to use storage through proxy.
 
 try it on [codesandbox](https://codesandbox.io/s/proxy-web-storage-demo-3w6uex).
@@ -90,7 +92,7 @@ local.test.a = 1;
 
 Subscribe to an item.
 
-- `key`: the name of the item to subscribe to. Support `obj.a` for `Object` and `list[0]` for `Array`.
+- `key`: the name of the item to subscribe to. Support `obj.a` for `Object` and `list[0]` for `Array`, and also `Array` length.
 - `callback`: the function to call when the item is changed. Includes `newValue` and `oldValue`.
 
 #### once
