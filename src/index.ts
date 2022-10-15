@@ -4,6 +4,7 @@ import { createProxyStorage } from './proxy/storage';
 import { createExpiredFunc, prefix, proxyMap, StorageValue } from './shared';
 import { isObject } from './utils';
 
+export { setPrefix } from './shared';
 export const local: any = createProxyStorage(localStorage);
 export const session: any = createProxyStorage(sessionStorage);
 
