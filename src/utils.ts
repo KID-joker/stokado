@@ -5,7 +5,7 @@ export const isSet = (val: unknown): val is Set<any> => getTypeString(val) === '
 export const isMap = (val: unknown): val is Map<any, any> => getTypeString(val) === '[object Map]';
 
 export const isDate = (val: unknown): val is Date => getTypeString(val) === '[object Date]';
-export const isRegExp = (val: unknown): val is Date => getTypeString(val) === '[object RegExp]';
+export const isRegExp = (val: unknown): val is RegExp => getTypeString(val) === '[object RegExp]';
 export const isFunction = (val: unknown): val is Function => typeof val === 'function';
 export const isNumber = (val: unknown): val is number => typeof val === 'number';
 export const isString = (val: unknown): val is string => typeof val === 'string';
