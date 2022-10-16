@@ -18,7 +18,7 @@ export type StorageValue = string | object | null;
 export interface TargetObject {
   type: string
   value: string | object
-  expires?: expiresType
+  expires?: ExpiresType
 }
 
 export interface ActiveEffect {
@@ -46,7 +46,7 @@ export interface Effect {
 }
 export type EffectMap = Map<string, Effect[]>;
 
-export type expiresType = string | number | Date;
+export type ExpiresType = string | number | Date;
 export function createExpiredFunc(
   target: object,
   key: string

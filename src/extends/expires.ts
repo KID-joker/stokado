@@ -1,11 +1,11 @@
 import { encode } from "../proxy/transform";
-import { expiresType, prefix, proxyMap } from "../shared"
+import { ExpiresType, prefix, proxyMap } from "../shared"
 import { isDate, isObject, isString, transformJSON } from "../utils";
 
 export function setExpires(
   target: object,
   property: string,
-  value: expiresType,
+  value: ExpiresType,
   receiver: any
 ) {
   let time: number;
