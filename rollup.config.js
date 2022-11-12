@@ -1,7 +1,9 @@
 import typescript2 from 'rollup-plugin-typescript2';
 import { terser } from 'rollup-plugin-terser';
+import dts from "rollup-plugin-dts";
+import path from 'path';
 
-export default {
+export default [{
   input: 'src/index.ts',
   output: {
     file: 'dist/proxy-web-storage.js',
@@ -12,4 +14,13 @@ export default {
     typescript2(),
     terser()
   ]
-};
+}, {
+  input: path.resolve(__dirname, 'src/index.ts'),
+  output: {
+    file: "dist/proxy-web-storage.d.ts",
+    format: "es"
+  },
+  plugins: [
+    dts()
+  ]
+}];
