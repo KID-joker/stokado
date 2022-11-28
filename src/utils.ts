@@ -1,4 +1,4 @@
-import { TargetObject } from './shared';
+import { TargetObject } from "./types";
 
 export const isArray = Array.isArray;
 export const isSet = (val: unknown): val is Set<any> => getTypeString(val) === '[object Set]';

@@ -1,8 +1,9 @@
 import { getExpires, removeExpires, setExpires } from '../extends/expires';
-import { activeEffect, createExpiredFunc, prefix, proxyMap, shouldTrack, StorageLike } from '../shared';
+import { activeEffect, createExpiredFunc, prefix, proxyMap, shouldTrack } from '../shared';
 import { hasChanged, hasOwn, propertyIsInPrototype } from '../utils';
 import { emit, off, on, once } from '../extends/watch';
 import { decode, encode } from './transform';
+import { StorageLike } from '../types';
 
 function createInstrumentations(
   target: object,

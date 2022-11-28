@@ -1,4 +1,4 @@
-import { TargetObject } from '../shared';
+import { TargetObject } from '../types';
 import { isObject, getRawType, transformEval, transformJSON } from '../utils';
 import { createProxyObject } from './object';
 

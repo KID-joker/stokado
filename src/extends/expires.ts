@@ -1,5 +1,6 @@
 import { encode } from "../proxy/transform";
-import { ExpiresType, prefix, proxyMap } from "../shared"
+import { prefix, proxyMap } from "../shared"
+import { ExpiresType } from "../types";
 import { isDate, isObject, isString, transformJSON } from "../utils";
 
 export function setExpires(
