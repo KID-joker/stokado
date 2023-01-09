@@ -1,6 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@rollup/plugin-html': ^1.0.1
   '@types/jest': ^28.1.7
   '@types/node': ^18.7.10
   '@typescript-eslint/parser': ^5.33.1
@@ -19,6 +20,7 @@ specifiers:
   typescript: ^4.7.4
 
 devDependencies:
+  '@rollup/plugin-html': 1.0.1_rollup@2.78.1
   '@types/jest': 28.1.7
   '@types/node': 18.7.10
   '@typescript-eslint/parser': 5.33.1_4rv7y5c6xz3vfxwhbrcxxi73bq
@@ -738,6 +740,18 @@ packages:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.13.0
+    dev: true
+
+  /@rollup/plugin-html/1.0.1_rollup@2.78.1:
+    resolution: {integrity: sha512-ex4qCaauEhrhYTlFaW/D1Y66I/qL8Uu04FWFR+eQgjOtRCegMtscn69fS6ZGeL1GG6qCFdV8DTaP911uyMycWw==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: ^1.20.0||^2.0.0||^3.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+    dependencies:
+      rollup: 2.78.1
     dev: true
 
   /@rollup/pluginutils/4.2.1:

@@ -8,7 +8,7 @@
     "build": "rimraf dist && rollup -c",
     "format": "prettier --write --parser typescript \"src/*.ts\"",
     "lint": "eslint . --format friendly",
-    "test": "jest --runInBand"
+    "test": "npm run build && jest --runInBand"
   },
   "repository": {
     "type": "git",
@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/KID-joker/proxy-web-storage#readme",
   "devDependencies": {
+    "@rollup/plugin-html": "^1.0.1",
     "@types/jest": "^28.1.7",
     "@types/node": "^18.7.10",
     "@typescript-eslint/parser": "^5.33.1",
