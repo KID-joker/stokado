@@ -43,7 +43,7 @@ function createInstrumentations(
   return instrumentations;
 }
 
-let instrumentations: Record<string, Function>;
+const storageInstrumentations: Map<object, Record<string, Function>> = new Map();
 function get(
   target: object,
   property: string,
@@ -56,8 +56,10 @@ function get(
     activeEffect.proxy = receiver;
   }
 
+  let instrumentations = storageInstrumentations.get(target);
   if(!instrumentations) {
     instrumentations = createInstrumentations(target, receiver);
+    storageInstrumentations.set(target, instrumentations);
   }
   if(hasOwn(instrumentations, property)) {
     return Reflect.get(instrumentations, property, receiver);

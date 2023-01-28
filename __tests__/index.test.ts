@@ -2,7 +2,7 @@
  * The implementation of local and session is the same.
  * So just test local.
  */
-import { local } from '../src/index'; 
+import { local, session } from '../src/index'; 
 
 describe('proxy-web-storage', () => {
   it('Can set, read and remove', () => {
@@ -11,6 +11,34 @@ describe('proxy-web-storage', () => {
     expect(local.test).toBe('Hello proxy-web-storage');
     delete local.test;
     expect(local.test).toBe(undefined);
+  })
+
+  it('localStorage methods', () => {
+    expect(local.getItem('local-test')).toBe(undefined);
+    local.setItem('local-test', 'Hello proxy-web-storage');
+    expect(local.getItem('local-test')).toBe('Hello proxy-web-storage');
+    local.removeItem('local-test');
+    expect(local.getItem('local-test')).toBe(undefined);
+
+    local.setItem('local-test1', '1');
+    local.setItem('local-test2', '2');
+    expect(local.length).toBe(2);
+    local.clear();
+    expect(local.length).toBe(0);
+  })
+
+  it('sessionStorage methods', () => {
+    expect(session.getItem('session-test')).toBe(undefined);
+    session.setItem('session-test', 'Hello proxy-web-storage');
+    expect(session.getItem('session-test')).toBe('Hello proxy-web-storage');
+    session.removeItem('session-test');
+    expect(session.getItem('session-test')).toBe(undefined);
+
+    session.setItem('session-test1', '1');
+    session.setItem('session-test2', '2');
+    expect(session.length).toBe(2);
+    session.clear();
+    expect(session.length).toBe(0);
   })
 
   it('Number', () => {
