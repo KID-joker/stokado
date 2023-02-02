@@ -1,1 +1,460 @@
-!function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t((e="undefined"!=typeof globalThis?globalThis:e||self).proxyWebStorage={})}(this,(function(e){"use strict";let t=new WeakMap;function n(e,n,r){const o={ctx:this,fn:r};let i=t.get(e);i||t.set(e,i=new Map);const c=i.get(n);c?c.push(o):i.set(n,[o])}function r(e,t,r){const i=this,c=(n,s)=>{o(e,t,c),r.call(i,n,s)};c.fn=r,n(e,t,c)}function o(e,n,r){if(void 0===n)return void t.set(e,new Map);let o=t.get(e);if(o){const e=o.get(n);if(e&&e.length>0){let t=[];r&&(t=e.filter((e=>!(e.fn===r||e.fn?.fn===r)))),o.set(n,t)}}}function i(e,n,...r){const o=t.get(e);if(o){const e=o.get(n);if(e){const[t,n]=r;e.forEach((e=>e.fn.call(e.ctx,t,n)))}}}const c=Array.isArray,s=e=>null!==e&&"object"==typeof e,l=e=>"string"==typeof e&&"NaN"!==e&&"-"!==e[0]&&""+parseInt(e,10)===e,a=e=>Object.prototype.toString.call(e),u=(e,t)=>!Object.is(e,t);function f(e){try{return JSON.parse(e)}catch(t){return e}}const g=Object.prototype.hasOwnProperty,p=(e,t)=>g.call(e,t);function d(e){return(0,eval)(e)}let y="";const w=new WeakMap,h={storage:{},key:"",proxy:{}};let x=!0;function $(e,t){return function(){delete e[t]}}function S(e,t,...n){let r=`${h.key}.${t}`;c(e)&&l(t)&&(r=`${h.key}[${t}]`),i(h.storage,r,...n)}let b=!1;const v=function(){const e={};return["push","pop","shift","unshift","splice"].forEach((t=>{e[t]=function(...e){b=!0;const n=this.length,r=w.get(this)[t].apply(this,e);return this.length>n&&S(this,"length",this.length,n),b=!1,r}})),e}();function k(e,t,n){return c(e)&&p(v,t)?Reflect.get(v,t,n):Reflect.get(e,t,n)}function m(e){x=!1;let t=h.proxy.getExpires(h.key);h.proxy[h.key]=e,t&&h.proxy.setExpires(h.key,t),x=!0}function E(e,t,n,r){let o;c(e)&&!b&&(o=e.length);const i=e[t],s=c(e)&&l(t)?Number(t)<e.length:p(e,t),a=Reflect.set(e,t,n,r);return a&&u(n,i)&&(S(e,t,n,s?i:void 0),c(e)&&void 0!==o&&Number(t)>=o&&S(e,"length",e.length,o),m(e)),a}function O(e,t){const n=p(e,t),r=e[t],o=Reflect.deleteProperty(e,t);return o&&n&&(S(e,t,void 0,r),m(e)),o}function P(e){const t=new Proxy(e,{get:k,set:E,deleteProperty:O});return w.set(t,e),t}const j={String:{read:e=>e,write:e=>e},Number:{read:e=>Number.parseFloat(e),write:e=>String(e)},BigInt:{read:e=>BigInt(e),write:e=>String(e)},Boolean:{read:e=>"true"===e,write:e=>String(e)},Null:{read:()=>null,write:e=>String(e)},Undefined:{read:()=>{},write:e=>String(e)},Object:{read:e=>P(e),write:e=>e},Array:{read:e=>P(e),write:e=>e},Set:{read:e=>new Set(e),write:e=>Array.from(e)},Map:{read:e=>new Map(e),write:e=>Array.from(e)},Date:{read:e=>new Date(e),write:e=>String(e)},RegExp:{read:e=>d(e),write:e=>String(e)},Function:{read:e=>d(`(function() { return ${e} })()`),write:e=>String(e)}};function D(e,t){let n=e;try{n=f(e)}catch(e){}if(!s(n))return n;if(n.expires&&new Date(+n.expires).getTime()<=Date.now())return void t();const r=j[n.type];return r?r.read(n.value):n.value}function N(e,t){const n=a(e).slice(8,-1);const r=j[n];if(!r)throw new Error(`can't set "${n}" property.`);let o={type:n,value:r.write(e)};return t&&(o.expires=t),JSON.stringify(o)}function M(e,t,n,r){let o;if(o="[object Date]"===a(n)?n.getTime():(e=>"string"==typeof e)(n)?+n.padEnd(13,"0"):n,o<=Date.now())return void delete r[t];let i=r[t];return i?(i=w.get(i)||i,e[`${y}${t}`]=N(i,""+o),new Date(o)):void 0}function R(e,t){const n=`${y}${t}`;if(!e[n])return;let r=f(e[n]);return!s(r)||!r.expires||+r.expires<=Date.now()?void 0:new Date(+r.expires)}function I(e,t,n){let r=n[t];r&&(r=w.get(r)||r,e[`${y}${t}`]=N(r))}const V=new Map;function A(e,t,i){x&&(h.storage=e,h.key=t,h.proxy=i);let c=V.get(e);if(c||(console.log("abc"),c=function(e,t){const i={};["clear","key"].forEach((t=>{i[t]=e[t].bind(e)}));const c={getItem:A,setItem:T,setExpires:M,removeExpires:I};Object.keys(c).forEach((n=>{i[n]=function(...r){return c[n](e,...r,t)}}));const s={removeItem:B,getExpires:R,off:o,on:n,once:r};return Object.keys(s).forEach((t=>{i[t]=function(...n){return s[t](e,...n)}})),i}(e,i),V.set(e,c)),p(c,t))return Reflect.get(c,t,i);if(!W(e,t))return;const s=`${y}${t}`,l=e[s]||e[t];return l?D(l,$(e,s)):l}function T(e,t,n,r){const o=`${y}${t}`;let c=D(e[o],$(e,o));c=w.get(c)||c;const s=N(n),l=Reflect.set(e,o,s,r);return l&&u(n,c)&&x&&i(e,t,n,c),l}function W(e,t){return e.hasOwnProperty(`${y}${t}`)||(r=t,!(n=e).hasOwnProperty(r)&&r in n);var n,r}function B(e,t){const n=`${y}${t}`,r=p(e,n);let o=D(e[n],$(e,n));o=w.get(o)||o;const c=Reflect.deleteProperty(e,n);return c&&r&&i(e,t,void 0,o),c}function F(e){if(!e)return null;return new Proxy(e,{get:A,set:T,has:W,deleteProperty:B})}const J=F(localStorage),_=F(sessionStorage);"undefined"!=typeof window&&window.addEventListener("storage",(e=>{if(e.key&&e.key.startsWith(y)){let t=e.newValue,n=e.oldValue;e.newValue&&(t=D(e.newValue,$(localStorage,e.key)),s(t)&&(t=w.get(t)||t)),e.oldValue&&(n=D(e.oldValue,$(localStorage,e.key)),s(n)&&(n=w.get(n)||n)),i(localStorage,e.key.slice(y.length),t,n)}})),e.local=J,e.session=_,e.setPrefix=function(e){y=`${e}:`},Object.defineProperty(e,"__esModule",{value:!0})}));
+(function (global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+    typeof define === 'function' && define.amd ? define(['exports'], factory) :
+    (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.proxyWebStorage = {}));
+})(this, (function (exports) { 'use strict';
+
+    let targetMap = new WeakMap();
+    function on(target, key, fn) {
+        const effect = {
+            ctx: this,
+            fn
+        };
+        let effectMap = targetMap.get(target);
+        if (!effectMap) {
+            targetMap.set(target, (effectMap = new Map()));
+        }
+        const effects = effectMap.get(key);
+        if (effects) {
+            effects.push(effect);
+        }
+        else {
+            effectMap.set(key, [effect]);
+        }
+    }
+    function once(target, key, fn) {
+        const that = this;
+        const wrapped = (value, oldValue) => {
+            off(target, key, wrapped);
+            fn.call(that, value, oldValue);
+        };
+        // in order to filter
+        wrapped.fn = fn;
+        on(target, key, wrapped);
+    }
+    function off(target, key, fn) {
+        if (key === undefined) {
+            targetMap.set(target, new Map());
+            return;
+        }
+        let effectMap = targetMap.get(target);
+        if (effectMap) {
+            const effects = effectMap.get(key);
+            if (effects && effects.length > 0) {
+                let value = [];
+                if (fn) {
+                    value = effects.filter(ele => !(ele.fn === fn || ele.fn?.fn === fn));
+                }
+                effectMap.set(key, value);
+            }
+        }
+    }
+    function emit(target, key, ...args) {
+        const effectMap = targetMap.get(target);
+        if (effectMap) {
+            const effects = effectMap.get(key);
+            if (effects) {
+                const [value, oldValue] = args;
+                effects.forEach(ele => ele.fn.call(ele.ctx, value, oldValue));
+            }
+        }
+    }
+
+    const isArray = Array.isArray;
+    const isDate = (val) => getTypeString(val) === '[object Date]';
+    const isString = (val) => typeof val === 'string';
+    const isObject = (val) => val !== null && typeof val === 'object';
+    const isIntegerKey = (key) => typeof key === 'string' &&
+        key !== 'NaN' &&
+        key[0] !== '-' &&
+        '' + parseInt(key, 10) === key;
+    const getTypeString = (value) => Object.prototype.toString.call(value);
+    const getRawType = (value) => {
+        return getTypeString(value).slice(8, -1);
+    };
+    const hasChanged = (value, oldValue) => !Object.is(value, oldValue);
+    function transformJSON(data) {
+        try {
+            return JSON.parse(data);
+        }
+        catch (e) {
+            return data;
+        }
+    }
+    // prototies exist in the prototype chain
+    function propertyIsInPrototype(object, prototypeName) {
+        return !object.hasOwnProperty(prototypeName) && (prototypeName in object);
+    }
+    const hasOwnProperty = Object.prototype.hasOwnProperty;
+    const hasOwn = (val, key) => hasOwnProperty.call(val, key);
+    function transformEval(code) {
+        // runs in the global scope rather than the local one
+        const eval2 = eval;
+        return (function () {
+            return eval2(code);
+        })();
+    }
+
+    let prefix = '';
+    function setPrefix(str) {
+        prefix = `${str}:`;
+    }
+    const proxyMap = new WeakMap();
+    const activeEffect = { storage: {}, key: '', proxy: {} };
+    let shouldTrack = true;
+    function pauseTracking() {
+        shouldTrack = false;
+    }
+    function enableTracking() {
+        shouldTrack = true;
+    }
+    function createExpiredFunc(target, key) {
+        return function () {
+            delete target[key];
+        };
+    }
+
+    function selfEmit(obj, key, ...args) {
+        let actualKey = `${activeEffect.key}.${key}`;
+        if (isArray(obj) && isIntegerKey(key)) {
+            actualKey = `${activeEffect.key}[${key}]`;
+        }
+        emit(activeEffect.storage, actualKey, ...args);
+    }
+    let lengthAltering = false;
+    function createInstrumentations$1() {
+        const instrumentations = {};
+        // instrument length-altering mutation methods to track length
+        ['push', 'pop', 'shift', 'unshift', 'splice'].forEach(key => {
+            instrumentations[key] = function (...args) {
+                lengthAltering = true;
+                const oldLength = this.length;
+                const res = proxyMap.get(this)[key].apply(this, args);
+                if (this.length > oldLength) {
+                    selfEmit(this, 'length', this.length, oldLength);
+                }
+                lengthAltering = false;
+                return res;
+            };
+        });
+        return instrumentations;
+    }
+    const arrayInstrumentations = createInstrumentations$1();
+    function get$1(target, property, receiver) {
+        if (isArray(target) && hasOwn(arrayInstrumentations, property)) {
+            return Reflect.get(arrayInstrumentations, property, receiver);
+        }
+        return Reflect.get(target, property, receiver);
+    }
+    function setStorageValue(value) {
+        pauseTracking();
+        let date = activeEffect.proxy.getExpires(activeEffect.key);
+        activeEffect.proxy[activeEffect.key] = value;
+        if (date) {
+            activeEffect.proxy.setExpires(activeEffect.key, date);
+        }
+        enableTracking();
+    }
+    function set$1(target, key, value, receiver) {
+        let arrayLength;
+        if (isArray(target) && !lengthAltering) {
+            arrayLength = target.length;
+        }
+        const oldValue = target[key];
+        const hadKey = isArray(target) && isIntegerKey(key)
+            ? Number(key) < target.length
+            : hasOwn(target, key);
+        const result = Reflect.set(target, key, value, receiver);
+        if (result && hasChanged(value, oldValue)) {
+            if (hadKey) {
+                selfEmit(target, key, value, oldValue);
+            }
+            else {
+                selfEmit(target, key, value, undefined);
+            }
+            // track `array[3] = 3` length
+            if (isArray(target) && arrayLength !== undefined && Number(key) >= arrayLength) {
+                selfEmit(target, 'length', target.length, arrayLength);
+            }
+            setStorageValue(target);
+        }
+        return result;
+    }
+    function deleteProperty$1(target, key) {
+        const hadKey = hasOwn(target, key);
+        const oldValue = target[key];
+        const result = Reflect.deleteProperty(target, key);
+        if (result && hadKey) {
+            selfEmit(target, key, undefined, oldValue);
+            setStorageValue(target);
+        }
+        return result;
+    }
+    function createProxyObject(target) {
+        const proxy = new Proxy(target, {
+            get: get$1,
+            set: set$1,
+            deleteProperty: deleteProperty$1
+        });
+        proxyMap.set(proxy, target);
+        return proxy;
+    }
+
+    const StorageSerializers = {
+        String: {
+            read: (v) => v,
+            write: (v) => v
+        },
+        Number: {
+            read: (v) => Number.parseFloat(v),
+            write: (v) => String(v)
+        },
+        BigInt: {
+            read: (v) => BigInt(v),
+            write: (v) => String(v)
+        },
+        Boolean: {
+            read: (v) => v === 'true',
+            write: (v) => String(v)
+        },
+        Null: {
+            read: () => null,
+            write: (v) => String(v)
+        },
+        Undefined: {
+            read: () => undefined,
+            write: (v) => String(v)
+        },
+        Object: {
+            read: (v) => createProxyObject(v),
+            write: (v) => v
+        },
+        Array: {
+            read: (v) => createProxyObject(v),
+            write: (v) => v
+        },
+        Set: {
+            read: (v) => new Set(v),
+            write: (v) => Array.from(v)
+        },
+        Map: {
+            read: (v) => new Map(v),
+            write: (v) => Array.from(v)
+        },
+        Date: {
+            read: (v) => new Date(v),
+            write: (v) => String(v)
+        },
+        RegExp: {
+            read: (v) => transformEval(v),
+            write: (v) => String(v)
+        },
+        Function: {
+            read: (v) => transformEval(`(function() { return ${v} })()`),
+            write: (v) => String(v)
+        }
+    };
+    function decode(data, expiredFunc) {
+        let originalData = data;
+        try {
+            originalData = transformJSON(data);
+        }
+        catch (e) { }
+        if (!isObject(originalData)) {
+            return originalData;
+        }
+        if (originalData.expires && new Date(+originalData.expires).getTime() <= Date.now()) {
+            expiredFunc();
+            return undefined;
+        }
+        const serializer = StorageSerializers[originalData.type];
+        if (!serializer) {
+            return originalData.value;
+        }
+        return serializer.read(originalData.value);
+    }
+    function encode(data, expires) {
+        const rawType = getRawType(data);
+        const serializer = StorageSerializers[rawType];
+        if (!serializer) {
+            throw new Error(`can't set "${rawType}" property.`);
+        }
+        let targetObject = {
+            type: rawType,
+            value: serializer.write(data)
+        };
+        if (expires) {
+            targetObject.expires = expires;
+        }
+        return JSON.stringify(targetObject);
+    }
+
+    function setExpires(target, property, value, receiver) {
+        let time;
+        if (isDate(value)) {
+            time = value.getTime();
+        }
+        else if (isString(value)) {
+            time = +value.padEnd(13, '0');
+        }
+        else {
+            time = value;
+        }
+        if (time <= Date.now()) {
+            delete receiver[property];
+            return undefined;
+        }
+        let data = receiver[property];
+        if (!data) {
+            return undefined;
+        }
+        data = proxyMap.get(data) || data;
+        target[`${prefix}${property}`] = encode(data, '' + time);
+        return new Date(time);
+    }
+    function getExpires(target, property) {
+        const key = `${prefix}${property}`;
+        if (!target[key]) {
+            return undefined;
+        }
+        let data = transformJSON(target[key]);
+        if (!isObject(data) || !data.expires || +data.expires <= Date.now()) {
+            return undefined;
+        }
+        return new Date(+data.expires);
+    }
+    function removeExpires(target, property, receiver) {
+        let data = receiver[property];
+        if (!data) {
+            return undefined;
+        }
+        data = proxyMap.get(data) || data;
+        target[`${prefix}${property}`] = encode(data);
+        return undefined;
+    }
+
+    function createInstrumentations(target, receiver) {
+        const instrumentations = {};
+        ['clear', 'key'].forEach(key => {
+            instrumentations[key] = target[key].bind(target);
+        });
+        const needReceiverFuncMap = {
+            getItem: get,
+            setItem: set,
+            setExpires,
+            removeExpires
+        };
+        Object.keys(needReceiverFuncMap).forEach(key => {
+            instrumentations[key] = function (...args) {
+                return needReceiverFuncMap[key](target, ...args, receiver);
+            };
+        });
+        const notNeedReceiverFuncMap = {
+            removeItem: deleteProperty,
+            getExpires,
+            off,
+            on,
+            once
+        };
+        Object.keys(notNeedReceiverFuncMap).forEach(key => {
+            instrumentations[key] = function (...args) {
+                return notNeedReceiverFuncMap[key](target, ...args);
+            };
+        });
+        return instrumentations;
+    }
+    const storageInstrumentations = new Map();
+    function get(target, property, receiver) {
+        // records the parent of array and object
+        if (shouldTrack) {
+            activeEffect.storage = target;
+            activeEffect.key = property;
+            activeEffect.proxy = receiver;
+        }
+        let instrumentations = storageInstrumentations.get(target);
+        if (!instrumentations) {
+            instrumentations = createInstrumentations(target, receiver);
+            storageInstrumentations.set(target, instrumentations);
+        }
+        if (hasOwn(instrumentations, property)) {
+            return Reflect.get(instrumentations, property, receiver);
+        }
+        if (!has(target, property)) {
+            return undefined;
+        }
+        const key = `${prefix}${property}`;
+        const value = target[key] || target[property];
+        if (!value) {
+            return value;
+        }
+        return decode(value, createExpiredFunc(target, key));
+    }
+    function set(target, property, value, receiver) {
+        const key = `${prefix}${property}`;
+        let oldValue = decode(target[key], createExpiredFunc(target, key));
+        oldValue = proxyMap.get(oldValue) || oldValue;
+        const encodeValue = encode(value);
+        const result = Reflect.set(target, key, encodeValue, receiver);
+        if (result && hasChanged(value, oldValue) && shouldTrack) {
+            emit(target, property, value, oldValue);
+        }
+        return result;
+    }
+    // only prefixed properties are accepted in the instance
+    function has(target, property) {
+        return target.hasOwnProperty(`${prefix}${property}`) || propertyIsInPrototype(target, property);
+    }
+    function deleteProperty(target, property) {
+        const key = `${prefix}${property}`;
+        const hadKey = hasOwn(target, key);
+        let oldValue = decode(target[key], createExpiredFunc(target, key));
+        oldValue = proxyMap.get(oldValue) || oldValue;
+        const result = Reflect.deleteProperty(target, key);
+        if (result && hadKey) {
+            emit(target, property, undefined, oldValue);
+        }
+        return result;
+    }
+    function createProxyStorage(storage) {
+        if (!storage) {
+            return null;
+        }
+        const proxy = new Proxy(storage, {
+            get,
+            set,
+            has,
+            deleteProperty,
+        });
+        return proxy;
+    }
+
+    const local = createProxyStorage(localStorage);
+    const session = createProxyStorage(sessionStorage);
+    if (typeof window !== 'undefined') {
+        window.addEventListener('storage', (e) => {
+            if (e.key && e.key.startsWith(prefix)) {
+                let newValue = e.newValue, oldValue = e.oldValue;
+                if (e.newValue) {
+                    newValue = decode(e.newValue, createExpiredFunc(localStorage, e.key));
+                    if (isObject(newValue)) {
+                        newValue = proxyMap.get(newValue) || newValue;
+                    }
+                }
+                if (e.oldValue) {
+                    oldValue = decode(e.oldValue, createExpiredFunc(localStorage, e.key));
+                    if (isObject(oldValue)) {
+                        oldValue = proxyMap.get(oldValue) || oldValue;
+                    }
+                }
+                emit(localStorage, e.key.slice(prefix.length), newValue, oldValue);
+            }
+        });
+    }
+
+    exports.local = local;
+    exports.session = session;
+    exports.setPrefix = setPrefix;
+
+    Object.defineProperty(exports, '__esModule', { value: true });
+
+}));

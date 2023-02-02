@@ -2,13 +2,16 @@
   "name": "proxy-web-storage",
   "version": "1.0.7",
   "description": "Keep the type of storage value unchanged and change array and object directly. Supports listening to changes and setting expires.",
-  "main": "dist/proxy-web-storage.js",
+  "files": [
+    "dist"
+  ],
+  "browser": "dist/proxy-web-storage.min.js",
   "types": "dist/proxy-web-storage.d.ts",
   "scripts": {
     "build": "rimraf dist && rollup -c",
     "format": "prettier --write --parser typescript \"src/*.ts\"",
     "lint": "eslint . --format friendly",
-    "test": "npm run build && jest --runInBand"
+    "test": "rimraf playground && rollup -c rollup.test.config.js && jest --runInBand"
   },
   "repository": {
     "type": "git",
@@ -31,6 +34,8 @@
   "homepage": "https://github.com/KID-joker/proxy-web-storage#readme",
   "devDependencies": {
     "@rollup/plugin-html": "^1.0.1",
+    "@rollup/plugin-terser": "^0.4.0",
+    "@rollup/plugin-typescript": "^11.0.0",
     "@types/jest": "^28.1.7",
     "@types/node": "^18.7.10",
     "@typescript-eslint/parser": "^5.33.1",
@@ -42,8 +47,6 @@
     "rimraf": "^3.0.2",
     "rollup": "^2.78.1",
     "rollup-plugin-dts": "^5.0.0",
-    "rollup-plugin-terser": "^7.0.2",
-    "rollup-plugin-typescript2": "^0.33.0",
     "ts-jest": "^28.0.8",
     "tslib": "^2.4.0",
     "typescript": "^4.7.4"
