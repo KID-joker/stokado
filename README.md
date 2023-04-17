@@ -19,49 +19,49 @@ npm i proxy-web-storage
 Keep the type of storage value unchanged and change array and object directly.
 
 ```js
-import { local, session } from 'proxy-web-storage';
+import { local, session } from 'proxy-web-storage'
 
-local.test = 'Hello proxy-web-storage'; // works
-delete local.test; // works
+local.test = 'Hello proxy-web-storage' // works
+delete local.test // works
 
 // number
-local.test = 0;
-local.test === 0; // true
+local.test = 0
+local.test === 0 // true
 
 // boolean
-local.test = false;
-local.test === false; // true
+local.test = false
+local.test === false // true
 
 // undefined
-local.test = undefined;
-local.test === undefined; // true
+local.test = undefined
+local.test === undefined // true
 
 // null
-local.test = null;
-local.test === null; // true
+local.test = null
+local.test === null // true
 
 // object
-local.test = { hello: 'world' };
-local.test.hello = 'proxy-web-storage'; // works
+local.test = { hello: 'world' }
+local.test.hello = 'proxy-web-storage' // works
 
 // array
-local.test = ['hello'];
-local.test.push('proxy-web-storage'); // works
+local.test = ['hello']
+local.test.push('proxy-web-storage') // works
 local.test.length // 2
 
 // Date
-local.test = new Date('2000-01-01T00:00:00.000Z');
-local.test.getTime() === 946684800000; // true
+local.test = new Date('2000-01-01T00:00:00.000Z')
+local.test.getTime() === 946684800000 // true
 
 // RegExp
-local.test = /d(b+)d/g;
-local.test.test("cdbbdbsbz"); // true
+local.test = /d(b+)d/g
+local.test.test('cdbbdbsbz') // true
 
 // function
-local.test = function() {
-  return 'Hello proxy-web-storage!';
-};
-local.test() === 'Hello proxy-web-storage!'; // true
+local.test = function () {
+  return 'Hello proxy-web-storage!'
+}
+local.test() === 'Hello proxy-web-storage!' // true
 ```
 
 `test` is the key in localStorage. The value is also saved to localStorage.
@@ -72,19 +72,19 @@ The `local`, `session` also have the same methods and properties: `key()`, `getI
 listen to the changes.
 
 ```js
-import { local } from 'proxy-web-storage';
+import { local } from 'proxy-web-storage'
 
-local.on('test', function(newVal, oldVal) {
-  console.log('test', newVal, oldVal);
-});
-local.on('test.a', function(newVal, oldVal) {
-  console.log('test.a', newVal, oldVal);
-});
+local.on('test', (newVal, oldVal) => {
+  console.log('test', newVal, oldVal)
+})
+local.on('test.a', (newVal, oldVal) => {
+  console.log('test.a', newVal, oldVal)
+})
 
-local.test = {};
+local.test = {}
 // test {} undefined
 
-local.test.a = 1;
+local.test.a = 1
 // test.a 1 undefined
 ```
 
@@ -114,10 +114,10 @@ Unsubscribe from an item or all items.
 set expires for items.
 
 ```js
-import { local } from 'proxy-web-storage';
+import { local } from 'proxy-web-storage'
 
-local.test = 'hello proxy-web-storage';
-local.setExpires('test', Date.now() + 10000);
+local.test = 'hello proxy-web-storage'
+local.setExpires('test', Date.now() + 10000)
 
 // within 10's
 local.test // 'hello proxy-web-storage'

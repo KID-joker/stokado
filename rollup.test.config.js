@@ -1,16 +1,19 @@
-import typescript from '@rollup/plugin-typescript';
-import html from '@rollup/plugin-html';
-import path from 'path';
+import typescript from '@rollup/plugin-typescript'
+import html from '@rollup/plugin-html'
+import { nodeResolve } from '@rollup/plugin-node-resolve'
+import commonjs from '@rollup/plugin-commonjs'
 
 export default [{
-  input: path.resolve(__dirname, 'src/index.ts'),
+  input: 'src/index.ts',
   output: {
-    dir: "playground",
-    format: "iife",
-    name: 'proxyWebStorage'
+    dir: 'playground',
+    format: 'iife',
+    name: 'proxyWebStorage',
   },
   plugins: [
+    nodeResolve(),
+    commonjs(),
     typescript(),
-    html()
-  ]
-}];
+    html(),
+  ],
+}]

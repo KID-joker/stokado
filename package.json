@@ -1,21 +1,17 @@
 {
   "name": "proxy-web-storage",
+  "type": "module",
   "version": "1.0.7",
   "description": "Keep the type of storage value unchanged and change array and object directly. Supports listening to changes and setting expires.",
-  "files": [
-    "dist"
-  ],
-  "browser": "dist/proxy-web-storage.min.js",
-  "types": "dist/proxy-web-storage.d.ts",
-  "scripts": {
-    "build": "rimraf dist && rollup -c",
-    "format": "prettier --write --parser typescript \"src/*.ts\"",
-    "lint": "eslint . --format friendly",
-    "test": "rimraf playground && rollup -c rollup.test.config.js && jest --runInBand"
-  },
+  "author": "KID-joker",
+  "license": "MIT",
+  "homepage": "https://github.com/KID-joker/proxy-web-storage#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/KID-joker/proxy-web-storage.git"
+  },
+  "bugs": {
+    "url": "https://github.com/KID-joker/proxy-web-storage/issues"
   },
   "keywords": [
     "localStorage",
@@ -26,28 +22,31 @@
     "subscribe",
     "expires"
   ],
-  "author": "KID-joker",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/KID-joker/proxy-web-storage/issues"
+  "types": "dist/proxy-web-storage.d.ts",
+  "files": [
+    "dist"
+  ],
+  "browser": "dist/proxy-web-storage.min.js",
+  "scripts": {
+    "build": "rimraf dist && rollup -c --bundleConfigAsCjs",
+    "lint": "eslint . --fix",
+    "test": "rimraf playground && rollup -c rollup.test.config.js && npx playwright test",
+    "typecheck": "tsc --noEmit"
   },
-  "homepage": "https://github.com/KID-joker/proxy-web-storage#readme",
   "devDependencies": {
+    "@antfu/eslint-config": "^0.38.4",
+    "@playwright/test": "^1.32.3",
+    "@rollup/plugin-commonjs": "^24.1.0",
     "@rollup/plugin-html": "^1.0.1",
+    "@rollup/plugin-node-resolve": "^15.0.2",
     "@rollup/plugin-terser": "^0.4.0",
     "@rollup/plugin-typescript": "^11.0.0",
-    "@types/jest": "^28.1.7",
     "@types/node": "^18.7.10",
-    "@typescript-eslint/parser": "^5.33.1",
     "eslint": "^8.22.0",
-    "eslint-plugin-jest": "^26.8.5",
-    "jest": "^28.1.3",
-    "jest-environment-jsdom": "^29.0.2",
-    "prettier": "^2.7.1",
     "rimraf": "^3.0.2",
-    "rollup": "^2.78.1",
+    "rollup": "^3.20.2",
     "rollup-plugin-dts": "^5.0.0",
-    "ts-jest": "^28.0.8",
+    "serve-then": "1.0.0-rc.0",
     "tslib": "^2.4.0",
     "typescript": "^4.7.4"
   }

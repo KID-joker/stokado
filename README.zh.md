@@ -19,49 +19,49 @@ npm i proxy-web-storage
 保持`storage`值的类型不变并且可以直接操作数组和对象。
 
 ```js
-import { local, session } from 'proxy-web-storage';
+import { local, session } from 'proxy-web-storage'
 
-local.test = 'Hello proxy-web-storage'; // works
-delete local.test; // works
+local.test = 'Hello proxy-web-storage' // works
+delete local.test // works
 
 // number
-local.test = 0;
-local.test === 0; // true
+local.test = 0
+local.test === 0 // true
 
 // boolean
-local.test = false;
-local.test === false; // true
+local.test = false
+local.test === false // true
 
 // undefined
-local.test = undefined;
-local.test === undefined; // true
+local.test = undefined
+local.test === undefined // true
 
 // null
-local.test = null;
-local.test === null; // true
+local.test = null
+local.test === null // true
 
 // object
-local.test = { hello: 'world' };
-local.test.hello = 'proxy-web-storage'; // works
+local.test = { hello: 'world' }
+local.test.hello = 'proxy-web-storage' // works
 
 // array
-local.test = ['hello'];
-local.test.push('proxy-web-storage'); // works
+local.test = ['hello']
+local.test.push('proxy-web-storage') // works
 local.test.length // 2
 
 // Date
-local.test = new Date('2000-01-01T00:00:00.000Z');
-local.test.getTime() === 946684800000; // true
+local.test = new Date('2000-01-01T00:00:00.000Z')
+local.test.getTime() === 946684800000 // true
 
 // RegExp
-local.test = /d(b+)d/g;
-local.test.test("cdbbdbsbz"); // true
+local.test = /d(b+)d/g
+local.test.test('cdbbdbsbz') // true
 
 // function
-local.test = function() {
-  return 'Hello proxy-web-storage!';
-};
-local.test() === 'Hello proxy-web-storage!'; // true
+local.test = function () {
+  return 'Hello proxy-web-storage!'
+}
+local.test() === 'Hello proxy-web-storage!' // true
 ```
 
 `test`和对应的`value`是实际保存到`localStorage`的。同时，`local`和`session`也支持`Web Storage`的方法和属性：`key()`，`getItem()`，`setItem()`，`removeItem()`，`clear()` 和 `length`。
@@ -71,19 +71,19 @@ local.test() === 'Hello proxy-web-storage!'; // true
 监听值的变化。
 
 ```js
-import { local } from 'proxy-web-storage';
+import { local } from 'proxy-web-storage'
 
-local.on('test', function(newVal, oldVal) {
-  console.log('test', newVal, oldVal);
-});
-local.on('test.a', function(newVal, oldVal) {
-  console.log('test.a', newVal, oldVal);
-});
+local.on('test', (newVal, oldVal) => {
+  console.log('test', newVal, oldVal)
+})
+local.on('test.a', (newVal, oldVal) => {
+  console.log('test.a', newVal, oldVal)
+})
 
-local.test = {};
+local.test = {}
 // test {} undefined
 
-local.test.a = 1;
+local.test.a = 1
 // test.a 1 undefined
 ```
 
@@ -115,10 +115,10 @@ local.test.a = 1;
 为指定项设置过期时间。
 
 ```js
-import { local } from 'proxy-web-storage';
+import { local } from 'proxy-web-storage'
 
-local.test = 'hello proxy-web-storage';
-local.setExpires('test', Date.now() + 10000);
+local.test = 'hello proxy-web-storage'
+local.setExpires('test', Date.now() + 10000)
 
 // within 10's
 local.test // 'hello proxy-web-storage'

@@ -1,65 +1,63 @@
-import { Effect, EffectFn, EffectMap } from '../types';
+import type { Effect, EffectFn, EffectMap } from '../types'
 
-let targetMap = new WeakMap<Object, EffectMap>();
+const targetMap = new WeakMap<Object, EffectMap>()
 
 export function on(
-  this: any, 
-  target: object, 
+  this: any,
+  target: object,
   key: string,
-  fn: EffectFn
+  fn: EffectFn,
 ) {
   const effect: Effect = {
     ctx: this,
-    fn
-  };
+    fn,
+  }
 
-  let effectMap = targetMap.get(target);
-  if(!effectMap) {
-    targetMap.set(target, (effectMap = new Map()));
-  }
-  const effects: Effect[] | undefined = effectMap.get(key);
-  if(effects) {
-    effects.push(effect);
-  } else {
-    effectMap.set(key, [effect] as Effect[]);
-  }
+  let effectMap = targetMap.get(target)
+  if (!effectMap)
+    targetMap.set(target, (effectMap = new Map()))
+
+  const effects: Effect[] | undefined = effectMap.get(key)
+  if (effects)
+    effects.push(effect)
+  else
+    effectMap.set(key, [effect] as Effect[])
 }
 
 export function once(
   this: any,
   target: object,
   key: string,
-  fn: EffectFn
+  fn: EffectFn,
 ) {
-  const that = this;
   const wrapped = (value: any, oldValue: any) => {
-    off(target, key, wrapped);
-    fn.call(that, value, oldValue);
+    off(target, key, wrapped)
+    fn.call(this, value, oldValue)
   }
   // in order to filter
-  wrapped.fn = fn;
-  on(target, key, wrapped);
+  wrapped.fn = fn
+  on(target, key, wrapped)
 }
 
 export function off(
   target: object,
   key?: string,
-  fn?: EffectFn
+  fn?: EffectFn,
 ) {
-  if(key === undefined) {
-    targetMap.set(target, new Map());
-    return;
+  if (key === undefined) {
+    targetMap.set(target, new Map())
+    return
   }
 
-  let effectMap: EffectMap | undefined = targetMap.get(target);
-  if(effectMap) {
-    const effects: Effect[] | undefined = effectMap.get(key);
-    if(effects && effects.length > 0) {
-      let value: Effect[] = [];
-      if(fn) {
-        value = effects.filter(ele => !(ele.fn === fn || (ele as any).fn?.fn === fn));
-      }
-      effectMap.set(key, value);
+  const effectMap: EffectMap | undefined = targetMap.get(target)
+  if (effectMap) {
+    const effects: Effect[] | undefined = effectMap.get(key)
+    if (effects && effects.length > 0) {
+      let value: Effect[] = []
+      if (fn)
+        value = effects.filter(ele => !(ele.fn === fn || (ele as any).fn?.fn === fn))
+
+      effectMap.set(key, value)
     }
   }
 }
@@ -69,12 +67,12 @@ export function emit(
   key: string,
   ...args: any[]
 ) {
-  const effectMap: EffectMap | undefined = targetMap.get(target);
-  if(effectMap) {
-    const effects: Effect[] | undefined = effectMap.get(key);
-    if(effects) {
-      const [value, oldValue] = args;
-      effects.forEach(ele => ele.fn.call(ele.ctx, value, oldValue));
+  const effectMap: EffectMap | undefined = targetMap.get(target)
+  if (effectMap) {
+    const effects: Effect[] | undefined = effectMap.get(key)
+    if (effects) {
+      const [value, oldValue] = args
+      effects.forEach(ele => ele.fn.call(ele.ctx, value, oldValue))
     }
   }
 }

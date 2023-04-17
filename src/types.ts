@@ -1,5 +1,5 @@
 export interface StorageLike {
-  [x: string]: any;
+  [x: string]: any
   clear(): void
   getItem(key: string): string | null
   key(key: number): string | null
@@ -7,7 +7,7 @@ export interface StorageLike {
   removeItem(key: string): void
   length: number
 }
-export type StorageValue = string | object | null;
+export type StorageValue = string | object | null
 
 export interface ActiveEffect {
   storage: object
@@ -15,13 +15,13 @@ export interface ActiveEffect {
   proxy: any
 }
 
-export type EffectMap = Map<string, Effect[]>;
+export type EffectMap = Map<string, Effect[]>
 export type EffectFn<V = any, OV = any> = (
   value?: V,
   oldValue?: OV
 ) => any
 export interface Effect {
-  ctx: any,
+  ctx: any
   fn: EffectFn
 }
 
@@ -31,4 +31,4 @@ export interface TargetObject {
   expires?: ExpiresType
 }
 
-export type ExpiresType = string | number | Date;
+export type ExpiresType = string | number | Date

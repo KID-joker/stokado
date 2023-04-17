@@ -1,40 +1,46 @@
-import typescript from '@rollup/plugin-typescript';
-import terser from '@rollup/plugin-terser';
-import dts from "rollup-plugin-dts";
-import path from 'path';
+import path from 'node:path'
+import typescript from '@rollup/plugin-typescript'
+import { nodeResolve } from '@rollup/plugin-node-resolve'
+import terser from '@rollup/plugin-terser'
+import dts from 'rollup-plugin-dts'
+import { getDirname } from './shared-utils'
+
+const input = path.resolve(getDirname(import.meta.url), 'src/index.ts')
 
 export default [{
-  input: path.resolve(__dirname, 'src/index.ts'),
+  input,
   output: {
     file: 'dist/proxy-web-storage.js',
     format: 'umd',
-    name: 'proxyWebStorage'
-  },
-  plugins: [
-    typescript()
-  ]
-}, {
-  input: path.resolve(__dirname, 'src/index.ts'),
-  output: {
-    file: 'dist/proxy-web-storage.min.js',
-    format: 'umd',
-    name: 'proxyWebStorage'
+    name: 'proxyWebStorage',
   },
   plugins: [
     typescript(),
-    terser({
-      compress: {
-        drop_console: true
-      }
-    })
-  ]
+    nodeResolve(),
+  ],
 }, {
-  input: path.resolve(__dirname, 'src/index.ts'),
+  input,
   output: {
-    file: "dist/proxy-web-storage.d.ts",
-    format: "es"
+    file: 'dist/proxy-web-storage.min.js',
+    format: 'umd',
+    name: 'proxyWebStorage',
   },
   plugins: [
-    dts()
-  ]
-}];
+    typescript(),
+    nodeResolve(),
+    terser({
+      compress: {
+        drop_console: true,
+      },
+    }),
+  ],
+}, {
+  input,
+  output: {
+    file: 'dist/proxy-web-storage.d.ts',
+    format: 'es',
+  },
+  plugins: [
+    dts(),
+  ],
+}]

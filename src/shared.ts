@@ -1,27 +1,33 @@
-import { ActiveEffect } from "./types";
+import type { ActiveEffect } from './types'
 
-export let prefix = '';
+let prefix = ''
 export function setPrefix(str: string) {
-  prefix = `${str}:`;
+  prefix = `${str}:`
+}
+export function getPrefix() {
+  return prefix
 }
 
-export const proxyMap = new WeakMap<object, object>();
+export const proxyMap = new WeakMap<object, object>()
 
-export const activeEffect: ActiveEffect = { storage: {}, key: '', proxy: {} };
+export const activeEffect: ActiveEffect = { storage: {}, key: '', proxy: {} }
 
-export let shouldTrack = true;
+let shouldTrack = true
 export function pauseTracking() {
   shouldTrack = false
 }
 export function enableTracking() {
   shouldTrack = true
 }
+export function getShouldTrack() {
+  return shouldTrack
+}
 
 export function createExpiredFunc(
   target: object,
-  key: string
+  key: string,
 ) {
-  return function() {
-    delete target[key];
+  return function () {
+    delete target[key]
   }
 }

@@ -4,13 +4,13 @@
     "experimentalDecorators": true,
     "lib": ["DOM", "ESNEXT"],
     "module": "ES2015",
+    "moduleResolution": "node",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "outDir": "dist",
     "rootDir": ".",
     "strict": true,
     "suppressImplicitAnyIndexErrors": true,
-    "target": "ES2020",
+    "target": "ES2020"
   },
-  "include": ["src/*.ts", "src/*/*.ts", "__tests__/*.ts"]
+  "include": ["src/*.ts", "src/*/*.ts", "tests/*.ts"]
 }
