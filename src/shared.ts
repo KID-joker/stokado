@@ -1,4 +1,4 @@
-import type { ActiveEffect } from './types'
+import type { ActiveEffect } from '@/types'
 
 let prefix = ''
 export function setPrefix(str: string) {

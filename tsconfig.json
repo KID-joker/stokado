@@ -15,7 +15,11 @@
     "strictFunctionTypes": true,
     "strictNullChecks": true,
     "strict": true,
-    "target": "ES2016"
+    "target": "ES2017",
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"]
+    }
   },
   "include": ["src/*.ts", "src/*/*.ts", "tests/*.ts"]
 }

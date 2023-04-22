@@ -1,9 +1,9 @@
-import { emit } from './extends/watch'
-import { decode } from './proxy/transform'
-import { createProxyStorage } from './proxy/storage'
-import { createExpiredFunc, getPrefix, proxyMap } from './shared'
-import { isObject } from './utils'
-import type { StorageValue } from './types'
+import { emit } from '@/extends/watch'
+import { decode } from '@/proxy/transform'
+import { createProxyStorage } from '@/proxy/storage'
+import { createExpiredFunc, getPrefix, proxyMap } from '@/shared'
+import { isObject } from '@/utils'
+import type { StorageValue } from '@/types'
 
 export { setPrefix } from './shared'
 export const local: any = createProxyStorage(localStorage)

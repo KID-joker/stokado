@@ -1,9 +1,9 @@
-import { getExpires, removeExpires, setExpires } from '../extends/expires'
-import { activeEffect, createExpiredFunc, getPrefix, getShouldTrack, proxyMap } from '../shared'
-import { hasChanged, hasOwn, propertyIsInPrototype } from '../utils'
-import { emit, off, on, once } from '../extends/watch'
-import type { StorageLike } from '../types'
-import { decode, encode } from './transform'
+import { getExpires, removeExpires, setExpires } from '@/extends/expires'
+import { activeEffect, createExpiredFunc, getPrefix, getShouldTrack, proxyMap } from '@/shared'
+import { hasChanged, hasOwn, propertyIsInPrototype } from '@/utils'
+import { emit, off, on, once } from '@/extends/watch'
+import type { StorageLike } from '@/types'
+import { decode, encode } from '@/proxy/transform'
 
 function createInstrumentations(
   target: Record<string, any>,

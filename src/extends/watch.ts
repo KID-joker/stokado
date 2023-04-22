@@ -1,4 +1,4 @@
-import type { Effect, EffectFn, EffectMap } from '../types'
+import type { Effect, EffectFn, EffectMap } from '@/types'
 
 const targetMap = new WeakMap<Object, EffectMap>()
 

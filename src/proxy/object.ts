@@ -1,6 +1,6 @@
-import { activeEffect, enableTracking, pauseTracking, proxyMap } from '../shared'
-import { hasChanged, hasOwn, isArray, isIntegerKey } from '../utils'
-import { emit } from '../extends/watch'
+import { activeEffect, enableTracking, pauseTracking, proxyMap } from '@/shared'
+import { hasChanged, hasOwn, isArray, isIntegerKey } from '@/utils'
+import { emit } from '@/extends/watch'
 
 function selfEmit(
   obj: object,

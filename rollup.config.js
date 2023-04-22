@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import tsConfigPaths from 'rollup-plugin-tsconfig-paths'
 import html from '@rollup/plugin-html'
 import esbuild from 'rollup-plugin-esbuild'
 import dts from 'rollup-plugin-dts'
@@ -21,9 +22,10 @@ const output = [{
   extend: true,
 }]
 const pluginEsbuild = esbuild({ drop: ['console'] })
+const pluginPaths = tsConfigPaths()
 const pluginDts = dts()
 const pluginHtml = html()
-const plugins = [pluginEsbuild]
+const plugins = [pluginEsbuild, pluginPaths]
 
 if (process.env.BUILD === 'prod') {
   output.push({

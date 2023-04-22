@@ -1,4 +1,4 @@
-import type { RawType, TargetObject } from './types'
+import type { RawType, TargetObject } from '@/types'
 
 export const isArray = Array.isArray
 export function isSet(val: unknown): val is Set<any> {

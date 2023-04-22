@@ -1,7 +1,7 @@
-import { encode } from '../proxy/transform'
-import { getPrefix, proxyMap } from '../shared'
-import type { ExpiresType } from '../types'
-import { isDate, isObject, isString, transformJSON } from '../utils'
+import { encode } from '@/proxy/transform'
+import { getPrefix, proxyMap } from '@/shared'
+import type { ExpiresType } from '@/types'
+import { isDate, isObject, isString, transformJSON } from '@/utils'
 
 export function setExpires(
   target: Record<string, any>,

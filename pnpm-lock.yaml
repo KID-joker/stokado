@@ -7,10 +7,10 @@ specifiers:
   '@types/node': ^18.7.10
   esbuild: ^0.17.17
   eslint: ^8.22.0
-  rimraf: ^3.0.2
   rollup: ^3.20.2
   rollup-plugin-dts: ^5.0.0
   rollup-plugin-esbuild: ^5.0.0
+  rollup-plugin-tsconfig-paths: ^1.5.0
   serve-then: 1.0.0-rc.0
   tslib: ^2.4.0
   typescript: ^4.7.4
@@ -22,10 +22,10 @@ devDependencies:
   '@types/node': 18.15.13
   esbuild: 0.17.17
   eslint: 8.39.0
-  rimraf: 3.0.2
   rollup: 3.20.7
   rollup-plugin-dts: 5.3.0_ml2wmhwxtzex2i3wmu6dwgkcxu
   rollup-plugin-esbuild: 5.0.0_v7vqyqzedljq5z3mz2y2n2tsxq
+  rollup-plugin-tsconfig-paths: 1.5.0_ml2wmhwxtzex2i3wmu6dwgkcxu
   serve-then: 1.0.0-rc.0
   tslib: 2.5.0
   typescript: 4.9.5
@@ -3304,6 +3304,17 @@ packages:
       - supports-color
     dev: true
 
+  /rollup-plugin-tsconfig-paths/1.5.0_ml2wmhwxtzex2i3wmu6dwgkcxu:
+    resolution: {integrity: sha512-b460afESVscekQAVFvRhHGsmti9vDd2wp1PirKBuVrkC0OgqbhPfKlAEDOcn6PUPYW73vwuEnMu76kCiFOzZaw==}
+    peerDependencies:
+      rollup: ^2 || ^3
+    dependencies:
+      rollup: 3.20.7
+      typescript-paths: 1.5.0_typescript@4.9.5
+    transitivePeerDependencies:
+      - typescript
+    dev: true
+
   /rollup/3.20.7:
     resolution: {integrity: sha512-P7E2zezKSLhWnTz46XxjSmInrbOCiul1yf+kJccMxT56vxjHwCbDfoLbiqFgu+WQoo9ij2PkraYaBstgB2prBA==}
     engines: {node: '>=14.18.0', npm: '>=8.0.0'}
@@ -3737,6 +3748,14 @@ packages:
       call-bind: 1.0.2
       for-each: 0.3.3
       is-typed-array: 1.1.10
+    dev: true
+
+  /typescript-paths/1.5.0_typescript@4.9.5:
+    resolution: {integrity: sha512-t6AEWi3g4wW2N/Ui8NpKjfpZ8EcJnGAs64uux54N8zMAZaz8ldjb0GCLIyo9panMUzKsxz+ePt4BGk+ssBGNFw==}
+    peerDependencies:
+      typescript: ^4.7.2 || ^5
+    dependencies:
+      typescript: 4.9.5
     dev: true
 
   /typescript/4.9.5:

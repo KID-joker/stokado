@@ -1,6 +1,6 @@
-import type { RawType, TargetObject } from '../types'
-import { getRawType, isObject, transformEval, transformJSON } from '../utils'
-import { createProxyObject } from './object'
+import type { RawType, TargetObject } from '@/types'
+import { getRawType, isObject, transformEval, transformJSON } from '@/utils'
+import { createProxyObject } from '@/proxy/object'
 
 interface Serializer<T> {
   read(raw: string | object): T
