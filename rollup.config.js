@@ -1,46 +1,68 @@
 import path from 'node:path'
-import typescript from '@rollup/plugin-typescript'
-import { nodeResolve } from '@rollup/plugin-node-resolve'
-import terser from '@rollup/plugin-terser'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import html from '@rollup/plugin-html'
+import esbuild from 'rollup-plugin-esbuild'
 import dts from 'rollup-plugin-dts'
-import { getDirname } from './shared-utils'
 
-const input = path.resolve(getDirname(import.meta.url), 'src/index.ts')
+const pkg = JSON.parse(readFileSync('./package.json', { encoding: 'utf8' }))
 
-export default [{
-  input,
-  output: {
-    file: 'dist/proxy-web-storage.js',
-    format: 'umd',
-    name: 'proxyWebStorage',
-  },
-  plugins: [
-    typescript(),
-    nodeResolve(),
-  ],
-}, {
-  input,
-  output: {
-    file: 'dist/proxy-web-storage.min.js',
-    format: 'umd',
-    name: 'proxyWebStorage',
-  },
-  plugins: [
-    typescript(),
-    nodeResolve(),
-    terser({
-      compress: {
-        drop_console: true,
-      },
-    }),
-  ],
-}, {
-  input,
-  output: {
-    file: 'dist/proxy-web-storage.d.ts',
-    format: 'es',
-  },
-  plugins: [
-    dts(),
-  ],
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
+
+const configs = []
+
+const input = path.resolve(__dirname, 'src/index.ts')
+const fileName = pkg.name
+const iifeName = 'proxyWebStorage'
+const output = [{
+  file: `${process.env.BUILD === 'test' ? 'playground' : 'dist'}/${fileName}.js`,
+  format: 'iife',
+  name: iifeName,
+  extend: true,
 }]
+const pluginEsbuild = esbuild({ drop: ['console'] })
+const pluginDts = dts()
+const pluginHtml = html()
+const plugins = [pluginEsbuild]
+
+if (process.env.BUILD === 'prod') {
+  output.push({
+    file: `dist/${fileName}.mjs`,
+    format: 'es',
+  }, {
+    file: `dist/${fileName}.cjs`,
+    format: 'cjs',
+  }, {
+    file: `dist/${fileName}.min.js`,
+    format: 'iife',
+    name: iifeName,
+    extend: true,
+    plugins: [
+      esbuild({
+        minify: true,
+      }),
+    ],
+  })
+
+  configs.push({
+    input,
+    output: {
+      file: `dist/${fileName}.d.ts`,
+      format: 'es',
+    },
+    plugins: [
+      pluginDts,
+    ],
+  })
+}
+
+if (process.env.BUILD === 'test')
+  plugins.push(pluginHtml)
+
+configs.push({
+  input,
+  output,
+  plugins,
+})
+
+export default configs

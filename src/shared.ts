@@ -19,7 +19,7 @@ export function pauseTracking() {
 export function enableTracking() {
   shouldTrack = true
 }
-export function getShouldTrack():boolean {
+export function getShouldTrack(): boolean {
   return shouldTrack
 }
 
