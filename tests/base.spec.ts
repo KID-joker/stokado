@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test'
-import { serve } from 'serve-then'
-import { decode, encode } from '../src/proxy/transform'
-import type { StorageLike } from '../src/types'
+import { decode, encode } from '@/proxy/transform'
+import type { StorageLike } from '@/types'
 
 declare global {
   interface Window {
@@ -9,16 +8,8 @@ declare global {
   }
 }
 
-let serverURL: string
-
-test.beforeAll(async () => {
-  serverURL = await serve({
-    root: '/playground',
-  })
-})
-
 test('proxy-web-storage', async ({ page }) => {
-  await page.goto(serverURL)
+  await page.goto('/')
   const localTest = await page.evaluate(() => {
     const { local } = window.proxyWebStorage
     local.test = 'hello proxy-web-storage'
