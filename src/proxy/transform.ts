@@ -1,4 +1,4 @@
-import type { TargetObject } from '../types'
+import type { RawType, TargetObject } from '../types'
 import { getRawType, isObject, transformEval, transformJSON } from '../utils'
 import { createProxyObject } from './object'
 
@@ -6,7 +6,7 @@ interface Serializer<T> {
   read(raw: string | object): T
   write(value: T): string | object
 }
-const StorageSerializers: Record<'String' | 'Number' | 'BigInt' | 'Boolean' | 'Null' | 'Undefined' | 'Object' | 'Array' | 'Set' | 'Map' | 'Date' | 'RegExp' | 'Function', Serializer<any>> = {
+const StorageSerializers: Record<RawType, Serializer<any>> = {
   String: {
     read: (v: string) => v,
     write: (v: string) => v,
@@ -79,7 +79,7 @@ export function decode(
     return undefined
   }
 
-  const serializer = StorageSerializers[originalData.type]
+  const serializer = StorageSerializers[originalData.type as RawType]
   if (!serializer)
     return originalData.value
 

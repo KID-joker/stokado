@@ -1,4 +1,4 @@
-import type { TargetObject } from './types'
+import type { RawType, TargetObject } from './types'
 
 export const isArray = Array.isArray
 export function isSet(val: unknown): val is Set<any> {
@@ -38,8 +38,8 @@ export function getTypeString(value: unknown): string {
   return Object.prototype.toString.call(value)
 }
 
-export function getRawType(value: unknown): string {
-  return getTypeString(value).slice(8, -1)
+export function getRawType(value: unknown): RawType {
+  return getTypeString(value).slice(8, -1) as RawType
 }
 
 export function hasChanged(value: any, oldValue: any): boolean {

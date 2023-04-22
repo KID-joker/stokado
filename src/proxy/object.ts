@@ -60,7 +60,7 @@ function setStorageValue(
 }
 
 function set(
-  target: object,
+  target: Record<string, any>,
   key: string,
   value: unknown,
   receiver: object,
@@ -90,7 +90,7 @@ function set(
 }
 
 function deleteProperty(
-  target: object,
+  target: Record<string, any>,
   key: string,
 ) {
   const hadKey = hasOwn(target, key)

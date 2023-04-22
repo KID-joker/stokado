@@ -4,7 +4,7 @@ let prefix = ''
 export function setPrefix(str: string) {
   prefix = `${str}:`
 }
-export function getPrefix() {
+export function getPrefix(): string {
   return prefix
 }
 
@@ -19,12 +19,12 @@ export function pauseTracking() {
 export function enableTracking() {
   shouldTrack = true
 }
-export function getShouldTrack() {
+export function getShouldTrack():boolean {
   return shouldTrack
 }
 
 export function createExpiredFunc(
-  target: object,
+  target: Record<string, any>,
   key: string,
 ) {
   return function () {

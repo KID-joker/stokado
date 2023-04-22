@@ -1,3 +1,5 @@
+export type RawType = 'String' | 'Number' | 'BigInt' | 'Boolean' | 'Null' | 'Undefined' | 'Object' | 'Array' | 'Set' | 'Map' | 'Date' | 'RegExp' | 'Function'
+
 export interface StorageLike {
   [x: string]: any
   clear(): void

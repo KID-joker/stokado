@@ -6,7 +6,7 @@ import type { StorageLike } from '../types'
 import { decode, encode } from './transform'
 
 function createInstrumentations(
-  target: object,
+  target: Record<string, any>,
   receiver: any,
 ) {
   const instrumentations: Record<string, Function> = {};
@@ -15,7 +15,7 @@ function createInstrumentations(
     instrumentations[key] = target[key].bind(target)
   })
 
-  const needReceiverFuncMap = {
+  const needReceiverFuncMap: Record<string, Function> = {
     getItem: get,
     setItem: set,
     setExpires,
@@ -27,7 +27,7 @@ function createInstrumentations(
     }
   })
 
-  const notNeedReceiverFuncMap = {
+  const notNeedReceiverFuncMap: Record<string, Function> = {
     removeItem: deleteProperty,
     getExpires,
     off,
@@ -45,7 +45,7 @@ function createInstrumentations(
 
 const storageInstrumentations: Map<object, Record<string, Function>> = new Map()
 function get(
-  target: object,
+  target: Record<string, any>,
   property: string,
   receiver: any,
 ) {
@@ -76,7 +76,7 @@ function get(
 }
 
 function set(
-  target: object,
+  target: Record<string, any>,
   property: string,
   value: any,
   receiver: any,
@@ -101,7 +101,7 @@ function has(
 }
 
 function deleteProperty(
-  target: object,
+  target: Record<string, any>,
   property: string,
 ) {
   const key = `${getPrefix()}${property}`

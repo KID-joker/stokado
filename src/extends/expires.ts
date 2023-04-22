@@ -1,10 +1,10 @@
 import { encode } from '../proxy/transform'
-import { prefix, proxyMap } from '../shared'
+import { getPrefix, proxyMap } from '../shared'
 import type { ExpiresType } from '../types'
 import { isDate, isObject, isString, transformJSON } from '../utils'
 
 export function setExpires(
-  target: object,
+  target: Record<string, any>,
   property: string,
   value: ExpiresType,
   receiver: any,
@@ -28,15 +28,15 @@ export function setExpires(
 
   data = proxyMap.get(data) || data
 
-  target[`${prefix}${property}`] = encode(data, `${time}`)
+  target[`${getPrefix()}${property}`] = encode(data, `${time}`)
   return new Date(time)
 }
 
 export function getExpires(
-  target: object,
+  target: Record<string, any>,
   property: string,
 ) {
-  const key = `${prefix}${property}`
+  const key = `${getPrefix()}${property}`
   if (!target[key])
     return undefined
 
@@ -48,7 +48,7 @@ export function getExpires(
 }
 
 export function removeExpires(
-  target: object,
+  target: Record<string, any>,
   property: string,
   receiver: any,
 ) {
@@ -58,7 +58,7 @@ export function removeExpires(
 
   data = proxyMap.get(data) || data
 
-  target[`${prefix}${property}`] = encode(data)
+  target[`${getPrefix()}${property}`] = encode(data)
 
   return undefined
 }
