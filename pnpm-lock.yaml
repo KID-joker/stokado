@@ -11,7 +11,7 @@ specifiers:
   rollup-plugin-dts: ^5.0.0
   rollup-plugin-esbuild: ^5.0.0
   rollup-plugin-tsconfig-paths: ^1.5.0
-  serve-then: 1.0.0-rc.0
+  serve-then: ^1.0.0
   tslib: ^2.4.0
   typescript: ^4.7.4
 
@@ -26,7 +26,7 @@ devDependencies:
   rollup-plugin-dts: 5.3.0_ml2wmhwxtzex2i3wmu6dwgkcxu
   rollup-plugin-esbuild: 5.0.0_v7vqyqzedljq5z3mz2y2n2tsxq
   rollup-plugin-tsconfig-paths: 1.5.0_ml2wmhwxtzex2i3wmu6dwgkcxu
-  serve-then: 1.0.0-rc.0
+  serve-then: 1.0.0
   tslib: 2.5.0
   typescript: 4.9.5
 
@@ -408,8 +408,8 @@ packages:
     resolution: {integrity: sha512-eF2rxCRulEKXHTRiDrDy6erMYWqNw4LPdQ8UQA4huuxaQsVeRPFl2oM8oDGxMFhJUWZf9McpLtJasDDZb/Bpeg==}
     dev: true
 
-  /@kid-joker/live-server/1.0.1:
-    resolution: {integrity: sha512-WXtRjsn72voVfRjTodgt7fIrgUE7KXtcL3DnufNEnsEdMjRDKGPTmmWvMCxdlW68Vawnbd8b2IvUtCQddUzUIA==}
+  /@kid-joker/live-server/1.0.2:
+    resolution: {integrity: sha512-zdF4aAd8I4gPBjwt8PNoMjTV7crlBB8uS6Gc7LOiIhD7+fdFOtDwQC+RrCv9BViwcL6ErcUnCHzEQoZ691KoYQ==}
     engines: {node: '>=0.10.0'}
     hasBin: true
     dependencies:
@@ -1970,7 +1970,7 @@ packages:
     resolution: {integrity: sha512-oWb1Z6mkHIskLzEJ/XWX0srkpkTQ7vaopMQkyaEIoq0fmtFVxOthb8cCxeT+p3ynTdkk/RZwbgG4brR5BeWECw==}
     engines: {node: '>= 4.0'}
     os: [darwin]
-    deprecated: fsevents 1 will break on node v14+ and could be using insecure binaries. Upgrade to fsevents 2.
+    deprecated: The v1 package contains DANGEROUS / INSECURE binaries. Upgrade to safe fsevents v2
     requiresBuild: true
     dependencies:
       bindings: 1.5.0
@@ -3411,10 +3411,10 @@ packages:
       - supports-color
     dev: true
 
-  /serve-then/1.0.0-rc.0:
-    resolution: {integrity: sha512-UnAA+jhV0eQZP81BWOLioVeesjt+i7y2WI3qkVCa2/938tX7mA55B7F97mBhfwbjnunfXDR0gyGq9XByMhyrNw==}
+  /serve-then/1.0.0:
+    resolution: {integrity: sha512-Pahm3JkVWOt7gEkDlrvEutXcS1jHKJM4pBhJ1c7L1hxEEBVi2Wo8IJj3GW74VRPkS/EIt1OxwfFCm9xYHFuLXw==}
     dependencies:
-      '@kid-joker/live-server': 1.0.1
+      '@kid-joker/live-server': 1.0.2
     transitivePeerDependencies:
       - supports-color
     dev: true

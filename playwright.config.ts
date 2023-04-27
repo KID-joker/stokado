@@ -7,6 +7,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 const baseURL = await serve({
   root: path.resolve(__dirname, './playground'),
+  open: false,
 })
 
 const config: PlaywrightTestConfig = {
