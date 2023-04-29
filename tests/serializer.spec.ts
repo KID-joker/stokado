@@ -48,7 +48,7 @@ test.describe('serialized value', () => {
       const { local } = window.proxyWebStorage
       local.test = NaN
       return local.test
-    })).toBe(NaN)
+    })).toBeNaN()
 
     // Infinity
     expect(await page.evaluate(() => {
@@ -116,7 +116,7 @@ test.describe('serialized value', () => {
       const { local } = window.proxyWebStorage
       local.test = undefined
       return local.test
-    })).toBe(undefined)
+    })).toBeUndefined()
   })
 
   test('null', async ({ page }) => {
@@ -126,7 +126,7 @@ test.describe('serialized value', () => {
       const { local } = window.proxyWebStorage
       local.test = null
       return local.test
-    })).toBe(null)
+    })).toBeNull()
   })
 
   test('Object', async ({ page }) => {
@@ -136,7 +136,7 @@ test.describe('serialized value', () => {
       const { local } = window.proxyWebStorage
       // JSON.stringify don't know how to serialize a BigInt
       local.test = {
-        $string: 'Hello proxy-web-storage',
+        $string: 'hello proxy-web-storage',
         $number: 0,
         $boolean: true,
         $null: null,
@@ -144,7 +144,7 @@ test.describe('serialized value', () => {
       }
       return local.test
     })).toEqual({
-      $string: 'Hello proxy-web-storage',
+      $string: 'hello proxy-web-storage',
       $number: 0,
       $boolean: true,
       $null: null,
@@ -225,29 +225,29 @@ test.describe('serialized value', () => {
     expect(decode(await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       function foo() {
-        return 'Hello proxy-web-storage!'
+        return 'hello proxy-web-storage!'
       }
       local.test = foo
       return localStorage.test
-    }))()).toBe('Hello proxy-web-storage!')
+    }))()).toBe('hello proxy-web-storage!')
 
     // Function expression
     expect(decode(await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       local.test = function () {
-        return 'Hello proxy-web-storage!'
+        return 'hello proxy-web-storage!'
       }
       return localStorage.test
-    }))()).toBe('Hello proxy-web-storage!')
+    }))()).toBe('hello proxy-web-storage!')
 
     // Arrow function
     expect(decode(await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       local.test = () => {
-        return 'Hello proxy-web-storage!'
+        return 'hello proxy-web-storage!'
       }
       return localStorage.test
-    }))()).toBe('Hello proxy-web-storage!')
+    }))()).toBe('hello proxy-web-storage!')
   })
 
   test('Set', async ({ page }) => {
@@ -255,9 +255,9 @@ test.describe('serialized value', () => {
 
     expect(decode(await page.evaluate(() => {
       const { local } = window.proxyWebStorage
-      local.test = new Set(['Hello proxy-web-storage'])
+      local.test = new Set(['hello proxy-web-storage'])
       return localStorage.test
-    }))).toEqual(new Set(['Hello proxy-web-storage']))
+    }))).toEqual(new Set(['hello proxy-web-storage']))
   })
 
   test('Map', async ({ page }) => {

@@ -21,7 +21,7 @@ Keep the type of storage value unchanged and change array and object directly.
 ```js
 import { local, session } from 'proxy-web-storage'
 
-local.test = 'Hello proxy-web-storage' // works
+local.test = 'hello proxy-web-storage' // works
 delete local.test // works
 
 // number
@@ -59,9 +59,9 @@ local.test.test('cdbbdbsbz') // true
 
 // function
 local.test = function () {
-  return 'Hello proxy-web-storage!'
+  return 'hello proxy-web-storage!'
 }
-local.test() === 'Hello proxy-web-storage!' // true
+local.test() === 'hello proxy-web-storage!' // true
 ```
 
 `test` is the key in localStorage. The value is also saved to localStorage.

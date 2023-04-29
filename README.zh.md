@@ -21,7 +21,7 @@ npm i proxy-web-storage
 ```js
 import { local, session } from 'proxy-web-storage'
 
-local.test = 'Hello proxy-web-storage' // works
+local.test = 'hello proxy-web-storage' // works
 delete local.test // works
 
 // number
@@ -59,9 +59,9 @@ local.test.test('cdbbdbsbz') // true
 
 // function
 local.test = function () {
-  return 'Hello proxy-web-storage!'
+  return 'hello proxy-web-storage!'
 }
-local.test() === 'Hello proxy-web-storage!' // true
+local.test() === 'hello proxy-web-storage!' // true
 ```
 
 `test`和对应的`value`是实际保存到`localStorage`的。同时，`local`和`session`也支持`Web Storage`的方法和属性：`key()`，`getItem()`，`setItem()`，`removeItem()`，`clear()` 和 `length`。
