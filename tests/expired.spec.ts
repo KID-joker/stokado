@@ -11,7 +11,7 @@ declare global {
 }
 
 async function delay(ms?: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 test.describe('expired', () => {
@@ -43,7 +43,7 @@ test.describe('expired', () => {
   test('getExpires', async ({ page }) => {
     await page.goto('/')
 
-    const expires = Date.now() + 1000;
+    const expires = Date.now() + 1000
     await page.evaluate((expires) => {
       const { local } = window.proxyWebStorage
       local.test = 'hello proxy-web-storage'
