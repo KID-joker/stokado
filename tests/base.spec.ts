@@ -15,13 +15,13 @@ test.describe('basic usage', () => {
   test('transform', async ({ page }) => {
     await page.goto('/')
 
-    const localTest = await page.evaluate(() => {
+    const proxyStorage = await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       local.test = 'hello proxy-web-storage'
       return localStorage.test
     })
-    expect(localTest).toBe(encode('hello proxy-web-storage'))
-    expect(decode(localTest)).toBe('hello proxy-web-storage')
+    expect(proxyStorage).toBe(encode('hello proxy-web-storage'))
+    expect(decode(proxyStorage)).toBe('hello proxy-web-storage')
   })
 
   test('set, read and delete', async ({ page }) => {
@@ -34,62 +34,55 @@ test.describe('basic usage', () => {
     })
 
     // read
-    const localRead = await page.evaluate(() => {
+    expect(await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       return local.test
-    })
-    expect(localRead).toBe('hello proxy-web-storage')
+    })).toBe('hello proxy-web-storage')
 
     // delete
-    const localDelete = await page.evaluate(() => {
+    expect(await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       delete local.test
       return local.test
-    })
-    expect(localDelete).toBe(undefined)
+    })).toBe(undefined)
   })
 
   test('localStorage methods', async ({ page }) => {
     await page.goto('/')
 
     // key() setItem()
-    const localKey = await page.evaluate(() => {
+    expect(await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       local.test = 'hello localStorage'
       local.setItem('test', 'hello proxy-web-storage')
       local.setItem('foo', 'bar')
       return local.key(0)
-    })
-    expect(localKey).toBe('foo')
+    })).toBe('foo')
 
     // getItem()
-    const localGetItem = await page.evaluate(() => {
+    expect(await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       return local.getItem('test')
-    })
-    expect(localGetItem).toBe('hello proxy-web-storage')
+    })).toBe('hello proxy-web-storage')
 
     // length
-    const localLength = await page.evaluate(() => {
+    expect(await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       return local.length
-    })
-    expect(localLength).toBe(2)
+    })).toBe(2)
 
     // removeItem()
-    const localRemoveItem = await page.evaluate(() => {
+    expect(await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       local.removeItem('test')
       return local.test
-    })
-    expect(localRemoveItem).toBe(undefined)
+    })).toBe(undefined)
 
     // clear()
-    const localClear = await page.evaluate(() => {
+    expect(await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       local.clear()
       return local.length
-    })
-    expect(localClear).toEqual(0)
+    })).toEqual(0)
   })
 })
