@@ -1,4 +1,4 @@
-import type { RawType, TargetObject } from '@/types'
+import type { RawType, StorageOptions, TargetObject } from '@/types'
 import { getRawType, isObject, transformEval, transformJSON } from '@/utils'
 import { createProxyObject } from '@/proxy/object'
 
@@ -88,7 +88,7 @@ export function decode(
 
 export function encode(
   data: any,
-  expires?: string,
+  options?: StorageOptions,
 ) {
   const rawType = getRawType(data)
 
@@ -101,8 +101,8 @@ export function encode(
     value: serializer.write(data),
   }
 
-  if (expires)
-    targetObject.expires = expires
+  if (options)
+    Object.assign(targetObject, options)
 
   return JSON.stringify(targetObject)
 }

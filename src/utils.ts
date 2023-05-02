@@ -75,3 +75,13 @@ export function transformEval(code: string) {
     return eval2(code)
   })()
 }
+
+export function formatTime(time: any) {
+  if (isDate(time))
+    return time.getTime()
+
+  if (isString(time))
+    return +time.padEnd(13, '0')
+
+  return time
+}

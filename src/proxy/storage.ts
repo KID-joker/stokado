@@ -5,6 +5,23 @@ import { emit, off, on, once } from '@/extends/watch'
 import type { StorageLike } from '@/types'
 import { decode, encode } from '@/proxy/transform'
 
+function baseSetter(
+  target: Record<string, any>,
+  property: string,
+  value: any,
+  encodeValue: string,
+  receiver: any,
+) {
+  const key = `${getPrefix()}${property}`
+  const decodeOldValue = decode(target[key], createExpiredFunc(target, key))
+  const oldValue = proxyMap.get(decodeOldValue) || decodeOldValue
+  const result = Reflect.set(target, key, encodeValue, receiver)
+  if (result && hasChanged(value, oldValue) && getShouldTrack())
+    emit(target, property, value, oldValue)
+
+  return result
+}
+
 function createInstrumentations(
   target: Record<string, any>,
   receiver: any,
@@ -17,7 +34,7 @@ function createInstrumentations(
 
   const needReceiverFuncMap: Record<string, Function> = {
     getItem: get,
-    setItem: set,
+    setItem,
     setExpires,
     removeExpires,
   }
@@ -81,15 +98,7 @@ function set(
   value: any,
   receiver: any,
 ) {
-  const key = `${getPrefix()}${property}`
-  let oldValue = decode(target[key], createExpiredFunc(target, key))
-  oldValue = proxyMap.get(oldValue) || oldValue
-  const encodeValue = encode(value)
-  const result = Reflect.set(target, key, encodeValue, receiver)
-  if (result && hasChanged(value, oldValue) && getShouldTrack())
-    emit(target, property, value, oldValue)
-
-  return result
+  return baseSetter(target, property, value, encode(value), receiver)
 }
 
 // only prefixed properties are accepted in the instance
@@ -106,13 +115,22 @@ function deleteProperty(
 ) {
   const key = `${getPrefix()}${property}`
   const hadKey = hasOwn(target, key)
-  let oldValue = decode(target[key], createExpiredFunc(target, key))
-  oldValue = proxyMap.get(oldValue) || oldValue
+  const decodeOldValue = decode(target[key], createExpiredFunc(target, key))
+  const oldValue = proxyMap.get(decodeOldValue) || decodeOldValue
   const result = Reflect.deleteProperty(target, key)
   if (result && hadKey)
     emit(target, property, undefined, oldValue)
 
   return result
+}
+
+function setItem(
+  target: Record<string, any>,
+  property: string,
+  value: any,
+  ...args: any[]
+) {
+  return baseSetter(target, property, value, encode(value, args.at(-2)), args.at(-1))
 }
 
 export function createProxyStorage(storage: StorageLike) {

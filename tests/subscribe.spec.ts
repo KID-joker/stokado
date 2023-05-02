@@ -88,6 +88,7 @@ test.describe('subscribe', async () => {
   test('once', async ({ page }) => {
     await page.goto('/')
 
+    // once
     await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       local.count = 0
@@ -96,12 +97,14 @@ test.describe('subscribe', async () => {
       })
     })
 
+    // trigger
     await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       local.test = {}
       local.test = []
     })
 
+    // count
     expect(await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       return local.count
@@ -111,6 +114,7 @@ test.describe('subscribe', async () => {
   test('off', async ({ page }) => {
     await page.goto('/')
 
+    // on
     await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       local.count = 0
@@ -119,6 +123,7 @@ test.describe('subscribe', async () => {
       })
     })
 
+    // trigger and off
     await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       local.test = {}
@@ -128,6 +133,7 @@ test.describe('subscribe', async () => {
       local.test = true
     })
 
+    // count
     expect(await page.evaluate(() => {
       const { local } = window.proxyWebStorage
       return local.count

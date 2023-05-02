@@ -5,11 +5,15 @@ export interface StorageLike {
   clear(): void
   getItem(key: string): string | null
   key(key: number): string | null
-  setItem(key: string, value: string): void
+  setItem(key: string, value: string, options?: StorageOptions): void
   removeItem(key: string): void
   length: number
 }
 export type StorageValue = string | object | null
+
+export interface StorageOptions {
+  expires?: ExpiresType
+}
 
 export interface ActiveEffect {
   storage: object
