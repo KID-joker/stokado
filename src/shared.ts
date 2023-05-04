@@ -23,7 +23,7 @@ export function getShouldTrack(): boolean {
   return shouldTrack
 }
 
-export function createExpiredFunc(
+export function deleteFunc(
   target: Record<string, any>,
   key: string,
 ) {

@@ -1,7 +1,7 @@
 import { emit } from '@/extends/watch'
 import { decode } from '@/proxy/transform'
 import { createProxyStorage } from '@/proxy/storage'
-import { createExpiredFunc, getPrefix, proxyMap } from '@/shared'
+import { deleteFunc, getPrefix, proxyMap } from '@/shared'
 import { isObject } from '@/utils'
 import type { StorageValue } from '@/types'
 
@@ -15,12 +15,12 @@ if (typeof window !== 'undefined') {
       let newValue: StorageValue = e.newValue
       let oldValue: StorageValue = e.oldValue
       if (e.newValue) {
-        newValue = decode(e.newValue, createExpiredFunc(localStorage, e.key))
+        newValue = decode(e.newValue, deleteFunc(localStorage, e.key))
         if (isObject(newValue))
           newValue = proxyMap.get(newValue) || newValue
       }
       if (e.oldValue) {
-        oldValue = decode(e.oldValue, createExpiredFunc(localStorage, e.key))
+        oldValue = decode(e.oldValue, deleteFunc(localStorage, e.key))
         if (isObject(oldValue))
           oldValue = proxyMap.get(oldValue) || oldValue
       }

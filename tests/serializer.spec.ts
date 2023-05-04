@@ -1,15 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { decode } from '@/proxy/transform'
-import type { StorageLike } from '@/types'
-
-declare global {
-  interface Window {
-    proxyWebStorage: {
-      local: StorageLike
-      session: StorageLike
-    }
-  }
-}
+import './global.d.ts'
 
 test.describe('serialized value', () => {
   test('number', async ({ page }) => {

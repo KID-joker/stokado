@@ -1,14 +1,5 @@
 import { expect, test } from '@playwright/test'
-import type { StorageLike } from '@/types'
-
-declare global {
-  interface Window {
-    proxyWebStorage: {
-      local: StorageLike
-      session: StorageLike
-    }
-  }
-}
+import './global.d.ts'
 
 async function delay(ms?: number) {
   return new Promise(resolve => setTimeout(resolve, ms))

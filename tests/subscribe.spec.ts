@@ -1,14 +1,5 @@
 import { expect, test } from '@playwright/test'
-import type { StorageLike } from '@/types'
-
-declare global {
-  interface Window {
-    proxyWebStorage: {
-      local: StorageLike
-      session: StorageLike
-    }
-  }
-}
+import './global.d.ts'
 
 test.describe('subscribe', async () => {
   test('on', async ({ context }) => {

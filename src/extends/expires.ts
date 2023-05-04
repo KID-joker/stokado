@@ -22,7 +22,14 @@ export function setExpires(
 
   const value = proxyMap.get(data) || data
 
-  target[`${getPrefix()}${property}`] = encode(value, { expires: time })
+  const key = `${getPrefix()}${property}`
+  const oldValue = transformJSON(target[key])
+
+  const options = { expires: time }
+  if (isObject(oldValue))
+    Object.assign(options, oldValue?.options)
+
+  target[key] = encode(value, options)
   return new Date(time)
 }
 
@@ -35,10 +42,10 @@ export function getExpires(
     return undefined
 
   const data = transformJSON(target[key])
-  if (!isObject(data) || !data.expires || +data.expires <= Date.now())
+  if (!isObject(data) || !data.options?.expires || +data.options.expires <= Date.now())
     return undefined
 
-  return new Date(+data.expires)
+  return new Date(+data.options.expires)
 }
 
 export function removeExpires(

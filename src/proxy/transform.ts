@@ -63,7 +63,7 @@ const StorageSerializers: Record<RawType, Serializer<any>> = {
 
 export function decode(
   data: string,
-  expiredFunc?: Function,
+  deleteFunc?: Function,
 ): any {
   let originalData: string | TargetObject = data
   try {
@@ -74,9 +74,20 @@ export function decode(
   if (!isObject(originalData))
     return originalData
 
-  if (originalData.expires && new Date(+originalData.expires).getTime() <= Date.now() && expiredFunc) {
-    expiredFunc()
-    return undefined
+  if (originalData.options) {
+    const { disposable, expires } = originalData.options
+
+    if (expires && new Date(+expires).getTime() <= Date.now() && deleteFunc) {
+      deleteFunc()
+      return undefined
+    }
+
+    if (disposable && deleteFunc) {
+      // remove after returning data
+      setTimeout(() => {
+        deleteFunc()
+      })
+    }
   }
 
   const serializer = StorageSerializers[originalData.type as RawType]
@@ -99,10 +110,8 @@ export function encode(
   const targetObject: TargetObject = {
     type: rawType,
     value: serializer.write(data),
+    options,
   }
-
-  if (options)
-    Object.assign(targetObject, options)
 
   return JSON.stringify(targetObject)
 }

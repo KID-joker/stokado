@@ -13,6 +13,7 @@ export type StorageValue = string | object | null
 
 export interface StorageOptions {
   expires?: ExpiresType
+  disposable?: boolean
 }
 
 export interface ActiveEffect {
@@ -34,7 +35,7 @@ export interface Effect {
 export interface TargetObject {
   type: string
   value: string | object
-  expires?: ExpiresType
+  options?: StorageOptions
 }
 
 export type ExpiresType = string | number | Date
