@@ -10,19 +10,40 @@
 
 **English | [中文](./README.zh.md)**
 
-A more convenient way to use storage through proxy.
+*Stokado*(/stəˈkɑːdoʊ/) is the [Esperanto](https://en.wikipedia.org/wiki/Esperanto)(an international auxiliary language) for *storage*, meaning that *Stokado* is also an auxiliary agent for *storage*.
 
-try it on [codesandbox](https://codesandbox.io/s/proxy-web-storage-demo-3w6uex).
+*Stokado* uses `proxy` to better and more conveniently manage *storage*, enabling features such as syntax sugar, serialization, event listeners, expiration settings, and one-time value.
 
-## Install
+try it on [codesandbox](https://codesandbox.io/s/proxy-web-storage-demo-3w6uex), or check out the test cases in the **tests** folder.
+
+### Install
 
 ```shell
 npm i stokado
 ```
 
-## Features
+```js
+// mjs
+import { local, session } from 'stokado'
+```
+```js
+// cjs
+const { local, session } = require('stokado')
+```
 
-### Base
+### CDN
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/stokado"></script>
+<!-- or https://www.unpkg.com/stokado -->
+<script>
+  const { local, session } = window.stokado
+</script>
+```
+
+### Features
+
+#### 1. Syntax sugar
 
 Keep the type of storage value unchanged and change array and object directly.
 
@@ -75,9 +96,18 @@ local.test() === 'hello stokado!' // true
 `test` is the key in localStorage. The value is also saved to localStorage.
 The `local`, `session` also have the same methods and properties: `key()`, `getItem()`, `setItem()`, `removeItem()`, `clear()` and `length`.
 
-### Subscribe
+**Extra:**
 
-listen to the changes.
+`setItem(key, value, options)` supports setting attributes, `options` configuration fields are as follows:
+
+| | type | effect |
+| ---- | ---- | ---- |
+| expires | string \| number \| Date | set the expires for the item |
+| disposable | boolean | set a one-time value for the item |
+
+#### 2. Subscribe
+
+Listen to the changes.
 
 ```js
 import { local } from 'stokado'
@@ -96,36 +126,37 @@ local.test.a = 1
 // test.a 1 undefined
 ```
 
-#### on
+##### on
 
 Subscribe to an item.
 
 - `key`: the name of the item to subscribe to. Support `obj.a` for `Object` and `list[0]` for `Array`, and also `Array` length.
 - `callback`: the function to call when the item is changed. Includes `newValue` and `oldValue`.
 
-#### once
+##### once
 
 Subscribe to an item only once.
 
 - `key`: the name of the item to subscribe to. Support `obj.a` for `Object` and `list[0]` for `Array`.
 - `callback`: the function to call when the item is changed. Includes `newValue` and `oldValue`.
 
-#### off
+##### off
 
 Unsubscribe from an item or all items.
 
 - `key(optional)`: the name of the item to unsubscribe from. If no key is provided, it unsubscribes you from all items.
 - `callback(optional)`: the function used when binding to the item. If no callback is provided, it unsubscribes you from all functions binding to the item.
 
-### Expired
+#### 3. Expired
 
-set expires for items.
+Set expires for items.
 
 ```js
 import { local } from 'stokado'
 
-local.test = 'hello stokado'
-local.setExpires('test', Date.now() + 10000)
+local.setItem('test', 'hello stokado', { expires: Date.now() + 10000 })
+// local.test = 'hello stokado'
+// local.setExpires('test', Date.now() + 10000)
 
 // within 10's
 local.test // 'hello stokado'
@@ -138,21 +169,42 @@ The expires is saved to localStorage.
 So no matter how you reload it within 10's, the value still exists.
 But after 10's, it has been removed.
 
-#### setExpires
+##### setExpires
 
-set expires for an item.
+Set expires for an item.
 
 - `key`: the name of the item to set expires.
 - `expires`: accept `string`、`number` and `Date`.
 
-#### getExpires
+##### getExpires
 
-return the expires(`Date`) of the item.
+Return the expires(`Date`) of the item.
+
+- `key`: the name of the item that has set expires.
+
+##### removeExpires
+
+Cancel the expires of the item.
 
 - `key`: the name of the item that has set expires.
 
-#### removeExpires
+#### 4. Disposable
 
-cancel the expires of the item.
+Get the value once.
 
-- `key`: the name of the item that has set expires.
+```js
+import { local } from 'stokado'
+
+local.setItem('test', 'hello stokado', { disposable: true })
+// local.test = 'hello stokado'
+// local.setDisposable('test')
+
+local.test // 'hello stokado'
+local.test // undefined
+```
+
+##### setDisposable
+
+Set a one-time value for the item.
+
+- `key`：the name of the item to set disposable.

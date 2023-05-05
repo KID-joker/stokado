@@ -10,19 +10,40 @@
 
 **[English](./README.md) | 中文**
 
-通过`proxy`更方便快捷地使用`storage`。
+*stokado*(/stəˈkɑːdoʊ/) 是 *storage* 的[世界语](https://zh.wikipedia.org/wiki/%E4%B8%96%E7%95%8C%E8%AF%AD)(一种国际辅助语言)，喻意为 *stokado* 也是 *storage* 的辅助代理。
 
-在[codesandbox](https://codesandbox.io/s/proxy-web-storage-demo-3w6uex)试一试。
+*stokado* 借助 `proxy`，更好地更方便地管理 *storage*，实现了相关语法糖、序列化、监听订阅、设置过期、一次性取值等功能。
 
-## Install
+在[codesandbox](https://codesandbox.io/s/proxy-web-storage-demo-3w6uex)试一试，也可以查看 **tests** 文件夹下的测试用例。
+
+### Install
 
 ```shell
 npm i stokado
 ```
 
-## Features
+```js
+// mjs
+import { local, session } from 'stokado'
+```
+```js
+// cjs
+const { local, session } = require('stokado')
+```
 
-### Base
+### CDN
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/stokado"></script>
+<!-- or https://www.unpkg.com/stokado -->
+<script>
+  const { local, session } = window.stokado
+</script>
+```
+
+### Features
+
+#### 1. Syntax sugar
 
 保持`storage`值的类型不变并且可以直接操作数组和对象。
 
@@ -74,7 +95,16 @@ local.test() === 'hello stokado!' // true
 
 `test`和对应的`value`是实际保存到`localStorage`的。同时，`local`和`session`也支持`Web Storage`的方法和属性：`key()`，`getItem()`，`setItem()`，`removeItem()`，`clear()` 和 `length`。
 
-### Subscribe
+**Extra:**
+
+`setItem(key, value, options)` 支持设置属性，`options` 配置字段如下：
+
+| | 类型 | 作用 |
+| ---- | ---- | ---- |
+| expires | string \| number \| Date | 设置过期时间 |
+| disposable | boolean | 设置一次性 |
+
+#### 2. Subscribe
 
 监听值的变化。
 
@@ -95,7 +125,7 @@ local.test.a = 1
 // test.a 1 undefined
 ```
 
-#### on
+##### on
 
 监听指定项。
 
@@ -104,29 +134,30 @@ local.test.a = 1
 - `key`：监听指定项的名字。支持对象的二级监听，例如：`obj.a` 对于 `Object` 和 `list[0]` 对于 `Array`，还支持数组长度的监听。
 - `callback`：指定项的值发生变化时，触发的回调函数。参数包括`newValue` 和 `oldValue`。
 
-#### once
+##### once
 
 只监听指定项一次。
 
 - `key`：监听指定项的名字。支持对象的二级监听，例如：`obj.a` 对于 `Object` 和 `list[0]` 对于 `Array`，还支持数组长度的监听。
 - `callback`：指定项的值发生变化时，触发的回调函数。参数包括`newValue` 和 `oldValue`。
 
-#### off
+##### off
 
 取消监听指定项或者移除所有监听。
 
 - `key（可选）`：期望移除监听的指定项。如果为空，则移除所有监听。
 - `callback（可选）`：移除指定项的某一回调函数。如果为空，则移除指定项绑定的所有监听事件。
 
-### Expired
+#### 3. Expired
 
 为指定项设置过期时间。
 
 ```js
 import { local } from 'stokado'
 
-local.test = 'hello stokado'
-local.setExpires('test', Date.now() + 10000)
+local.setItem('test', 'hello stokado', { expires: Date.now() + 10000 })
+// local.test = 'hello stokado'
+// local.setExpires('test', Date.now() + 10000)
 
 // within 10's
 local.test // 'hello stokado'
@@ -139,21 +170,42 @@ local.test // undefined
 所以在10秒内无论你怎么刷新，值还是会存在。
 但是在10秒以后，指定项就被移除了。
 
-#### setExpires
+##### setExpires
 
 为指定项设置过期时间。
 
 - `key`：设置过期的指定项名字。
 - `expires`：过期时间。接受`string`、`number` 和 `Date`类型。
 
-#### getExpires
+##### getExpires
 
 获取指定的过期时间，返回类型为`Date`。
 
 - `key`: 设置了过期时间的指定项名字。
 
-#### removeExpires
+##### removeExpires
 
 取消指定项的过期设置。
 
 - `key`: 设置了过期时间的指定项名字。
+
+#### 4. Disposable
+
+一次性取值。
+
+```js
+import { local } from 'stokado'
+
+local.setItem('test', 'hello stokado', { disposable: true })
+// local.test = 'hello stokado'
+// local.setDisposable('test')
+
+local.test // 'hello stokado'
+local.test // undefined
+```
+
+##### setDisposable
+
+为指定项设置一次性取值。
+
+- `key`：设置一次性的指定项名字。
