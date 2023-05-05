@@ -10,23 +10,23 @@ test.describe('expired', () => {
     await page.goto('/')
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
-      local.test = 'hello proxy-web-storage'
+      const { local } = window.stokado
+      local.test = 'hello stokado'
       local.setExpires('test', Date.now() + 1000)
       return local.test
-    })).toBe('hello proxy-web-storage')
+    })).toBe('hello stokado')
 
     await delay(500)
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
-    })).toBe('hello proxy-web-storage')
+    })).toBe('hello stokado')
 
     await delay(500)
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
     })).toBe(undefined)
   })
@@ -36,14 +36,14 @@ test.describe('expired', () => {
 
     const expires = Date.now() + 1000
     await page.evaluate((expires) => {
-      const { local } = window.proxyWebStorage
-      local.test = 'hello proxy-web-storage'
+      const { local } = window.stokado
+      local.test = 'hello stokado'
       local.setExpires('test', expires)
       return local.test
     }, expires)
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.getExpires('test')
     })).toEqual(new Date(expires))
   })
@@ -52,21 +52,21 @@ test.describe('expired', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
-      local.test = 'hello proxy-web-storage'
+      const { local } = window.stokado
+      local.test = 'hello stokado'
       local.setExpires('test', Date.now() + 1000)
     })
 
     await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       local.removeExpires('test')
     })
 
     delay(1200)
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
-    })).toEqual('hello proxy-web-storage')
+    })).toEqual('hello stokado')
   })
 })

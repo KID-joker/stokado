@@ -13,12 +13,11 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const configs = []
 
 const input = path.resolve(__dirname, 'src/index.ts')
-const fileName = pkg.name
-const iifeName = 'proxyWebStorage'
+const pkgName = pkg.name
 const output = [{
-  file: `${process.env.BUILD === 'test' ? 'playground' : 'dist'}/${fileName}.js`,
+  file: `${process.env.BUILD === 'test' ? 'playground' : 'dist'}/${pkgName}.js`,
   format: 'iife',
-  name: iifeName,
+  name: pkgName,
   extend: true,
 }]
 const pluginEsbuild = esbuild({ drop: ['console'] })
@@ -29,15 +28,15 @@ const plugins = [pluginEsbuild, pluginPaths]
 
 if (process.env.BUILD === 'prod') {
   output.push({
-    file: `dist/${fileName}.mjs`,
+    file: `dist/${pkgName}.mjs`,
     format: 'es',
   }, {
-    file: `dist/${fileName}.cjs`,
+    file: `dist/${pkgName}.cjs`,
     format: 'cjs',
   }, {
-    file: `dist/${fileName}.min.js`,
+    file: `dist/${pkgName}.min.js`,
     format: 'iife',
-    name: iifeName,
+    name: pkgName,
     extend: true,
     plugins: [
       esbuild({
@@ -49,7 +48,7 @@ if (process.env.BUILD === 'prod') {
   configs.push({
     input,
     output: {
-      file: `dist/${fileName}.d.ts`,
+      file: `dist/${pkgName}.d.ts`,
       format: 'es',
     },
     plugins: [

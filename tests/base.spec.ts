@@ -7,12 +7,12 @@ test.describe('basic usage', () => {
     await page.goto('/')
 
     const proxyStorage = await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
-      local.test = 'hello proxy-web-storage'
+      const { local } = window.stokado
+      local.test = 'hello stokado'
       return localStorage.test
     })
-    expect(proxyStorage).toBe(encode('hello proxy-web-storage'))
-    expect(decode(proxyStorage)).toBe('hello proxy-web-storage')
+    expect(proxyStorage).toBe(encode('hello stokado'))
+    expect(decode(proxyStorage)).toBe('hello stokado')
   })
 
   test('set, read and delete', async ({ page }) => {
@@ -20,19 +20,19 @@ test.describe('basic usage', () => {
 
     // set
     await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
-      local.test = 'hello proxy-web-storage'
+      const { local } = window.stokado
+      local.test = 'hello stokado'
     })
 
     // read
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
-    })).toBe('hello proxy-web-storage')
+    })).toBe('hello stokado')
 
     // delete
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       delete local.test
       return local.test
     })).toBe(undefined)
@@ -43,35 +43,35 @@ test.describe('basic usage', () => {
 
     // key() setItem()
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       local.test = 'hello localStorage'
-      local.setItem('test', 'hello proxy-web-storage')
+      local.setItem('test', 'hello stokado')
       local.setItem('foo', 'bar')
       return local.key(0)
     })).toBe('foo')
 
     // getItem()
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.getItem('test')
-    })).toBe('hello proxy-web-storage')
+    })).toBe('hello stokado')
 
     // length
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.length
     })).toBe(2)
 
     // removeItem()
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       local.removeItem('test')
       return local.test
     })).toBe(undefined)
 
     // clear()
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       local.clear()
       return local.length
     })).toEqual(0)

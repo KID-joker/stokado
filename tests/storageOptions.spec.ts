@@ -10,24 +10,24 @@ test.describe('setItem', async () => {
     await page.goto('/')
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
-      local.setItem('test', 'hello proxy-web-storage', {
+      const { local } = window.stokado
+      local.setItem('test', 'hello stokado', {
         expires: Date.now() + 1000,
       })
       return local.test
-    })).toBe('hello proxy-web-storage')
+    })).toBe('hello stokado')
 
     await delay(500)
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
-    })).toBe('hello proxy-web-storage')
+    })).toBe('hello stokado')
 
     await delay(500)
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
     })).toBe(undefined)
   })
@@ -36,23 +36,23 @@ test.describe('setItem', async () => {
     await page.goto('/')
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
-      local.setItem('test', 'hello proxy-web-storage', {
+      const { local } = window.stokado
+      local.setItem('test', 'hello stokado', {
         expires: Date.now() + 1000,
       })
       return local.test
-    })).toBe('hello proxy-web-storage')
+    })).toBe('hello stokado')
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       local.setDisposable('test')
       return local.test
-    })).toBe('hello proxy-web-storage')
+    })).toBe('hello stokado')
 
     await delay(500)
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
     })).toBe(undefined)
   })
@@ -61,22 +61,22 @@ test.describe('setItem', async () => {
     await page.goto('/')
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
-      local.setItem('test', 'hello proxy-web-storage', {
+      const { local } = window.stokado
+      local.setItem('test', 'hello stokado', {
         expires: Date.now() + 1000,
       })
       return local.test
-    })).toBe('hello proxy-web-storage')
+    })).toBe('hello stokado')
 
     await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       local.setDisposable('test')
     })
 
     await delay(1000)
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
     })).toBe(undefined)
   })
@@ -90,12 +90,12 @@ test.describe('setItem', async () => {
     }
 
     await page.evaluate((options) => {
-      const { local } = window.proxyWebStorage
-      local.setItem('test', 'hello proxy-web-storage', options)
+      const { local } = window.stokado
+      local.setItem('test', 'hello stokado', options)
     }, options)
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.getOptions('test')
     })).toEqual(options)
   })
@@ -106,13 +106,13 @@ test.describe('setItem', async () => {
     const expires = Date.now() + 1000
 
     await page.evaluate((expires) => {
-      const { local } = window.proxyWebStorage
-      local.test = 'hello proxy-web-storage'
+      const { local } = window.stokado
+      local.test = 'hello stokado'
       local.setExpires('test', expires)
     }, expires)
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.getOptions('test')
     })).toEqual({ expires })
   })
@@ -121,13 +121,13 @@ test.describe('setItem', async () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
-      local.test = 'hello proxy-web-storage'
+      const { local } = window.stokado
+      local.test = 'hello stokado'
       local.setDisposable('test')
     })
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.getOptions('test')
     })).toEqual({ disposable: true })
   })

@@ -1,4 +1,12 @@
-# proxy-web-storage
+```shell
+         __                __  __                __
+  ____  /\ \__     ___    /\ \/  \      __      /\ \     ___   
+ / ,__\ \ \ ,_\   / __`\  \ \    <    /'__`\    \_\ \   / __`\ 
+/\__, `\ \ \ \/  /\ \_\ \  \ \  ^  \ /\ \_\.\_ /\ ,. \ /\ \_\ \
+\/\____/  \ \ \_ \ \____/   \ \_\ \_\\ \__/.\_\\ \____\\ \____/
+ \/___/    \ \__\ \/___/     \/_/\/_/ \/__/\/_/ \/___ / \/___/ 
+            \/__/
+```
 
 **English | [中文](./README.zh.md)**
 
@@ -9,7 +17,7 @@ try it on [codesandbox](https://codesandbox.io/s/proxy-web-storage-demo-3w6uex).
 ## Install
 
 ```shell
-npm i proxy-web-storage
+npm i stokado
 ```
 
 ## Features
@@ -19,9 +27,9 @@ npm i proxy-web-storage
 Keep the type of storage value unchanged and change array and object directly.
 
 ```js
-import { local, session } from 'proxy-web-storage'
+import { local, session } from 'stokado'
 
-local.test = 'hello proxy-web-storage' // works
+local.test = 'hello stokado' // works
 delete local.test // works
 
 // number
@@ -42,11 +50,11 @@ local.test === null // true
 
 // object
 local.test = { hello: 'world' }
-local.test.hello = 'proxy-web-storage' // works
+local.test.hello = 'stokado' // works
 
 // array
 local.test = ['hello']
-local.test.push('proxy-web-storage') // works
+local.test.push('stokado') // works
 local.test.length // 2
 
 // Date
@@ -59,9 +67,9 @@ local.test.test('cdbbdbsbz') // true
 
 // function
 local.test = function () {
-  return 'hello proxy-web-storage!'
+  return 'hello stokado!'
 }
-local.test() === 'hello proxy-web-storage!' // true
+local.test() === 'hello stokado!' // true
 ```
 
 `test` is the key in localStorage. The value is also saved to localStorage.
@@ -72,7 +80,7 @@ The `local`, `session` also have the same methods and properties: `key()`, `getI
 listen to the changes.
 
 ```js
-import { local } from 'proxy-web-storage'
+import { local } from 'stokado'
 
 local.on('test', (newVal, oldVal) => {
   console.log('test', newVal, oldVal)
@@ -114,13 +122,13 @@ Unsubscribe from an item or all items.
 set expires for items.
 
 ```js
-import { local } from 'proxy-web-storage'
+import { local } from 'stokado'
 
-local.test = 'hello proxy-web-storage'
+local.test = 'hello stokado'
 local.setExpires('test', Date.now() + 10000)
 
 // within 10's
-local.test // 'hello proxy-web-storage'
+local.test // 'hello stokado'
 
 // after 10's
 local.test // undefined

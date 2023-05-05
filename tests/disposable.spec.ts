@@ -6,18 +6,18 @@ test.describe('disposable', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
-      local.test = 'hello proxy-web-storage'
+      const { local } = window.stokado
+      local.test = 'hello stokado'
       local.setDisposable('test')
     })
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
-    })).toBe('hello proxy-web-storage')
+    })).toBe('hello stokado')
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
     })).toBe(undefined)
   })

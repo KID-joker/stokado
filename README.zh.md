@@ -1,4 +1,12 @@
-# proxy-web-storage
+```shell
+         __                __  __                __
+  ____  /\ \__     ___    /\ \/  \      __      /\ \     ___   
+ / ,__\ \ \ ,_\   / __`\  \ \    <    /'__`\    \_\ \   / __`\ 
+/\__, `\ \ \ \/  /\ \_\ \  \ \  ^  \ /\ \_\.\_ /\ ,. \ /\ \_\ \
+\/\____/  \ \ \_ \ \____/   \ \_\ \_\\ \__/.\_\\ \____\\ \____/
+ \/___/    \ \__\ \/___/     \/_/\/_/ \/__/\/_/ \/___ / \/___/ 
+            \/__/
+```
 
 **[English](./README.md) | 中文**
 
@@ -9,7 +17,7 @@
 ## Install
 
 ```shell
-npm i proxy-web-storage
+npm i stokado
 ```
 
 ## Features
@@ -19,9 +27,9 @@ npm i proxy-web-storage
 保持`storage`值的类型不变并且可以直接操作数组和对象。
 
 ```js
-import { local, session } from 'proxy-web-storage'
+import { local, session } from 'stokado'
 
-local.test = 'hello proxy-web-storage' // works
+local.test = 'hello stokado' // works
 delete local.test // works
 
 // number
@@ -42,11 +50,11 @@ local.test === null // true
 
 // object
 local.test = { hello: 'world' }
-local.test.hello = 'proxy-web-storage' // works
+local.test.hello = 'stokado' // works
 
 // array
 local.test = ['hello']
-local.test.push('proxy-web-storage') // works
+local.test.push('stokado') // works
 local.test.length // 2
 
 // Date
@@ -59,9 +67,9 @@ local.test.test('cdbbdbsbz') // true
 
 // function
 local.test = function () {
-  return 'hello proxy-web-storage!'
+  return 'hello stokado!'
 }
-local.test() === 'hello proxy-web-storage!' // true
+local.test() === 'hello stokado!' // true
 ```
 
 `test`和对应的`value`是实际保存到`localStorage`的。同时，`local`和`session`也支持`Web Storage`的方法和属性：`key()`，`getItem()`，`setItem()`，`removeItem()`，`clear()` 和 `length`。
@@ -71,7 +79,7 @@ local.test() === 'hello proxy-web-storage!' // true
 监听值的变化。
 
 ```js
-import { local } from 'proxy-web-storage'
+import { local } from 'stokado'
 
 local.on('test', (newVal, oldVal) => {
   console.log('test', newVal, oldVal)
@@ -115,13 +123,13 @@ local.test.a = 1
 为指定项设置过期时间。
 
 ```js
-import { local } from 'proxy-web-storage'
+import { local } from 'stokado'
 
-local.test = 'hello proxy-web-storage'
+local.test = 'hello stokado'
 local.setExpires('test', Date.now() + 10000)
 
 // within 10's
-local.test // 'hello proxy-web-storage'
+local.test // 'hello stokado'
 
 // after 10's
 local.test // undefined

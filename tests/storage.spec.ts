@@ -6,18 +6,18 @@ test.describe('storage', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { local, session } = window.proxyWebStorage
+      const { local, session } = window.stokado
       local.test = 'hello local'
       session.test = 'hello session'
     })
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
     })).toBe('hello local')
 
     expect(await page.evaluate(() => {
-      const { session } = window.proxyWebStorage
+      const { session } = window.stokado
       return session.test
     })).toBe('hello session')
   })
@@ -26,18 +26,18 @@ test.describe('storage', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { local, session } = window.proxyWebStorage
+      const { local, session } = window.stokado
       session.test = 'hello session'
       local.test = 'hello local'
     })
 
     expect(await page.evaluate(() => {
-      const { session } = window.proxyWebStorage
+      const { session } = window.stokado
       return session.test
     })).toBe('hello session')
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
     })).toBe('hello local')
   })
@@ -46,24 +46,24 @@ test.describe('storage', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { local, session } = window.proxyWebStorage
+      const { local, session } = window.stokado
       local.test = 'hello local'
       local.setDisposable('test')
       session.test = 'hello session'
     })
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
     })).toBe('hello local')
 
     expect(await page.evaluate(() => {
-      const { session } = window.proxyWebStorage
+      const { session } = window.stokado
       return session.test
     })).toBe('hello session')
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
     })).toBe(undefined)
   })
@@ -72,12 +72,12 @@ test.describe('storage', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       local.test = 'hello local'
     })
 
     expect(await page.evaluate(() => {
-      const { session } = window.proxyWebStorage
+      const { session } = window.stokado
       return session.test
     })).toBe(undefined)
   })
@@ -86,12 +86,12 @@ test.describe('storage', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { session } = window.proxyWebStorage
+      const { session } = window.stokado
       session.test = 'hello local'
     })
 
     expect(await page.evaluate(() => {
-      const { local } = window.proxyWebStorage
+      const { local } = window.stokado
       return local.test
     })).toBe(undefined)
   })
