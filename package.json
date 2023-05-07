@@ -1,7 +1,7 @@
 {
   "name": "stokado",
   "type": "module",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Stokado is a library that serves as a syntax sugar for storage, providing support for serialization, subscription-based listening, expiration setting, and one-time value.",
   "author": "KID-joker",
   "license": "MIT",

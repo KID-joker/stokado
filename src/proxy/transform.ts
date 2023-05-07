@@ -84,9 +84,7 @@ export function decode(
 
     if (disposable && deleteFunc) {
       // remove after returning data
-      setTimeout(() => {
-        deleteFunc()
-      })
+      deleteFunc()
     }
   }
 
