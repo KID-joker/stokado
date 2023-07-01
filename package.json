@@ -1,7 +1,7 @@
 {
   "name": "stokado",
   "type": "module",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Stokado is a library that serves as a syntax sugar for storage, providing support for serialization, subscription-based listening, expiration setting, and one-time value.",
   "author": "KID-joker",
   "license": "MIT",
@@ -25,11 +25,24 @@
     "once",
     "disposable"
   ],
+  "exports": {
+    ".": {
+      "types": "./dist/stokado.d.ts",
+      "require": "./dist/stokado.cjs",
+      "import": "./dist/stokado.mjs"
+    }
+  },
+  "main": "dist/stokado.cjs",
+  "module": "dist/stokado.mjs",
+  "unpkg": "dist/stokado.min.js",
+  "jsdelivr": "dist/stokado.min.js",
   "types": "dist/stokado.d.ts",
   "files": [
     "dist"
   ],
-  "browser": "dist/stokado.min.js",
+  "engines": {
+    "node": ">=16.20.0"
+  },
   "scripts": {
     "build": "rollup -c --environment BUILD:prod",
     "lint": "eslint . --fix",
