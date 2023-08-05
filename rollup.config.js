@@ -20,7 +20,7 @@ const output = [{
   name: pkgName,
   extend: true,
 }]
-const pluginEsbuild = esbuild({ drop: ['console'] })
+const pluginEsbuild = process.env.BUILD === 'test' ? esbuild() : esbuild({ drop: ['console'] })
 const pluginPaths = tsConfigPaths()
 const pluginDts = dts()
 const pluginHtml = html()

@@ -51,12 +51,8 @@ function setStorageValue(
   value: object,
 ) {
   pauseTracking()
-  const date = activeEffect.proxy.getExpires(activeEffect.key)
-  if (date)
-    activeEffect.proxy.setExpires(activeEffect.key, value, date)
-  else
-    activeEffect.proxy[activeEffect.key] = value
-
+  const options = activeEffect.proxy.getOptions(activeEffect.key)
+  activeEffect.proxy.setItem(activeEffect.key, value, options)
   enableTracking()
 }
 

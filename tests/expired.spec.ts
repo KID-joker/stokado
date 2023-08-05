@@ -69,4 +69,30 @@ test.describe('expired', () => {
       return local.test
     })).toEqual('hello stokado')
   })
+
+  test('setExpires with object', async ({ page }) => {
+    await page.goto('/')
+
+    const expires = Date.now() + 1000
+    expect(await page.evaluate((expires) => {
+      const { local } = window.stokado
+      local.test = { hello: 'world' }
+      local.setExpires('test', expires)
+      local.test.hello = 'stokado'
+      local.test.other = 'stokado'
+      return local.test
+    }, expires)).toEqual({ hello: 'stokado', other: 'stokado' })
+
+    expect(await page.evaluate(() => {
+      const { local } = window.stokado
+      return local.getExpires('test')
+    })).toEqual(new Date(expires))
+
+    await delay(1000)
+
+    expect(await page.evaluate(() => {
+      const { local } = window.stokado
+      return local.test
+    })).toBe(undefined)
+  })
 })
