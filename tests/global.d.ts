@@ -5,6 +5,7 @@ declare global {
     stokado: {
       local: StorageLike
       session: StorageLike
+      setPrefix: Function
     }
   }
 }
