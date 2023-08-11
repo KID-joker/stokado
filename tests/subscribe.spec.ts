@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import './global.d.ts'
 
 test.describe('subscribe', async () => {
-  test('on', async ({ context }) => {
+  test('on Object', async ({ context }) => {
     const page1 = await context.newPage()
     await page1.goto('/')
 
@@ -73,6 +73,56 @@ test.describe('subscribe', async () => {
     })).toEqual({
       newVal: {},
       oldVal: null,
+    })
+  })
+
+  test('on Array', async ({ context }) => {
+    const page1 = await context.newPage()
+    await page1.goto('/')
+
+    expect(await page1.evaluate(() => {
+      const { local } = window.stokado
+      setTimeout(() => {
+        local.test = ['hello', 'stokado']
+        local.test.pop()
+      })
+      return new Promise((resolve) => {
+        local.on('test.length', (newVal: any, oldVal: any) => {
+          resolve({
+            newVal,
+            oldVal,
+          })
+        })
+      })
+    })).toEqual({
+      newVal: 1,
+      oldVal: 2,
+    })
+
+    // another tab
+    const page2 = await context.newPage()
+    await page2.goto('/')
+
+    setTimeout(() => {
+      page2.evaluate(() => {
+        const { local } = window.stokado
+        local.test = []
+      })
+    })
+
+    expect(await page1.evaluate(() => {
+      const { local } = window.stokado
+      return new Promise((resolve) => {
+        local.on('test.length', (newVal: any, oldVal: any) => {
+          resolve({
+            newVal,
+            oldVal,
+          })
+        })
+      })
+    })).toEqual({
+      newVal: 0,
+      oldVal: 1,
     })
   })
 
