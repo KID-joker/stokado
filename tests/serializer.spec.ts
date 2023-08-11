@@ -67,12 +67,11 @@ test.describe('serialized value', () => {
     await page.goto('/')
 
     // 1n
-    expect(decode(await page.evaluate(() => {
+    expect(await page.evaluate(() => {
       const { local } = window.stokado
       local.test = 1n
-      // Bug: https://github.com/microsoft/playwright/issues/22719
-      return localStorage.test
-    }))).toBe(1n)
+      return local.test
+    })).toBe(1n)
   })
 
   test('boolean', async ({ page }) => {
@@ -191,6 +190,16 @@ test.describe('serialized value', () => {
     })).toEqual(new Date('2000-01-01T00:00:00.000Z'))
   })
 
+  test('URL', async ({ page }) => {
+    await page.goto('/')
+
+    expect(await page.evaluate(() => {
+      const { local } = window.stokado
+      local.test = new URL('https://github.com/')
+      return local.test
+    })).toEqual(new URL('https://github.com/'))
+  })
+
   test('RegExp', async ({ page }) => {
     await page.goto('/')
 
@@ -213,51 +222,61 @@ test.describe('serialized value', () => {
     await page.goto('/')
 
     // Function declaration
-    expect(decode(await page.evaluate(() => {
-      const { local } = window.stokado
-      function foo() {
-        return 'hello stokado!'
-      }
-      local.test = foo
-      return localStorage.test
-    }))()).toBe('hello stokado!')
+    expect(decode({
+      data: await page.evaluate(() => {
+        const { local } = window.stokado
+        function foo() {
+          return 'hello stokado!'
+        }
+        local.test = foo
+        return localStorage.test
+      }),
+    })()).toBe('hello stokado!')
 
     // Function expression
-    expect(decode(await page.evaluate(() => {
-      const { local } = window.stokado
-      local.test = function () {
-        return 'hello stokado!'
-      }
-      return localStorage.test
-    }))()).toBe('hello stokado!')
+    expect(decode({
+      data: await page.evaluate(() => {
+        const { local } = window.stokado
+        local.test = function () {
+          return 'hello stokado!'
+        }
+        return localStorage.test
+      }),
+    })()).toBe('hello stokado!')
 
     // Arrow function
-    expect(decode(await page.evaluate(() => {
-      const { local } = window.stokado
-      local.test = () => {
-        return 'hello stokado!'
-      }
-      return localStorage.test
-    }))()).toBe('hello stokado!')
+    expect(decode({
+      data: await page.evaluate(() => {
+        const { local } = window.stokado
+        local.test = () => {
+          return 'hello stokado!'
+        }
+        return localStorage.test
+      }),
+    })()).toBe('hello stokado!')
   })
 
   test('Set', async ({ page }) => {
     await page.goto('/')
 
-    expect(decode(await page.evaluate(() => {
-      const { local } = window.stokado
-      local.test = new Set(['hello stokado'])
-      return localStorage.test
-    }))).toEqual(new Set(['hello stokado']))
+    expect(decode({
+      data: await page.evaluate(() => {
+        const { local } = window.stokado
+        local.test = new Set(['hello stokado'])
+        return localStorage.test
+      }),
+    })).toEqual(new Set(['hello stokado']))
   })
 
   test('Map', async ({ page }) => {
     await page.goto('/')
 
-    expect(decode(await page.evaluate(() => {
-      const { local } = window.stokado
-      local.test = new Map([['hello', 'stokado'], ['foo', 'bar']])
-      return localStorage.test
-    }))).toEqual(new Map([['hello', 'stokado'], ['foo', 'bar']]))
+    expect(decode({
+      data: await page.evaluate(() => {
+        const { local } = window.stokado
+        local.test = new Map([['hello', 'stokado'], ['foo', 'bar']])
+        return localStorage.test
+      }),
+    })).toEqual(new Map([['hello', 'stokado'], ['foo', 'bar']]))
   })
 })

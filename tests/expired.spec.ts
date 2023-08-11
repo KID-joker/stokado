@@ -28,7 +28,7 @@ test.describe('expired', () => {
     expect(await page.evaluate(() => {
       const { local } = window.stokado
       return local.test
-    })).toBe(undefined)
+    })).toBeUndefined()
   })
 
   test('getExpires', async ({ page }) => {
@@ -93,6 +93,6 @@ test.describe('expired', () => {
     expect(await page.evaluate(() => {
       const { local } = window.stokado
       return local.test
-    })).toBe(undefined)
+    })).toBeUndefined()
   })
 })

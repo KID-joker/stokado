@@ -11,8 +11,8 @@ test.describe('basic usage', () => {
       local.test = 'hello stokado'
       return localStorage.test
     })
-    expect(proxyStorage).toBe(encode('hello stokado'))
-    expect(decode(proxyStorage)).toBe('hello stokado')
+    expect(proxyStorage).toBe(encode({ data: 'hello stokado', options: {} }))
+    expect(decode({ data: proxyStorage })).toBe('hello stokado')
   })
 
   test('set, read and delete', async ({ page }) => {
@@ -35,7 +35,7 @@ test.describe('basic usage', () => {
       const { local } = window.stokado
       delete local.test
       return local.test
-    })).toBe(undefined)
+    })).toBeUndefined()
   })
 
   test('localStorage methods', async ({ page }) => {
@@ -67,7 +67,7 @@ test.describe('basic usage', () => {
       const { local } = window.stokado
       local.removeItem('test')
       return local.test
-    })).toBe(undefined)
+    })).toBeUndefined()
 
     // clear()
     expect(await page.evaluate(() => {

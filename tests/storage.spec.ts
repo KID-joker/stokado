@@ -65,7 +65,7 @@ test.describe('storage', () => {
     expect(await page.evaluate(() => {
       const { local } = window.stokado
       return local.test
-    })).toBe(undefined)
+    })).toBeUndefined()
   })
 
   test('local only', async ({ page }) => {
@@ -79,7 +79,7 @@ test.describe('storage', () => {
     expect(await page.evaluate(() => {
       const { session } = window.stokado
       return session.test
-    })).toBe(undefined)
+    })).toBeUndefined()
   })
 
   test('session only', async ({ page }) => {
@@ -93,6 +93,6 @@ test.describe('storage', () => {
     expect(await page.evaluate(() => {
       const { local } = window.stokado
       return local.test
-    })).toBe(undefined)
+    })).toBeUndefined()
   })
 })
