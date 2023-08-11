@@ -1,4 +1,5 @@
-export type RawType = 'String' | 'Number' | 'BigInt' | 'Boolean' | 'Null' | 'Undefined' | 'Object' | 'Array' | 'Set' | 'Map' | 'Date' | 'RegExp' | 'Function'
+export type RawType = 'String' | 'Number' | 'BigInt' | 'Boolean' | 'Null' | 'Undefined' | 'Object' | 'Array' | 'Set' | 'Map' | 'Date' | 'RegExp' | 'URL' | 'Function'
+export type TrapType = 'apply' | 'construct' | 'defineProperty' | 'deleteProperty' | 'get' | 'getOwnPropertyDescriptor' | 'getPrototypeOf' | 'has' | 'isExtensible' | 'ownKeys' | 'preventExtensions' | 'set' | 'setPrototypeOf'
 
 export interface StorageLike {
   [x: string]: any
@@ -9,7 +10,7 @@ export interface StorageLike {
   removeItem(key: string): void
   length: number
 }
-export type StorageValue = string | object | null
+export type StorageValue = string | number | bigint | boolean | null | undefined | Object
 
 export interface StorageOptions {
   expires?: ExpiresType
@@ -17,9 +18,10 @@ export interface StorageOptions {
 }
 
 export interface ActiveEffect {
-  storage: object
+  storage: Record<string, any>
   key: string
   proxy: any
+  options: StorageOptions
 }
 
 export type EffectMap = Map<string, Effect[]>

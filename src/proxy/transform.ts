@@ -1,6 +1,7 @@
 import type { RawType, StorageOptions, TargetObject } from '@/types'
-import { getRawType, isObject, transformEval, transformJSON } from '@/utils'
+import { getRawType, isObject, isString, transformEval, transformJSON } from '@/utils'
 import { createProxyObject } from '@/proxy/object'
+import { proxyMap } from '@/shared'
 
 interface Serializer<T> {
   read(raw: string | object): T
@@ -51,6 +52,10 @@ const StorageSerializers: Record<RawType, Serializer<any>> = {
     read: (v: string) => new Date(v),
     write: (v: Date) => String(v),
   },
+  URL: {
+    read: (v: string) => new URL(v),
+    write: (v: URL) => String(v),
+  },
   RegExp: {
     read: (v: string) => transformEval(v),
     write: (v: RegExp) => String(v),
@@ -61,44 +66,55 @@ const StorageSerializers: Record<RawType, Serializer<any>> = {
   },
 }
 
-export function decode(
-  data: string,
-  deleteFunc?: Function,
-): any {
-  let originalData: string | TargetObject = data
-  try {
-    originalData = transformJSON(data)
-  }
-  catch (e) {}
+export function decode({
+  data,
+  target,
+  property,
+}: {
+  data: string
+  target?: Record<string, any>
+  property?: string
+}): any {
+  if (!isString(data))
+    return data
+
+  const targetProxy: Record<string, any> | undefined = target && proxyMap.get(target)
+  const targetData: TargetObject | undefined = targetProxy && targetProxy[property!]
+  if (targetData)
+    return targetData.value
+
+  const originalData: TargetObject | string = transformJSON(data)
 
   if (!isObject(originalData))
     return originalData
-
-  if (originalData.options) {
-    const { disposable, expires } = originalData.options
-
-    if (expires && new Date(+expires).getTime() <= Date.now() && deleteFunc) {
-      deleteFunc()
-      return undefined
-    }
-
-    if (disposable && deleteFunc) {
-      // remove after returning data
-      deleteFunc()
-    }
-  }
 
   const serializer = StorageSerializers[originalData.type as RawType]
   if (!serializer)
     return originalData.value
 
-  return serializer.read(originalData.value)
+  const value = serializer.read(originalData.value)
+
+  if (targetProxy && property) {
+    targetProxy![property] = {
+      ...originalData,
+      value,
+    }
+  }
+
+  return value
 }
 
-export function encode(
-  data: any,
-  options?: StorageOptions,
-) {
+export function encode({
+  data,
+  target,
+  property,
+  options,
+}: {
+  data: any
+  target?: Record<string, any>
+  property?: string
+  options?: StorageOptions
+}) {
   const rawType = getRawType(data)
 
   const serializer = StorageSerializers[rawType]
@@ -109,6 +125,14 @@ export function encode(
     type: rawType,
     value: serializer.write(data),
     options,
+  }
+
+  if (target && property) {
+    const targetProxy: Record<string, any> | undefined = proxyMap.get(target)
+    targetProxy![property] = {
+      ...targetObject,
+      value: serializer.read(targetObject.value),
+    }
   }
 
   return JSON.stringify(targetObject)

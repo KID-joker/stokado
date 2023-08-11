@@ -1,24 +1,56 @@
 import { encode } from '@/proxy/transform'
-import { getPrefix, proxyMap } from '@/shared'
-import { isObject, transformJSON } from '@/utils'
+import { deleteProxyProperty, prefixInst } from '@/shared'
+import type { TargetObject } from '@/types'
+import { isObject, isString, transformJSON } from '@/utils'
 
 export function setDisposable(
   target: Record<string, any>,
   property: string,
-  receiver: any,
 ) {
-  const data = receiver[property]
+  const key = `${prefixInst.getPrefix()}${property}`
+
+  const data = target[key]
   if (!data)
     return undefined
 
-  const value = proxyMap.get(data) || data
+  const originalData = transformJSON(data)
 
-  const key = `${getPrefix()}${property}`
-  const oldValue = transformJSON(target[key])
+  const options = isObject(originalData) ? Object.assign({}, originalData?.options, { disposable: true }) : { disposable: true }
 
-  const options = { disposable: true }
-  if (isObject(oldValue))
-    Object.assign(options, oldValue?.options)
+  target[key] = encode({ data: isObject(originalData) ? originalData.value : originalData, target, property, options })
+}
 
-  return target[key] = encode(value, options)
+export function isDisposable({
+  data,
+  target,
+  property,
+}: {
+  data: string
+  target: Record<string, any>
+  property: string
+}) {
+  if (!isString(data)) {
+    return {
+      data,
+      target,
+      property,
+    }
+  }
+
+  const originalData: TargetObject | string = transformJSON(data)
+
+  if (isObject(originalData) && originalData.options) {
+    const { disposable } = originalData.options
+
+    if (disposable) {
+      delete target[property]
+      deleteProxyProperty(target, property)
+    }
+  }
+
+  return {
+    data,
+    target,
+    property,
+  }
 }

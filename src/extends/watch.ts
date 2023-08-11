@@ -53,9 +53,7 @@ export function off(
   if (effectMap) {
     const effects: Effect[] | undefined = effectMap.get(key)
     if (effects && effects.length > 0) {
-      let value: Effect[] = []
-      if (fn)
-        value = effects.filter(ele => !(ele.fn === fn || (ele as any).fn?.fn === fn))
+      const value: Effect[] = fn ? effects.filter(ele => !(ele.fn === fn || (ele as any).fn?.fn === fn)) : []
 
       effectMap.set(key, value)
     }

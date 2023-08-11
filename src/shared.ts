@@ -1,33 +1,40 @@
 import type { ActiveEffect } from '@/types'
 
-let prefix = ''
-export function setPrefix(str: string) {
-  prefix = `${str}:`
-}
-export function getPrefix(): string {
-  return prefix
-}
+class PrefixConstructor {
+  private prefix = ''
+  setPrefix(str: string) {
+    this.prefix = `${str}:`
+  }
 
-export const proxyMap = new WeakMap<object, object>()
-
-export const activeEffect: ActiveEffect = { storage: {}, key: '', proxy: {} }
-
-let shouldTrack = true
-export function pauseTracking() {
-  shouldTrack = false
-}
-export function enableTracking() {
-  shouldTrack = true
-}
-export function getShouldTrack(): boolean {
-  return shouldTrack
-}
-
-export function deleteFunc(
-  target: Record<string, any>,
-  key: string,
-) {
-  return function () {
-    delete target[key]
+  getPrefix(): string {
+    return this.prefix
   }
 }
+export const prefixInst = new PrefixConstructor()
+
+export const proxyMap = new WeakMap<Record<string, any>, Record<string, any>>()
+export function deleteProxyProperty(target: Record<string, any>, property: string) {
+  const targetProxy = proxyMap.get(target)
+  delete targetProxy![property]
+}
+export function clearProxy(target: Record<string, any>) {
+  proxyMap.set(target, {})
+}
+
+export const activeEffect: ActiveEffect = { storage: {}, key: '', proxy: {}, options: {} }
+
+class ShouldTrackConstructor {
+  private tracking = true
+  pauseTracking() {
+    this.tracking = false
+  }
+
+  enableTracking() {
+    this.tracking = true
+  }
+
+  getTracking(): boolean {
+    return this.tracking
+  }
+}
+export const shouldTrackInst = new ShouldTrackConstructor()

@@ -1,15 +1,16 @@
-import { activeEffect, enableTracking, pauseTracking, proxyMap } from '@/shared'
+import { activeEffect, shouldTrackInst } from '@/shared'
 import { hasChanged, hasOwn, isArray, isIntegerKey } from '@/utils'
 import { emit } from '@/extends/watch'
+
+const proxyObjectMap = new WeakMap()
 
 function selfEmit(
   obj: object,
   key: string,
   ...args: any[]
 ) {
-  let actualKey = `${activeEffect.key}.${key}`
-  if (isArray(obj) && isIntegerKey(key))
-    actualKey = `${activeEffect.key}[${key}]`
+  const isIntKey = isArray(obj) && isIntegerKey(key)
+  const actualKey = isIntKey ? `${activeEffect.key}[${key}]` : `${activeEffect.key}.${key}`
 
   emit(activeEffect.storage, actualKey, ...args)
 }
@@ -23,7 +24,7 @@ function createInstrumentations() {
     instrumentations[key] = function (this: unknown[], ...args: unknown[]) {
       lengthAltering = true
       const oldLength: number = this.length
-      const res = (proxyMap.get(this) as any)[key].apply(this, args)
+      const res = (proxyObjectMap.get(this) as any)[key].apply(this, args)
       if (this.length > oldLength)
         selfEmit(this, 'length', this.length, oldLength)
 
@@ -41,6 +42,10 @@ function get(
   property: string,
   receiver: any,
 ) {
+  // target has been removed, so reset
+  if (activeEffect.options.disposable)
+    setStorageValue(target)
+
   if (isArray(target) && hasOwn(arrayInstrumentations, property))
     return Reflect.get(arrayInstrumentations, property, receiver)
 
@@ -50,10 +55,9 @@ function get(
 function setStorageValue(
   value: object,
 ) {
-  pauseTracking()
-  const options = activeEffect.proxy.getOptions(activeEffect.key)
-  activeEffect.proxy.setItem(activeEffect.key, value, options)
-  enableTracking()
+  shouldTrackInst.pauseTracking()
+  activeEffect.proxy.setItem(activeEffect.key, value, activeEffect.options)
+  shouldTrackInst.enableTracking()
 }
 
 function set(
@@ -62,9 +66,8 @@ function set(
   value: unknown,
   receiver: object,
 ) {
-  let arrayLength: number | undefined
-  if (isArray(target) && !lengthAltering)
-    arrayLength = target.length
+  const arrayLengthFlag = isArray(target) && !lengthAltering
+  const arrayLength: number | undefined = arrayLengthFlag ? target.length : undefined
 
   const oldValue = target[key]
   const hadKey = (isArray(target) && isIntegerKey(key)) ? Number(key) < target.length : hasOwn(target, key)
@@ -77,13 +80,32 @@ function set(
       selfEmit(target, key, value, undefined)
 
     // track `array[3] = 3` length
-    if (isArray(target) && arrayLength !== undefined && Number(key) >= arrayLength)
+    if (arrayLength !== undefined && Number(key) >= arrayLength)
       selfEmit(target, 'length', target.length, arrayLength)
 
     setStorageValue(target)
   }
 
   return result
+}
+
+function has(
+  target: object,
+  property: string,
+): boolean {
+  if (activeEffect.options.disposable)
+    setStorageValue(target)
+
+  return Reflect.has(target, property)
+}
+
+function ownKeys(
+  target: object,
+): (string | symbol)[] {
+  if (activeEffect.options.disposable)
+    setStorageValue(target)
+
+  return Reflect.ownKeys(target)
 }
 
 function deleteProperty(
@@ -107,9 +129,12 @@ export function createProxyObject(
   const proxy = new Proxy(target, {
     get,
     set,
+    has,
+    ownKeys,
     deleteProperty,
   })
 
-  proxyMap.set(proxy, target)
+  proxyObjectMap.set(proxy, target)
+
   return proxy
 }

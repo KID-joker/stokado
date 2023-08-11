@@ -14,6 +14,12 @@ export function isDate(val: unknown): val is Date {
 export function isRegExp(val: unknown): val is RegExp {
   return getTypeString(val) === '[object RegExp]'
 }
+export function isURL(val: unknown): val is URL {
+  return getTypeString(val) === '[object URL]'
+}
+export function isError(val: unknown): val is Error {
+  return !!val && Object.getPrototypeOf(val)?.name === 'Error'
+}
 export function isFunction(val: unknown): val is Function {
   return typeof val === 'function'
 }
@@ -84,4 +90,21 @@ export function formatTime(time: any) {
     return +time.padEnd(13, '0')
 
   return time
+}
+
+// https://github.com/reduxjs/redux/blob/master/src/compose.ts
+export function compose(...funcs: Function[]) {
+  if (funcs.length === 0) {
+    // infer the argument type so it is usable in inference down the line
+    return <T>(arg: T) => arg
+  }
+
+  if (funcs.length === 1)
+    return funcs[0]
+
+  return funcs.reduce(
+    (a, b) =>
+      (...args: any) =>
+        a(b(...args)),
+  )
 }
