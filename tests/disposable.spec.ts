@@ -19,6 +19,66 @@ test.describe('disposable', () => {
     expect(await page.evaluate(() => {
       const { local } = window.stokado
       return local.test
-    })).toBe(undefined)
+    })).toBeUndefined()
+  })
+
+  test('setDisposable width set', async ({ page }) => {
+    await page.goto('/')
+
+    await page.evaluate(() => {
+      const { local } = window.stokado
+      local.test = 'hello stokado'
+      local.setDisposable('test')
+    })
+
+    await page.evaluate(() => {
+      const { local } = window.stokado
+      local.test = 'hello world'
+    })
+
+    expect(await page.evaluate(() => {
+      const { local } = window.stokado
+      return local.test
+    })).toBe('hello world')
+
+    expect(await page.evaluate(() => {
+      const { local } = window.stokado
+      return local.test
+    })).toBeUndefined()
+  })
+
+  test('setDisposable width object', async ({ page }) => {
+    await page.goto('/')
+
+    expect(await page.evaluate(() => {
+      const { local } = window.stokado
+      local.test = { hello: 'world' }
+      local.setDisposable('test')
+      local.test.hello = 'stokado'
+      local.test.other = 'stokado'
+      return local.test.other
+    })).toBe('stokado')
+
+    expect(await page.evaluate(() => {
+      const { local } = window.stokado
+      delete local.test.other
+      return local.test.other
+    })).toBeUndefined()
+
+    expect(await page.evaluate(() => {
+      const { local } = window.stokado
+      return local.test.hello
+    })).toBe('stokado')
+
+    // `return local.test` will let playwright serialize the return value, and it will trigger the `get` trap
+    await page.evaluate(() => {
+      const { local } = window.stokado
+      local.test
+    })
+
+    expect(await page.evaluate(() => {
+      const { local } = window.stokado
+      return local.test
+    })).toBeUndefined()
   })
 })

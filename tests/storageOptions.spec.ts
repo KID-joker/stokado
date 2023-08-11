@@ -29,7 +29,7 @@ test.describe('setItem', async () => {
     expect(await page.evaluate(() => {
       const { local } = window.stokado
       return local.test
-    })).toBe(undefined)
+    })).toBeUndefined()
   })
 
   test('expired after disposable', async ({ page }) => {
@@ -54,7 +54,7 @@ test.describe('setItem', async () => {
     expect(await page.evaluate(() => {
       const { local } = window.stokado
       return local.test
-    })).toBe(undefined)
+    })).toBeUndefined()
   })
 
   test('disposable after expired', async ({ page }) => {
@@ -78,7 +78,41 @@ test.describe('setItem', async () => {
     expect(await page.evaluate(() => {
       const { local } = window.stokado
       return local.test
-    })).toBe(undefined)
+    })).toBeUndefined()
+  })
+
+  test('disposable after removeExpires', async ({ page }) => {
+    await page.goto('/')
+
+    expect(await page.evaluate(() => {
+      const { local } = window.stokado
+      local.setItem('test', 'hello stokado', {
+        expires: Date.now() + 1000,
+      })
+      return local.test
+    })).toBe('hello stokado')
+
+    await page.evaluate(() => {
+      const { local } = window.stokado
+      local.setDisposable('test')
+    })
+
+    await page.evaluate(() => {
+      const { local } = window.stokado
+      local.removeExpires('test')
+    })
+
+    await delay(1000)
+
+    expect(await page.evaluate(() => {
+      const { local } = window.stokado
+      return local.test
+    })).toBe('hello stokado')
+
+    expect(await page.evaluate(() => {
+      const { local } = window.stokado
+      return local.test
+    })).toBeUndefined()
   })
 
   test('getOptions', async ({ page }) => {
