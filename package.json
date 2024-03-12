@@ -1,7 +1,7 @@
 {
   "name": "stokado",
   "type": "module",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Stokado is a library that serves as a syntax sugar for storage, providing support for serialization, subscription-based listening, expiration setting, and one-time value.",
   "author": "KID-joker",
   "license": "MIT",
@@ -56,12 +56,22 @@
     "@types/node": "^18.17.3",
     "esbuild": "^0.17.19",
     "eslint": "^8.46.0",
+    "lint-staged": "^15.2.2",
     "rollup": "^3.27.2",
     "rollup-plugin-dts": "^5.3.1",
     "rollup-plugin-esbuild": "^5.0.0",
     "rollup-plugin-tsconfig-paths": "^1.5.1",
     "serve-then": "^1.0.0",
+    "simple-git-hooks": "^2.10.0",
     "tslib": "^2.6.1",
     "typescript": "^4.9.5"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,ts,md}": [
+      "eslint --fix"
+    ]
   }
 }
