@@ -5,6 +5,7 @@ import tsConfigPaths from 'rollup-plugin-tsconfig-paths'
 import html from '@rollup/plugin-html'
 import esbuild from 'rollup-plugin-esbuild'
 import dts from 'rollup-plugin-dts'
+import serve from 'rollup-plugin-serve'
 
 const pkg = JSON.parse(readFileSync('./package.json', { encoding: 'utf8' }))
 
@@ -15,16 +16,13 @@ const configs = []
 const input = path.resolve(__dirname, 'src/index.ts')
 const pkgName = pkg.name
 const output = [{
-  file: `${process.env.BUILD === 'test' ? 'playground' : 'dist'}/${pkgName}.js`,
+  file: `${process.env.BUILD === 'prod' ? 'dist' : 'playground'}/${pkgName}.js`,
   format: 'iife',
   name: pkgName,
   extend: true,
 }]
-const pluginEsbuild = process.env.BUILD === 'test' ? esbuild() : esbuild({ drop: ['console'] })
-const pluginPaths = tsConfigPaths()
-const pluginDts = dts()
-const pluginHtml = html()
-const plugins = [pluginEsbuild, pluginPaths]
+const pluginEsbuild = process.env.BUILD === 'prod' ? esbuild({ drop: ['console'] }) : esbuild()
+const plugins = [pluginEsbuild, tsConfigPaths()]
 
 if (process.env.BUILD === 'prod') {
   output.push({
@@ -52,13 +50,16 @@ if (process.env.BUILD === 'prod') {
       format: 'es',
     },
     plugins: [
-      pluginDts,
+      dts(),
     ],
   })
 }
 
-if (process.env.BUILD === 'test')
-  plugins.push(pluginHtml)
+if (process.env.BUILD !== 'prod')
+  plugins.push(html())
+
+if (process.env.BUILD === 'dev')
+  plugins.push(serve('playground'))
 
 configs.push({
   input,

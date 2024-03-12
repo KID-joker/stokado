@@ -45,8 +45,9 @@
   },
   "scripts": {
     "build": "rollup -c --environment BUILD:prod",
-    "lint": "eslint . --fix",
+    "dev": "rollup -c -w --environment BUILD:dev",
     "test": "rollup -c --environment BUILD:test && npx playwright test",
+    "lint": "eslint . --fix",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
@@ -60,6 +61,7 @@
     "rollup": "^3.27.2",
     "rollup-plugin-dts": "^5.3.1",
     "rollup-plugin-esbuild": "^5.0.0",
+    "rollup-plugin-serve": "^1.1.1",
     "rollup-plugin-tsconfig-paths": "^1.5.1",
     "serve-then": "^1.0.0",
     "simple-git-hooks": "^2.10.0",

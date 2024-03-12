@@ -11,6 +11,7 @@ specifiers:
   rollup: ^3.27.2
   rollup-plugin-dts: ^5.3.1
   rollup-plugin-esbuild: ^5.0.0
+  rollup-plugin-serve: ^1.1.1
   rollup-plugin-tsconfig-paths: ^1.5.1
   serve-then: ^1.0.0
   simple-git-hooks: ^2.10.0
@@ -28,6 +29,7 @@ devDependencies:
   rollup: 3.28.0
   rollup-plugin-dts: 5.3.1_goscwovs23ng2c52dbttmefzoe
   rollup-plugin-esbuild: 5.0.0_mtupuu7vers6bfxcqvc7tliji4
+  rollup-plugin-serve: 1.1.1
   rollup-plugin-tsconfig-paths: 1.5.1_goscwovs23ng2c52dbttmefzoe
   serve-then: 1.0.0
   simple-git-hooks: 2.10.0
@@ -3052,6 +3054,12 @@ packages:
     hasBin: true
     dev: true
 
+  /mime/2.6.0:
+    resolution: {integrity: sha512-USPkMeET31rOMiarsBNIHZKLGgvKc/LrjofAnBlOttf5ajRvqiRA8QsenbcooctK6d6Ts6aqZXBA+XbkKthiQg==}
+    engines: {node: '>=4.0.0'}
+    hasBin: true
+    dev: true
+
   /mimic-fn/2.1.0:
     resolution: {integrity: sha512-OqbOk5oEQeAZ8WXWydlu9HJjz9WVdEIvamMCcXmuqUYjTknH/sqsWvhQ3vgwKFRR1HpjvNBKQ37nbJgYzGqGcg==}
     engines: {node: '>=6'}
@@ -3294,6 +3302,11 @@ packages:
     engines: {node: '>=12'}
     dependencies:
       mimic-fn: 4.0.0
+    dev: true
+
+  /opener/1.5.2:
+    resolution: {integrity: sha512-ur5UIdyw5Y7yEj9wLzhqXiy6GZ3Mwx0yGI+5sMn2r0N0v3cKJvUmFH5yPP+WXh9e0xfyzyJX95D8l088DNFj7A==}
+    hasBin: true
     dev: true
 
   /opn/6.0.0:
@@ -3663,6 +3676,13 @@ packages:
       rollup: 3.28.0
     transitivePeerDependencies:
       - supports-color
+    dev: true
+
+  /rollup-plugin-serve/1.1.1:
+    resolution: {integrity: sha512-H0VarZRtFR0lfiiC9/P8jzCDvtFf1liOX4oSdIeeYqUCKrmFA7vNiQ0rg2D+TuoP7leaa/LBR8XBts5viF6lnw==}
+    dependencies:
+      mime: 2.6.0
+      opener: 1.5.2
     dev: true
 
   /rollup-plugin-tsconfig-paths/1.5.1_goscwovs23ng2c52dbttmefzoe:
