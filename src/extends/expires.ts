@@ -1,5 +1,5 @@
 import { encode } from '@/proxy/transform'
-import { deleteProxyProperty, prefixInst } from '@/shared'
+import { deleteProxyProperty } from '@/shared'
 import type { ExpiresType, TargetObject } from '@/types'
 import { formatTime, isObject, isString, transformJSON } from '@/utils'
 
@@ -16,9 +16,7 @@ export function setExpires(
     return undefined
   }
 
-  const key = `${prefixInst.getPrefix()}${property}`
-
-  const data = target[key]
+  const data = target[property]
   if (!data)
     return undefined
 
@@ -26,7 +24,7 @@ export function setExpires(
 
   const options = isObject(originalData) ? Object.assign({}, originalData?.options, { expires: time }) : { expires: time }
 
-  target[key] = encode({ data: isObject(originalData) ? originalData.value : originalData, target, property, options })
+  target[property] = encode({ data: isObject(originalData) ? originalData.value : originalData, target, property, options })
   return new Date(time)
 }
 
@@ -34,8 +32,7 @@ export function getExpires(
   target: Record<string, any>,
   property: string,
 ) {
-  const key = `${prefixInst.getPrefix()}${property}`
-  const data = target[key]
+  const data = target[property]
   if (!data)
     return undefined
 
@@ -50,9 +47,7 @@ export function removeExpires(
   target: Record<string, any>,
   property: string,
 ) {
-  const key = `${prefixInst.getPrefix()}${property}`
-
-  const data = target[key]
+  const data = target[property]
   if (!data)
     return undefined
 
@@ -62,7 +57,7 @@ export function removeExpires(
 
   delete originalData!.options!.expires
 
-  target[key] = encode({ data: originalData.value, target, property, options: originalData.options })
+  target[property] = encode({ data: originalData.value, target, property, options: originalData.options })
 }
 
 export function isExpired({

@@ -1,5 +1,5 @@
 import { encode } from '@/proxy/transform'
-import { deleteProxyProperty, prefixInst } from '@/shared'
+import { deleteProxyProperty } from '@/shared'
 import type { TargetObject } from '@/types'
 import { isObject, isString, transformJSON } from '@/utils'
 
@@ -7,9 +7,7 @@ export function setDisposable(
   target: Record<string, any>,
   property: string,
 ) {
-  const key = `${prefixInst.getPrefix()}${property}`
-
-  const data = target[key]
+  const data = target[property]
   if (!data)
     return undefined
 
@@ -17,7 +15,7 @@ export function setDisposable(
 
   const options = isObject(originalData) ? Object.assign({}, originalData?.options, { disposable: true }) : { disposable: true }
 
-  target[key] = encode({ data: isObject(originalData) ? originalData.value : originalData, target, property, options })
+  target[property] = encode({ data: isObject(originalData) ? originalData.value : originalData, target, property, options })
 }
 
 export function isDisposable({
