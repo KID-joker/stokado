@@ -1,187 +1,144 @@
-import { getExpires, isExpired, removeExpires, setExpires } from '@/extends/expires'
-import { activeEffect, clearProxy, deleteProxyProperty, prefixInst, proxyMap, shouldTrackInst } from '@/shared'
-import { compose, hasChanged, hasOwn, isArray, isObject, isString, propertyIsInPrototype, transformJSON } from '@/utils'
+import { getExpires, removeExpires, setExpires } from '@/extends/expires'
+import { clearProxy, deleteProxyProperty, getProxyProperty, setProxy } from '@/shared'
+import { hasOwn, isArray, isObject, isStorage, isString, pThen } from '@/utils'
 import { emit, off, on, once } from '@/extends/watch'
-import type { StorageLike } from '@/types'
-import { decode, encode } from '@/proxy/transform'
-import { isDisposable, setDisposable } from '@/extends/disposable'
+import type { StorageLike, StorageOptions, TargetObject } from '@/types'
+import { encode } from '@/proxy/transform'
+import { checkDisposable, setDisposable } from '@/extends/disposable'
+import { getOptions } from '@/extends/options'
 
-function baseSetter(
-  target: Record<string, any>,
-  property: string,
-  value: any,
-  ...args: any[]
-) {
-  const receiver = args.at(-1)
-  const key = `${prefixInst.getPrefix()}${property}`
-  const oldValue = compose(decode, isExpired)({ data: target[key], target, property })
-  const encodeValue = encode({ data: value, target, property, options: Object.assign({}, receiver.getOptions(property), args.at(-2)) })
-  const result = Reflect.set(target, key, encodeValue, receiver)
-  if (result && hasChanged(value, oldValue) && shouldTrackInst.getTracking())
-    emit(target, property, value, oldValue)
-
-  if (isArray(value) && isArray(oldValue) && hasChanged(value.length, oldValue.length))
-    emit(target, `${property}.length`, value.length, oldValue.length)
-
-  return result
-}
-
-function createInstrumentations(
-  target: Record<string, any>,
-  receiver: any,
-) {
-  const instrumentations: Record<string, Function> = {}
-
-  instrumentations.clear = function () {
+function clear(target: Record<string, any>) {
+  return function () {
     clearProxy(target)
-    target.clear.apply(target)
   }
-  instrumentations.key = function (...args: unknown[]) {
-    const property = target.key.apply(target!, args)
-    return property.slice(prefixInst.getPrefix().length)
-  }
-
-  const methods: Record<string, Function> = {
-    removeItem: deleteProperty,
-    getExpires,
-    off,
-    on,
-    once,
-    getOptions,
-    removeExpires,
-    setDisposable,
-  }
-  Object.keys(methods).forEach((key) => {
-    instrumentations[key] = function (...args: unknown[]) {
-      return methods[key](target, ...args)
-    }
-  })
-
-  const specialMethods: Record<string, Function> = {
-    getItem: get,
-    setItem,
-    setExpires,
-  }
-  Object.keys(specialMethods).forEach((key) => {
-    instrumentations[key] = function (...args: unknown[]) {
-      return specialMethods[key](target, ...args, receiver)
-    }
-  })
-
-  return instrumentations
 }
 
-const storageInstrumentations: Map<object, Record<string, Function>> = new Map()
-function get(
-  target: Record<string, any>,
-  property: string,
-  receiver: any,
-) {
-  // records the parent of array and object
-  if (shouldTrackInst.getTracking()) {
-    activeEffect.storage = target
-    activeEffect.key = property
-    activeEffect.proxy = receiver
-    activeEffect.options = getOptions(target, property)
+function getItem(target: Record<string, any>) {
+  return function (key: string) {
+    const data = getProxyProperty(target, key)
+    return pThen(data, (res: TargetObject | string | null) => {
+      const returnData = checkDisposable({ data: res, target, property: key })
+      return isObject(returnData) ? returnData.value : returnData
+    })
   }
-
-  let instrumentations = storageInstrumentations.get(target)
-  if (!instrumentations) {
-    instrumentations = createInstrumentations(target, receiver)
-    storageInstrumentations.set(target, instrumentations)
-  }
-  if (hasOwn(instrumentations, property))
-    return Reflect.get(instrumentations, property, receiver)
-
-  if (!has(target, property))
-    return undefined
-
-  if (property === 'length')
-    return target.length
-
-  const key = `${prefixInst.getPrefix()}${property}`
-  const value = target[key]
-  if (!value)
-    return undefined
-
-  return compose(decode, isExpired, isDisposable)({ data: value, target, property })
-}
-
-function set(
-  target: Record<string, any>,
-  property: string,
-  value: any,
-  receiver: any,
-) {
-  return baseSetter(target, property, value, receiver)
-}
-
-// only prefixed properties are accepted in the instance
-function has(
-  target: object,
-  property: string,
-): boolean {
-  return hasOwn(target, `${prefixInst.getPrefix()}${property}`) || propertyIsInPrototype(target, property)
-}
-
-function ownKeys(
-  target: object,
-): (string | symbol)[] {
-  const result = Reflect.ownKeys(target)
-  return result.map(key => isString(key) ? key.slice(prefixInst.getPrefix().length) : key)
-}
-
-function deleteProperty(
-  target: Record<string, any>,
-  property: string,
-) {
-  const key = `${prefixInst.getPrefix()}${property}`
-  const hadKey = hasOwn(target, key)
-  const oldValue = compose(decode, isExpired)({ data: target[key], target, property })
-  const result = Reflect.deleteProperty(target, key)
-  if (result && hadKey) {
-    hasChanged(undefined, oldValue) && emit(target, property, undefined, oldValue)
-    deleteProxyProperty(target, property)
-  }
-
-  return result
 }
 
 function setItem(
   target: Record<string, any>,
   property: string,
   value: any,
-  ...args: any[]
+  options?: StorageOptions,
 ) {
-  return baseSetter(target, property, value, ...args)
+  const oldData = getProxyProperty(target, property)
+
+  const encodeValue = encode({ data: value, target, property, options: Object.assign({}, getOptions(target, property), options) })
+  target.setItem(property, encodeValue)
+
+  pThen(oldData, (res: TargetObject | string | null) => {
+    const oldValue = isObject(res) ? res.value : (res || undefined)
+
+    emit(target, property, value, oldValue)
+
+    if (isArray(value) && isArray(oldValue))
+      emit(target, `${property}.length`, value.length, oldValue.length)
+  })
+
+  return true
 }
 
-function getOptions(
+function removeItem(target: Record<string, any>) {
+  return function (key: string) {
+    deleteProxyProperty(target, key)
+  }
+}
+
+const instrumentations: Record<string, Function> = createInstrumentations()
+function createInstrumentations() {
+  const nativeMethods: Record<string, Function> = {
+    clear,
+    getItem,
+    setItem,
+    removeItem,
+  }
+
+  const methods: Record<string, Function> = Object.assign({}, nativeMethods)
+
+  const extendMethods: Record<string, Function> = {
+    getExpires,
+    getOptions,
+    off,
+    on,
+    once,
+    removeExpires,
+    setDisposable,
+    setExpires,
+  }
+  for (const methodName in extendMethods) {
+    methods[methodName] = function (target: Record<string, any>) {
+      return function (...args: any[]) {
+        return extendMethods[methodName](target, ...args)
+      }
+    }
+  }
+
+  return methods
+}
+
+function get(
   target: Record<string, any>,
   property: string,
 ) {
-  const key = `${prefixInst.getPrefix()}${property}`
-  const value = transformJSON(target[key])
+  if (hasOwn(instrumentations, property))
+    return instrumentations[property](target)
 
-  if (!isObject(value))
-    return {}
+  let data = target[property]
 
-  return value.options || {}
+  if (!isString(data) && data !== undefined)
+    return data
+
+  if (data === undefined)
+    data = getProxyProperty(target, property)
+
+  return pThen(data, (res: TargetObject | string | null) => {
+    const returnData = checkDisposable({ data: res, target, property })
+    return isObject(returnData) ? returnData.value : returnData
+  })
+}
+
+function set(
+  target: Record<string, any>,
+  property: string,
+  value: any,
+) {
+  return setItem(target, property, value)
+}
+
+function deleteProperty(
+  target: Record<string, any>,
+  property: string,
+) {
+  const oldData = getProxyProperty(target, property)
+  deleteProxyProperty(target, property)
+
+  pThen(oldData, (res: TargetObject | string | null) => {
+    const oldValue = isObject(res) ? res.value : (res || undefined)
+    emit(target, property, undefined, oldValue)
+  })
+
+  return true
 }
 
 export function createProxyStorage(storage: StorageLike) {
-  if (!storage)
-    return null
+  if (!isStorage(storage))
+    throw new Error('The parameter should be StorageLike object')
 
   const proxy = new Proxy(storage, {
     get,
     set,
-    has,
-    ownKeys,
     deleteProperty,
   })
 
-  proxyMap.set(storage, {})
+  setProxy(storage, {})
 
   return proxy
 }

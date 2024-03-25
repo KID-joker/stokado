@@ -1,4 +1,5 @@
 import type { Effect, EffectFn, EffectMap } from '@/types'
+import { hasChanged } from '@/utils'
 
 const targetMap = new WeakMap<Object, EffectMap>()
 
@@ -63,14 +64,16 @@ export function off(
 export function emit(
   target: object,
   key: string,
-  ...args: any[]
+  value: any,
+  oldValue: any,
 ) {
+  if (!hasChanged(value, oldValue))
+    return
+
   const effectMap: EffectMap | undefined = targetMap.get(target)
   if (effectMap) {
     const effects: Effect[] | undefined = effectMap.get(key)
-    if (effects) {
-      const [value, oldValue] = args
+    if (effects)
       effects.forEach(ele => ele.fn.call(ele.ctx, value, oldValue))
-    }
   }
 }

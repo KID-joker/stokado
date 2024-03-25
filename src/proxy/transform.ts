@@ -1,10 +1,10 @@
 import type { RawType, StorageOptions, TargetObject } from '@/types'
 import { getRawType, isObject, isString, transformEval, transformJSON } from '@/utils'
 import { createProxyObject } from '@/proxy/object'
-import { proxyMap } from '@/shared'
+import { setProxyProperty } from '@/shared'
 
 interface Serializer<T> {
-  read(raw: string | object): T
+  read(raw: string | object, storage?: Record<string, any>, property?: string): T
   write(value: T): string | object
 }
 const StorageSerializers: Record<RawType, Serializer<any>> = {
@@ -33,11 +33,11 @@ const StorageSerializers: Record<RawType, Serializer<any>> = {
     write: (v: undefined) => String(v),
   },
   Object: {
-    read: (v: object) => createProxyObject(v),
+    read: (v: object, storage: Record<string, any>, property: string) => createProxyObject(v, storage, property),
     write: (v: object) => v,
   },
   Array: {
-    read: (v: object) => createProxyObject(v),
+    read: (v: object, storage: Record<string, any>, property: string) => createProxyObject(v, storage, property),
     write: (v: object) => v,
   },
   Set: {
@@ -71,37 +71,27 @@ export function decode({
   target,
   property,
 }: {
-  data: string
+  data: string | null
   target?: Record<string, any>
   property?: string
 }): any {
   if (!isString(data))
     return data
 
-  const targetProxy: Record<string, any> | undefined = target && proxyMap.get(target)
-  const targetData: TargetObject | undefined = targetProxy && targetProxy[property!]
-  if (targetData)
-    return targetData.value
+  const nativeData: TargetObject | string = transformJSON(data)
+  if (!isObject(nativeData))
+    return nativeData
 
-  const originalData: TargetObject | string = transformJSON(data)
-
-  if (!isObject(originalData))
-    return originalData
-
-  const serializer = StorageSerializers[originalData.type as RawType]
+  const serializer = StorageSerializers[nativeData?.type as RawType]
   if (!serializer)
-    return originalData.value
+    return nativeData
 
-  const value = serializer.read(originalData.value)
+  nativeData.value = ['Object', 'Array'].includes(nativeData.type) ? serializer.read(nativeData.value, target, property) : serializer.read(nativeData.value)
 
-  if (targetProxy && property) {
-    targetProxy![property] = {
-      ...originalData,
-      value,
-    }
-  }
+  if (target && property)
+    setProxyProperty(target, property, nativeData)
 
-  return value
+  return nativeData
 }
 
 export function encode({
@@ -128,11 +118,11 @@ export function encode({
   }
 
   if (target && property) {
-    const targetProxy: Record<string, any> | undefined = proxyMap.get(target)
-    targetProxy![property] = {
-      ...targetObject,
-      value: serializer.read(targetObject.value),
-    }
+    setProxyProperty(target, property, {
+      type: rawType,
+      value: ['Object', 'Array'].includes(rawType) ? serializer.read(targetObject.value, target, property) : serializer.read(targetObject.value),
+      options,
+    })
   }
 
   return JSON.stringify(targetObject)

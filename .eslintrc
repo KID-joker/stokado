@@ -4,6 +4,7 @@
     "no-eval": "off",
     "no-invalid-this": "off",
     "no-new-wrappers": "off",
-    "prefer-regex-literals": "off"
+    "prefer-regex-literals": "off",
+    "prefer-spread": "off"
   }
 }

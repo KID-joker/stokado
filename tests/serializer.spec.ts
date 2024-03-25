@@ -231,7 +231,7 @@ test.describe('serialized value', () => {
         local.test = foo
         return localStorage.test
       }),
-    })()).toBe('hello stokado!')
+    }).value()).toBe('hello stokado!')
 
     // Function expression
     expect(decode({
@@ -242,7 +242,7 @@ test.describe('serialized value', () => {
         }
         return localStorage.test
       }),
-    })()).toBe('hello stokado!')
+    }).value()).toBe('hello stokado!')
 
     // Arrow function
     expect(decode({
@@ -253,7 +253,7 @@ test.describe('serialized value', () => {
         }
         return localStorage.test
       }),
-    })()).toBe('hello stokado!')
+    }).value()).toBe('hello stokado!')
   })
 
   test('Set', async ({ page }) => {
@@ -265,7 +265,7 @@ test.describe('serialized value', () => {
         local.test = new Set(['hello stokado'])
         return localStorage.test
       }),
-    })).toEqual(new Set(['hello stokado']))
+    }).value).toEqual(new Set(['hello stokado']))
   })
 
   test('Map', async ({ page }) => {
@@ -277,6 +277,6 @@ test.describe('serialized value', () => {
         local.test = new Map([['hello', 'stokado'], ['foo', 'bar']])
         return localStorage.test
       }),
-    })).toEqual(new Map([['hello', 'stokado'], ['foo', 'bar']]))
+    }).value).toEqual(new Map([['hello', 'stokado'], ['foo', 'bar']]))
   })
 })

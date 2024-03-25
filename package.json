@@ -50,6 +50,9 @@
     "lint": "eslint . --fix",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "p-cancelable": "^4.0.1"
+  },
   "devDependencies": {
     "@antfu/eslint-config": "^0.38.6",
     "@playwright/test": "^1.36.2",

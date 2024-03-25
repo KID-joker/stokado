@@ -12,7 +12,7 @@ test.describe('basic usage', () => {
       return localStorage.test
     })
     expect(proxyStorage).toBe(encode({ data: 'hello stokado', options: {} }))
-    expect(decode({ data: proxyStorage })).toBe('hello stokado')
+    expect(decode({ data: proxyStorage }).value).toBe('hello stokado')
   })
 
   test('set, read and delete', async ({ page }) => {

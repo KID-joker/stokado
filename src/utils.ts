@@ -1,4 +1,4 @@
-import type { RawType, TargetObject } from '@/types'
+import type { RawType, StorageLike, TargetObject } from '@/types'
 
 export const isArray = Array.isArray
 export function isSet(val: unknown): val is Set<any> {
@@ -33,11 +33,34 @@ export function isObject(val: unknown): val is Record<any, any> {
   return val !== null && typeof val === 'object'
 }
 
+export function isPromise<T = any>(val: unknown): val is Promise<T> {
+  return (
+    (isObject(val) || isFunction(val))
+    && isFunction((val as any).then)
+    && isFunction((val as any).catch)
+  )
+}
+
 export function isIntegerKey(key: unknown) {
   return typeof key === 'string'
   && key !== 'NaN'
   && key[0] !== '-'
   && `${parseInt(key, 10)}` === key
+}
+
+export function isStorage(storage: StorageLike) {
+  try {
+    const test = '__isStorage'
+    storage.setItem(test, true)
+    if (storage.getItem(test) !== 'true')
+      return false
+
+    storage.removeItem(test)
+    return true
+  }
+  catch (e) {
+    return false
+  }
 }
 
 export function getTypeString(value: unknown): string {
@@ -92,19 +115,13 @@ export function formatTime(time: any) {
   return time
 }
 
-// https://github.com/reduxjs/redux/blob/master/src/compose.ts
-export function compose(...funcs: Function[]) {
-  if (funcs.length === 0) {
-    // infer the argument type so it is usable in inference down the line
-    return <T>(arg: T) => arg
+export function pThen(maybePromise: any, callback: Function) {
+  if (isPromise(maybePromise)) {
+    return maybePromise.then((res) => {
+      return callback(res)
+    })
   }
-
-  if (funcs.length === 1)
-    return funcs[0]
-
-  return funcs.reduce(
-    (a, b) =>
-      (...args: any) =>
-        a(b(...args)),
-  )
+  else {
+    return callback(maybePromise)
+  }
 }

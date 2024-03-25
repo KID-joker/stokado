@@ -1,18 +1,22 @@
-import { activeEffect, shouldTrackInst } from '@/shared'
+import { encode } from './transform'
 import { hasChanged, hasOwn, isArray, isIntegerKey } from '@/utils'
 import { emit } from '@/extends/watch'
+import { cancelDisposable } from '@/extends/disposable'
+import { getOptions } from '@/extends/options'
 
 const proxyObjectMap = new WeakMap()
 
 function selfEmit(
-  obj: object,
+  target: object,
   key: string,
-  ...args: any[]
+  value: any,
+  oldValue: any,
 ) {
-  const isIntKey = isArray(obj) && isIntegerKey(key)
-  const actualKey = isIntKey ? `${activeEffect.key}[${key}]` : `${activeEffect.key}.${key}`
+  const { storage, storageProp } = proxyObjectMap.get(target)
+  const isIntKey = isArray(target) && isIntegerKey(key)
+  const actualKey = isIntKey ? `${storageProp}[${key}]` : `${storageProp}.${key}`
 
-  emit(activeEffect.storage, actualKey, ...args)
+  emit(storage, actualKey, value, oldValue)
 }
 
 let lengthAltering = false
@@ -21,15 +25,17 @@ function createInstrumentations() {
 
   // instrument length-altering mutation methods to track length
   (['push', 'pop', 'shift', 'unshift', 'splice'] as const).forEach((key) => {
-    instrumentations[key] = function (this: unknown[], ...args: unknown[]) {
-      lengthAltering = true
-      const oldLength: number = this.length
-      const res = (proxyObjectMap.get(this) as any)[key].apply(this, args)
-      if (this.length > oldLength)
-        selfEmit(this, 'length', this.length, oldLength)
+    instrumentations[key] = function (target: Array<any>) {
+      return function (...args: any[]) {
+        lengthAltering = true
+        const oldLength: number = target.length
+        const res = target[key].apply(target, args)
+        if (target.length > oldLength)
+          selfEmit(target, 'length', target.length, oldLength)
 
-      lengthAltering = false
-      return res
+        lengthAltering = false
+        return res
+      }
     }
   })
 
@@ -42,28 +48,24 @@ function get(
   property: string,
   receiver: any,
 ) {
-  // target has been removed, so reset
-  if (activeEffect.options.disposable)
-    setStorageValue(target)
-
   if (isArray(target) && hasOwn(arrayInstrumentations, property))
-    return Reflect.get(arrayInstrumentations, property, receiver)
+    return arrayInstrumentations[property](target)
 
   return Reflect.get(target, property, receiver)
 }
 
 function setStorageValue(
-  value: object,
+  target: object,
 ) {
-  shouldTrackInst.pauseTracking()
-  activeEffect.proxy.setItem(activeEffect.key, value, activeEffect.options)
-  shouldTrackInst.enableTracking()
+  const { storage, storageProp } = proxyObjectMap.get(target)
+  const encodeValue = encode({ data: target, target: storage, property: storageProp, options: getOptions(storage, storageProp) })
+  storage.setItem(storageProp, encodeValue)
 }
 
 function set(
   target: Record<string, any>,
   key: string,
-  value: unknown,
+  value: any,
   receiver: object,
 ) {
   const arrayLengthFlag = isArray(target) && !lengthAltering
@@ -93,8 +95,11 @@ function has(
   target: object,
   property: string,
 ): boolean {
-  if (activeEffect.options.disposable)
-    setStorageValue(target)
+  const { storage, storageProp } = proxyObjectMap.get(target)
+  const options = getOptions(storage, storageProp)
+  // cancel disposable promise
+  if (options.disposable)
+    cancelDisposable()
 
   return Reflect.has(target, property)
 }
@@ -102,8 +107,11 @@ function has(
 function ownKeys(
   target: object,
 ): (string | symbol)[] {
-  if (activeEffect.options.disposable)
-    setStorageValue(target)
+  const { storage, storageProp } = proxyObjectMap.get(target)
+  const options = getOptions(storage, storageProp)
+  // cancel disposable promise
+  if (options.disposable)
+    cancelDisposable()
 
   return Reflect.ownKeys(target)
 }
@@ -125,6 +133,8 @@ function deleteProperty(
 
 export function createProxyObject(
   target: object,
+  storage: Record<string, any>,
+  property: string,
 ) {
   const proxy = new Proxy(target, {
     get,
@@ -134,7 +144,10 @@ export function createProxyObject(
     deleteProperty,
   })
 
-  proxyObjectMap.set(proxy, target)
+  proxyObjectMap.set(target, {
+    storage,
+    storageProp: property,
+  })
 
   return proxy
 }
