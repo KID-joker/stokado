@@ -1,9 +1,9 @@
 import { getExpires, removeExpires, setExpires } from '@/extends/expires'
 import { clearProxy, deleteProxyProperty, getProxyProperty, setProxy } from '@/shared'
-import { hasOwn, isArray, isObject, isStorage, isString, pThen } from '@/utils'
+import { hasOwn, isArray, isFunction, isObject, isStorage, isString, pThen } from '@/utils'
 import { emit, off, on, once } from '@/extends/watch'
 import type { StorageLike, StorageOptions, TargetObject } from '@/types'
-import { encode } from '@/proxy/transform'
+import { decode, encode } from '@/proxy/transform'
 import { checkDisposable, setDisposable } from '@/extends/disposable'
 import { getOptions } from '@/extends/options'
 
@@ -23,32 +23,31 @@ function getItem(target: Record<string, any>) {
   }
 }
 
-function setItem(
-  target: Record<string, any>,
-  property: string,
-  value: any,
-  options?: StorageOptions,
-) {
-  const oldData = getProxyProperty(target, property)
-
-  const encodeValue = encode({ data: value, target, property, options: Object.assign({}, getOptions(target, property), options) })
-  target.setItem(property, encodeValue)
-
-  pThen(oldData, (res: TargetObject | string | null) => {
-    const oldValue = isObject(res) ? res.value : (res || undefined)
-
-    emit(target, property, value, oldValue)
-
-    if (isArray(value) && isArray(oldValue))
-      emit(target, `${property}.length`, value.length, oldValue.length)
-  })
-
-  return true
-}
-
 function removeItem(target: Record<string, any>) {
   return function (key: string) {
     deleteProxyProperty(target, key)
+  }
+}
+
+function setItem(
+  target: Record<string, any>,
+) {
+  return function (property: string, value: any, options?: StorageOptions) {
+    const oldData = getProxyProperty(target, property)
+
+    const encodeValue = encode({ data: value, target, property, options: Object.assign({}, getOptions(target, property), options) })
+    target.setItem(property, encodeValue)
+
+    pThen(oldData, (res: TargetObject | string | null) => {
+      const oldValue = isObject(res) ? res.value : (res || undefined)
+
+      emit(target, property, value, oldValue)
+
+      if (isArray(value) && isArray(oldValue))
+        emit(target, `${property}.length`, value.length, oldValue.length)
+    })
+
+    return true
   }
 }
 
@@ -94,14 +93,17 @@ function get(
   let data = target[property]
 
   if (!isString(data) && data !== undefined)
-    return data
+    return isFunction(data) ? data.bind(target) : data
 
   if (data === undefined)
     data = getProxyProperty(target, property)
+  else
+    data = decode({ data, target, property })
 
   return pThen(data, (res: TargetObject | string | null) => {
     const returnData = checkDisposable({ data: res, target, property })
-    return isObject(returnData) ? returnData.value : returnData
+    // return null -> undefined
+    return (isObject(returnData) ? returnData.value : returnData) || undefined
   })
 }
 
@@ -110,7 +112,7 @@ function set(
   property: string,
   value: any,
 ) {
-  return setItem(target, property, value)
+  return setItem(target)(property, value)
 }
 
 function deleteProperty(
