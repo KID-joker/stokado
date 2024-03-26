@@ -1,10 +1,9 @@
-import PCancelable from 'p-cancelable'
 import { encode } from '@/proxy/transform'
 import { deleteProxyProperty, getProxyProperty } from '@/shared'
 import type { TargetObject } from '@/types'
 import { isObject, pThen } from '@/utils'
 
-let cancelablePromise: PCancelable<void>
+let cancelId: number | undefined
 
 export function setDisposable(
   target: Record<string, any>,
@@ -36,19 +35,14 @@ export function checkDisposable({
   const { disposable } = data.options
 
   if (disposable) {
-    cancelablePromise = new PCancelable((resolve, reject, onCancel) => {
-      onCancel.shouldReject = false
-
+    cancelId = window.setTimeout(() => {
       deleteProxyProperty(target, property)
-      data.value = undefined
-
-      resolve()
-    })
+    }, 0)
   }
 
   return data
 }
 
 export function cancelDisposable() {
-  cancelablePromise?.cancel()
+  clearTimeout(cancelId)
 }

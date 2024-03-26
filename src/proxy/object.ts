@@ -18,6 +18,13 @@ function selfEmit(
 
   emit(storage, actualKey, value, oldValue)
 }
+function selfCancel(target: object) {
+  const { storage, storageProp } = proxyObjectMap.get(target)
+  const options = getOptions(storage, storageProp)
+  // cancel disposable promise
+  if (options.disposable)
+    cancelDisposable()
+}
 
 let lengthAltering = false
 function createInstrumentations() {
@@ -48,6 +55,8 @@ function get(
   property: string,
   receiver: any,
 ) {
+  selfCancel(target)
+
   if (isArray(target) && hasOwn(arrayInstrumentations, property))
     return arrayInstrumentations[property](target)
 
@@ -68,6 +77,8 @@ function set(
   value: any,
   receiver: object,
 ) {
+  selfCancel(target)
+
   const arrayLengthFlag = isArray(target) && !lengthAltering
   const arrayLength: number | undefined = arrayLengthFlag ? target.length : undefined
 
@@ -95,11 +106,7 @@ function has(
   target: object,
   property: string,
 ): boolean {
-  const { storage, storageProp } = proxyObjectMap.get(target)
-  const options = getOptions(storage, storageProp)
-  // cancel disposable promise
-  if (options.disposable)
-    cancelDisposable()
+  selfCancel(target)
 
   return Reflect.has(target, property)
 }
@@ -107,11 +114,7 @@ function has(
 function ownKeys(
   target: object,
 ): (string | symbol)[] {
-  const { storage, storageProp } = proxyObjectMap.get(target)
-  const options = getOptions(storage, storageProp)
-  // cancel disposable promise
-  if (options.disposable)
-    cancelDisposable()
+  selfCancel(target)
 
   return Reflect.ownKeys(target)
 }
@@ -120,6 +123,8 @@ function deleteProperty(
   target: Record<string, any>,
   key: string,
 ) {
+  selfCancel(target)
+
   const hadKey = hasOwn(target, key)
   const oldValue = target[key]
   const result = Reflect.deleteProperty(target, key)
