@@ -57,6 +57,7 @@
     "@antfu/eslint-config": "^0.38.6",
     "@playwright/test": "^1.36.2",
     "@rollup/plugin-html": "^1.0.2",
+    "@rollup/plugin-node-resolve": "^15.2.3",
     "@types/node": "^18.17.3",
     "esbuild": "^0.17.19",
     "eslint": "^8.46.0",

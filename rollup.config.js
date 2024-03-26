@@ -6,6 +6,7 @@ import html from '@rollup/plugin-html'
 import esbuild from 'rollup-plugin-esbuild'
 import dts from 'rollup-plugin-dts'
 import serve from 'rollup-plugin-serve'
+import { nodeResolve } from '@rollup/plugin-node-resolve'
 
 const pkg = JSON.parse(readFileSync('./package.json', { encoding: 'utf8' }))
 
@@ -22,7 +23,7 @@ const output = [{
   extend: true,
 }]
 const pluginEsbuild = process.env.BUILD === 'prod' ? esbuild({ drop: ['console'] }) : esbuild()
-const plugins = [pluginEsbuild, tsConfigPaths()]
+const plugins = [pluginEsbuild, tsConfigPaths(), nodeResolve()]
 
 if (process.env.BUILD === 'prod') {
   output.push({
