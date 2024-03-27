@@ -3,7 +3,7 @@ import { clearProxy, deleteProxyProperty, getProxyProperty, setProxy } from '@/s
 import { hasOwn, isArray, isFunction, isObject, isStorage, isString, pThen } from '@/utils'
 import { emit, off, on, once } from '@/extends/watch'
 import type { StorageLike, StorageOptions, TargetObject } from '@/types'
-import { decode, encode } from '@/proxy/transform'
+import { encode } from '@/proxy/transform'
 import { checkDisposable, setDisposable } from '@/extends/disposable'
 import { getOptions } from '@/extends/options'
 
@@ -95,15 +95,12 @@ function get(
   if (!isString(data) && data !== undefined)
     return isFunction(data) ? data.bind(target) : data
 
-  if (data === undefined)
-    data = getProxyProperty(target, property)
-  else
-    data = decode({ data, target, property })
+  // storage.getItem(property) > target[property]
+  data = getProxyProperty(target, property)
 
   return pThen(data, (res: TargetObject | string | null) => {
     const returnData = checkDisposable({ data: res, target, property })
-    // return null -> undefined
-    return (isObject(returnData) ? returnData.value : returnData) || undefined
+    return isObject(returnData) ? returnData.value : target[property]
   })
 }
 
