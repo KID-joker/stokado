@@ -18,6 +18,7 @@ function selfEmit(
 
   emit(storage, actualKey, value, oldValue)
 }
+
 function selfCancel(target: object) {
   const { storage, storageProp } = proxyObjectMap.get(target)
   const options = getOptions(storage, storageProp)
@@ -26,7 +27,13 @@ function selfCancel(target: object) {
     cancelDisposable()
 }
 
-let lengthAltering = false
+function setStorageValue(target: object) {
+  const { storage, storageProp } = proxyObjectMap.get(target)
+  const encodeValue = encode({ data: target, target: storage, property: storageProp, options: getOptions(storage, storageProp) })
+  storage.setItem(storageProp, encodeValue)
+}
+
+let calling = false
 function createInstrumentations() {
   const instrumentations: Record<string, Function> = {};
 
@@ -34,13 +41,15 @@ function createInstrumentations() {
   (['push', 'pop', 'shift', 'unshift', 'splice'] as const).forEach((key) => {
     instrumentations[key] = function (target: Array<any>) {
       return function (...args: any[]) {
-        lengthAltering = true
+        calling = true
+
         const oldLength: number = target.length
         const res = target[key].apply(target, args)
-        if (target.length > oldLength)
+        setStorageValue(target)
+        if (target.length !== oldLength)
           selfEmit(target, 'length', target.length, oldLength)
 
-        lengthAltering = false
+        calling = false
         return res
       }
     }
@@ -52,25 +61,18 @@ function createInstrumentations() {
 const arrayInstrumentations: Record<string, Function> = createInstrumentations()
 function get(
   target: object,
-  property: string,
+  key: string,
   receiver: any,
 ) {
   selfCancel(target)
 
-  if (isArray(target) && hasOwn(arrayInstrumentations, property))
-    return arrayInstrumentations[property](target)
+  if (isArray(target) && hasOwn(arrayInstrumentations, key))
+    return arrayInstrumentations[key](target)
 
-  return Reflect.get(target, property, receiver)
+  return Reflect.get(target, key, receiver)
 }
 
-function setStorageValue(
-  target: object,
-) {
-  const { storage, storageProp } = proxyObjectMap.get(target)
-  const encodeValue = encode({ data: target, target: storage, property: storageProp, options: getOptions(storage, storageProp) })
-  storage.setItem(storageProp, encodeValue)
-}
-
+// Distinguish between array[0] = 0 and array.push(0)
 function set(
   target: Record<string, any>,
   key: string,
@@ -79,8 +81,7 @@ function set(
 ) {
   selfCancel(target)
 
-  const arrayLengthFlag = isArray(target) && !lengthAltering
-  const arrayLength: number | undefined = arrayLengthFlag ? target.length : undefined
+  const arrayLength: number | undefined = isArray(target) ? target.length : undefined
 
   const oldValue = target[key]
   const hadKey = (isArray(target) && isIntegerKey(key)) ? Number(key) < target.length : hasOwn(target, key)
@@ -93,7 +94,7 @@ function set(
       selfEmit(target, key, value, undefined)
 
     // track `array[3] = 3` length
-    if (arrayLength !== undefined && Number(key) >= arrayLength)
+    if (key !== 'length' && !calling && arrayLength !== undefined && target.length !== arrayLength)
       selfEmit(target, 'length', target.length, arrayLength)
 
     setStorageValue(target)
@@ -104,11 +105,11 @@ function set(
 
 function has(
   target: object,
-  property: string,
+  key: string,
 ): boolean {
   selfCancel(target)
 
-  return Reflect.has(target, property)
+  return Reflect.has(target, key)
 }
 
 function ownKeys(
