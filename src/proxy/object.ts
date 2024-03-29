@@ -72,7 +72,12 @@ function get(
   return Reflect.get(target, key, receiver)
 }
 
-// Distinguish between array[0] = 0 and array.push(0)
+/**
+ * array = [];
+ * array[0] = 0;
+ * array.push(1);
+ * array.length = 3;
+ */
 function set(
   target: Record<string, any>,
   key: string,
@@ -87,17 +92,22 @@ function set(
   const hadKey = (isArray(target) && isIntegerKey(key)) ? Number(key) < target.length : hasOwn(target, key)
 
   const result = Reflect.set(target, key, value, receiver)
-  if (result && hasChanged(value, oldValue)) {
-    if (hadKey)
-      selfEmit(target, key, value, oldValue)
-    else
-      selfEmit(target, key, value, undefined)
+  if (result) {
+    if (hasChanged(value, oldValue)) {
+      // track `array.length = 3` length
+      if (hadKey)
+        selfEmit(target, key, value, oldValue)
+      else
+        selfEmit(target, key, value, undefined)
+    }
 
-    // track `array[3] = 3` length
-    if (key !== 'length' && !calling && arrayLength !== undefined && target.length !== arrayLength)
-      selfEmit(target, 'length', target.length, arrayLength)
+    if (!calling) {
+      // track `array[0] = 0` length
+      if (key !== 'length' && arrayLength !== undefined && target.length !== arrayLength)
+        selfEmit(target, 'length', target.length, arrayLength)
 
-    setStorageValue(target)
+      setStorageValue(target)
+    }
   }
 
   return result
