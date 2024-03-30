@@ -6,18 +6,21 @@ test.describe('disposable', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = 'hello stokado'
       local.setDisposable('test')
     })
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.test
     })).toBe('hello stokado')
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.test
     })).toBeUndefined()
   })
@@ -26,23 +29,27 @@ test.describe('disposable', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = 'hello stokado'
       local.setDisposable('test')
     })
 
     await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = 'hello world'
     })
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.test
     })).toBe('hello world')
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.test
     })).toBeUndefined()
   })
@@ -51,7 +58,8 @@ test.describe('disposable', () => {
     await page.goto('/')
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = { hello: 'world' }
       local.setDisposable('test')
       local.test.hello = 'stokado'
@@ -60,24 +68,28 @@ test.describe('disposable', () => {
     })).toBe('stokado')
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       delete local.test.other
       return local.test.other
     })).toBeUndefined()
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.test.hello
     })).toBe('stokado')
 
     // `return local.test` will let playwright serialize the return value, and it will trigger the `get` trap
     await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test
     })
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.test
     })).toBeUndefined()
   })

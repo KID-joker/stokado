@@ -8,56 +8,64 @@ test.describe('serialized value', () => {
 
     // 1
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = 1
       return local.test
     })).toBe(1)
 
     // 0
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = 0
       return local.test
     })).toBe(0)
 
     // -1
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = -1
       return local.test
     })).toBe(-1)
 
     // 2.71
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = 2.71
       return local.test
     })).toBe(2.71)
 
     // NaN
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = NaN
       return local.test
     })).toBeNaN()
 
     // Infinity
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = Infinity
       return local.test
     })).toBe(Infinity)
 
     // -Infinity
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = -Infinity
       return local.test
     })).toBe(-Infinity)
 
     // new Number
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = new Number(3.14)
       return local.test
     })).toBe(3.14)
@@ -68,7 +76,8 @@ test.describe('serialized value', () => {
 
     // 1n
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = 1n
       return local.test
     })).toBe(1n)
@@ -79,21 +88,24 @@ test.describe('serialized value', () => {
 
     // true
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = true
       return local.test
     })).toBe(true)
 
     // false
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = false
       return local.test
     })).toBe(false)
 
     // new Boolean
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = new Boolean(false)
       return local.test
     })).toBe(false)
@@ -103,7 +115,8 @@ test.describe('serialized value', () => {
     await page.goto('/')
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = undefined
       return local.test
     })).toBeUndefined()
@@ -113,7 +126,8 @@ test.describe('serialized value', () => {
     await page.goto('/')
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = null
       return local.test
     })).toBeNull()
@@ -123,7 +137,8 @@ test.describe('serialized value', () => {
     await page.goto('/')
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       // JSON.stringify don't know how to serialize a BigInt
       local.test = {
         $string: 'hello stokado',
@@ -147,35 +162,40 @@ test.describe('serialized value', () => {
 
     // []
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = []
       return local.test
     })).toEqual([])
 
     // ['hello']
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test[0] = 'hello'
       return local.test
     })).toEqual(['hello'])
 
     // length
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test.length = 0
       return local.test
     })).toEqual([])
 
     // push
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test.push('hello', 'stokado')
       return local.test
     })).toEqual(['hello', 'stokado'])
 
     // pop
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.test.pop()
     })).toBe('stokado')
   })
@@ -184,7 +204,8 @@ test.describe('serialized value', () => {
     await page.goto('/')
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = new Date('2000-01-01T00:00:00.000Z')
       return local.test
     })).toEqual(new Date('2000-01-01T00:00:00.000Z'))
@@ -194,7 +215,8 @@ test.describe('serialized value', () => {
     await page.goto('/')
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = new URL('https://github.com/')
       return local.test
     })).toEqual(new URL('https://github.com/'))
@@ -205,14 +227,16 @@ test.describe('serialized value', () => {
 
     // new RegExp
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = new RegExp('ab+c')
       return local.test
     })).toEqual(new RegExp('ab+c'))
 
     // Literal
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = /ab+c/
       return local.test
     })).toEqual(/ab+c/)
@@ -224,7 +248,8 @@ test.describe('serialized value', () => {
     // Function declaration
     expect(decode({
       data: await page.evaluate(() => {
-        const { local } = window.stokado
+        const { createProxyStorage } = window.stokado
+        const local = createProxyStorage(localStorage)
         function foo() {
           return 'hello stokado!'
         }
@@ -236,7 +261,8 @@ test.describe('serialized value', () => {
     // Function expression
     expect(decode({
       data: await page.evaluate(() => {
-        const { local } = window.stokado
+        const { createProxyStorage } = window.stokado
+        const local = createProxyStorage(localStorage)
         local.test = function () {
           return 'hello stokado!'
         }
@@ -247,7 +273,8 @@ test.describe('serialized value', () => {
     // Arrow function
     expect(decode({
       data: await page.evaluate(() => {
-        const { local } = window.stokado
+        const { createProxyStorage } = window.stokado
+        const local = createProxyStorage(localStorage)
         local.test = () => {
           return 'hello stokado!'
         }
@@ -261,7 +288,8 @@ test.describe('serialized value', () => {
 
     expect(decode({
       data: await page.evaluate(() => {
-        const { local } = window.stokado
+        const { createProxyStorage } = window.stokado
+        const local = createProxyStorage(localStorage)
         local.test = new Set(['hello stokado'])
         return localStorage.test
       }),
@@ -273,7 +301,8 @@ test.describe('serialized value', () => {
 
     expect(decode({
       data: await page.evaluate(() => {
-        const { local } = window.stokado
+        const { createProxyStorage } = window.stokado
+        const local = createProxyStorage(localStorage)
         local.test = new Map([['hello', 'stokado'], ['foo', 'bar']])
         return localStorage.test
       }),

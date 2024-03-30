@@ -7,7 +7,8 @@ test.describe('equal object', () => {
     await page.goto('/')
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = {
         $string: 'hello stokado',
         $number: 0,
@@ -19,7 +20,8 @@ test.describe('equal object', () => {
     })).toBe(true)
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = []
       local.test[0] = 'hello'
       local.test.push('stokado')
@@ -27,25 +29,29 @@ test.describe('equal object', () => {
     })).toBe(true)
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = new Date()
       return local.test === local.test
     })).toBe(true)
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = new RegExp('ab+c')
       return local.test === local.test
     })).toBe(true)
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = new URL(location.href)
       return local.test === local.test
     })).toBe(true)
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       function foo() {
         return 'hello stokado!'
       }
@@ -54,13 +60,15 @@ test.describe('equal object', () => {
     })).toBe(true)
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = new Set(['hello stokado'])
       return local.test === local.test
     })).toBe(true)
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = new Map([['hello', 'stokado'], ['foo', 'bar']])
       return local.test === local.test
     })).toBe(true)
