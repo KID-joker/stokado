@@ -1,4 +1,4 @@
-import type { RawType, StorageLike, TargetObject } from '@/types'
+import type { RawType, StorageLike } from '@/types'
 
 export const isArray = Array.isArray
 export function isSet(val: unknown): val is Set<any> {
@@ -65,6 +65,14 @@ export function isStorage(storage: StorageLike) {
   }
 }
 
+export function isLocalStorage(storage: StorageLike) {
+  return storage === window.localStorage
+}
+
+export function isSessionStorage(storage: StorageLike) {
+  return storage === window.sessionStorage
+}
+
 export function getTypeString(value: unknown): string {
   return Object.prototype.toString.call(value)
 }
@@ -79,7 +87,7 @@ export function hasChanged(value: any, oldValue: any): boolean {
 
 export function transformJSON(
   data: string,
-): TargetObject | string {
+): object | string {
   try {
     return JSON.parse(data)
   }

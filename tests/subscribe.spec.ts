@@ -44,41 +44,40 @@ test.describe('subscribe', async () => {
       })
     })).toEqual({ newVal: 'bar', oldVal: undefined })
 
-    // // two page
-    // const page2 = await context.newPage()
-    // await page2.goto('/')
+    // two page
+    const page2 = await context.newPage()
+    await page2.goto('/')
 
-    // // clear
-    // page2.evaluate(() => {
-    //   const { createProxyStorage } = window.stokado
-    //   const local = createProxyStorage(localStorage)
-    //   local.clear()
-    // })
+    // clear
+    page2.evaluate(() => {
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
+      local.clear()
+    })
 
-    // setTimeout(() => {
-    //   page2.evaluate(() => {
-    //     const { createProxyStorage } = window.stokado
-    //     const local = createProxyStorage(localStorage)
-    //     local.test = {}
-    //   })
-    // })
+    setTimeout(() => {
+      page2.evaluate(() => {
+        const { createProxyStorage } = window.stokado
+        const local = createProxyStorage(localStorage)
+        local.test = {}
+      })
+    })
 
-    // // When localStorage is changed in different windows or tabs, the oldValue is null.
-    // expect(await page1.evaluate(() => {
-    //   const { createProxyStorage } = window.stokado
-    //   const local = createProxyStorage(localStorage)
-    //   return new Promise((resolve) => {
-    //     local.on('test', (newVal: any, oldVal: any) => {
-    //       resolve({
-    //         newVal,
-    //         oldVal,
-    //       })
-    //     })
-    //   })
-    // })).toEqual({
-    //   newVal: {},
-    //   oldVal: null,
-    // })
+    expect(await page1.evaluate(() => {
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
+      return new Promise((resolve) => {
+        local.on('test', (newVal: any, oldVal: any) => {
+          resolve({
+            newVal,
+            oldVal,
+          })
+        })
+      })
+    })).toEqual({
+      newVal: {},
+      oldVal: undefined,
+    })
   })
 
   test('on Array', async ({ context }) => {
@@ -105,33 +104,33 @@ test.describe('subscribe', async () => {
       oldVal: 2,
     })
 
-    // // another tab
-    // const page2 = await context.newPage()
-    // await page2.goto('/')
+    // another tab
+    const page2 = await context.newPage()
+    await page2.goto('/')
 
-    // setTimeout(() => {
-    //   page2.evaluate(() => {
-    //     const { createProxyStorage } = window.stokado
-    //     const local = createProxyStorage(localStorage)
-    //     local.test = []
-    //   })
-    // })
+    setTimeout(() => {
+      page2.evaluate(() => {
+        const { createProxyStorage } = window.stokado
+        const local = createProxyStorage(localStorage)
+        local.test = []
+      })
+    })
 
-    // expect(await page1.evaluate(() => {
-    //   const { createProxyStorage } = window.stokado
-    //   const local = createProxyStorage(localStorage)
-    //   return new Promise((resolve) => {
-    //     local.on('test.length', (newVal: any, oldVal: any) => {
-    //       resolve({
-    //         newVal,
-    //         oldVal,
-    //       })
-    //     })
-    //   })
-    // })).toEqual({
-    //   newVal: 0,
-    //   oldVal: 1,
-    // })
+    expect(await page1.evaluate(() => {
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
+      return new Promise((resolve) => {
+        local.on('test.length', (newVal: any, oldVal: any) => {
+          resolve({
+            newVal,
+            oldVal,
+          })
+        })
+      })
+    })).toEqual({
+      newVal: 0,
+      oldVal: 1,
+    })
   })
 
   test('once', async ({ page }) => {

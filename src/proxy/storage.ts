@@ -1,53 +1,55 @@
 import { getExpires, removeExpires, setExpires } from '@/extends/expires'
-import { clearProxyStorage, deleteProxyStorageProperty, getProxyStorageProperty, setProxyStorage } from '@/shared'
-import { hasOwn, isArray, isFunction, isObject, isStorage, isString, pThen } from '@/utils'
+import { clearProxyStorage, deleteProxyStorageProperty, getProxyStorageProperty, getRaw, setProxyStorage, storageNameMap } from '@/shared'
+import { hasOwn, isArray, isFunction, isLocalStorage, isObject, isStorage, isString, pThen } from '@/utils'
 import { emit, off, on, once } from '@/extends/watch'
-import type { StorageLike, StorageOptions, TargetObject } from '@/types'
+import type { StorageLike, StorageObject, StorageOptions } from '@/types'
 import { encode } from '@/proxy/transform'
 import { checkDisposable, setDisposable } from '@/extends/disposable'
 import { getOptions } from '@/extends/options'
+import { listenMessage } from '@/proxy/broadcast'
 
-function clear(target: Record<string, any>) {
+function clear(storage: Record<string, any>) {
   return function () {
-    clearProxyStorage(target)
+    clearProxyStorage(storage)
   }
 }
 
-function getItem(target: Record<string, any>) {
+function getItem(storage: Record<string, any>) {
   return function (key: string) {
-    const data = getProxyStorageProperty(target, key)
-    return pThen(data, (res: TargetObject | string | null) => {
-      const returnData = checkDisposable({ data: res, target, property: key })
+    const data = getProxyStorageProperty(storage, key)
+    return pThen(data, (res: StorageObject | string | null) => {
+      const returnData = checkDisposable({ data: res, storage, property: key })
       return isObject(returnData) ? returnData.value : returnData
     })
   }
 }
 
-function removeItem(target: Record<string, any>) {
+function removeItem(storage: Record<string, any>) {
   return function (key: string) {
-    deleteProxyStorageProperty(target, key)
+    deleteProxyStorageProperty(storage, key)
   }
 }
 
 function setItem(
-  target: Record<string, any>,
+  storage: Record<string, any>,
 ) {
   return function (property: string, value: any, options?: StorageOptions) {
-    const oldData = getProxyStorageProperty(target, property)
+    const oldData = getProxyStorageProperty(storage, property)
 
-    const encodeValue = encode({ data: value, target, property, options: Object.assign({}, getOptions(target, property), options) })
-    target.setItem(property, encodeValue)
-
-    pThen(oldData, (res: TargetObject | string | null) => {
+    return pThen(oldData, (res: StorageObject | string | null) => {
       const oldValue = isObject(res) ? res.value : (res || undefined)
+      const oldOptions = isObject(res) ? res.options : {}
 
-      emit(target, property, value, oldValue)
+      const encodeValue = encode({ data: value, storage, property, options: Object.assign({}, oldOptions, options) })
+      storage.setItem(property, encodeValue)
+
+      emit(storage, property, value, getRaw(oldValue), property)
 
       if (isArray(value) && isArray(oldValue))
-        emit(target, `${property}.length`, value.length, oldValue.length)
-    })
+        emit(storage, `${property}.length`, value.length, oldValue.length)
 
-    return true
+      return true
+    })
   }
 }
 
@@ -73,9 +75,9 @@ function createInstrumentations() {
     setExpires,
   }
   for (const methodName in extendMethods) {
-    methods[methodName] = function (target: Record<string, any>) {
+    methods[methodName] = function (storage: Record<string, any>) {
       return function (...args: any[]) {
-        return extendMethods[methodName](target, ...args)
+        return extendMethods[methodName](storage, ...args)
       }
     }
   }
@@ -84,50 +86,50 @@ function createInstrumentations() {
 }
 
 function get(
-  target: Record<string, any>,
+  storage: Record<string, any>,
   property: string,
 ) {
   if (hasOwn(instrumentations, property))
-    return instrumentations[property](target)
+    return instrumentations[property](storage)
 
-  let data = target[property]
+  let data = storage[property]
 
   if (!isString(data) && data !== undefined)
-    return isFunction(data) ? data.bind(target) : data
+    return isFunction(data) ? data.bind(storage) : data
 
-  // storage.getItem(property) > target[property]
-  data = getProxyStorageProperty(target, property)
+  // storage.getItem(property) > storage[property]
+  data = getProxyStorageProperty(storage, property)
 
-  return pThen(data, (res: TargetObject | string | null) => {
-    const returnData = checkDisposable({ data: res, target, property })
-    return isObject(returnData) ? returnData.value : target[property]
+  return pThen(data, (res: StorageObject | string | null) => {
+    const returnData = checkDisposable({ data: res, storage, property })
+    return isObject(returnData) ? returnData.value : storage[property]
   })
 }
 
 function set(
-  target: Record<string, any>,
+  storage: Record<string, any>,
   property: string,
   value: any,
 ) {
-  return setItem(target)(property, value)
+  return setItem(storage)(property, value)
 }
 
 function deleteProperty(
-  target: Record<string, any>,
+  storage: Record<string, any>,
   property: string,
 ) {
-  const oldData = getProxyStorageProperty(target, property)
-  deleteProxyStorageProperty(target, property)
+  const oldData = getProxyStorageProperty(storage, property)
+  deleteProxyStorageProperty(storage, property)
 
-  pThen(oldData, (res: TargetObject | string | null) => {
+  pThen(oldData, (res: StorageObject | string | null) => {
     const oldValue = isObject(res) ? res.value : (res || undefined)
-    emit(target, property, undefined, oldValue)
+    emit(storage, property, undefined, getRaw(oldValue), property)
   })
 
   return true
 }
 
-export function createProxyStorage(storage: StorageLike) {
+export function createProxyStorage(storage: StorageLike, name?: string) {
   if (!isStorage(storage))
     throw new Error('The parameter should be StorageLike object')
 
@@ -138,6 +140,11 @@ export function createProxyStorage(storage: StorageLike) {
   })
 
   setProxyStorage(storage, {})
+
+  if (name || isLocalStorage(storage)) {
+    storageNameMap.set(storage, name || 'localStorage')
+    listenMessage(storage)
+  }
 
   return proxy
 }

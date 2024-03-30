@@ -1,11 +1,12 @@
+import { postMessage } from '@/proxy/broadcast'
 import type { Effect, EffectFn, EffectMap } from '@/types'
 import { hasChanged } from '@/utils'
 
-const targetEffectMap = new WeakMap<Object, EffectMap>()
+const storageEffectMap = new WeakMap<Object, EffectMap>()
 
 export function on(
   this: any,
-  target: object,
+  storage: object,
   key: string,
   fn: EffectFn,
 ) {
@@ -14,9 +15,9 @@ export function on(
     fn,
   }
 
-  let effectMap = targetEffectMap.get(target)
+  let effectMap = storageEffectMap.get(storage)
   if (!effectMap)
-    targetEffectMap.set(target, (effectMap = new Map()))
+    storageEffectMap.set(storage, (effectMap = new Map()))
 
   const effects: Effect[] | undefined = effectMap.get(key)
   if (effects)
@@ -27,30 +28,30 @@ export function on(
 
 export function once(
   this: any,
-  target: object,
+  storage: object,
   key: string,
   fn: EffectFn,
 ) {
   const wrapped = (value: any, oldValue: any) => {
-    off(target, key, wrapped)
+    off(storage, key, wrapped)
     fn.call(this, value, oldValue)
   }
   // in order to filter
   wrapped.fn = fn
-  on(target, key, wrapped)
+  on(storage, key, wrapped)
 }
 
 export function off(
-  target: object,
+  storage: object,
   key?: string,
   fn?: EffectFn,
 ) {
   if (key === undefined) {
-    targetEffectMap.set(target, new Map())
+    storageEffectMap.set(storage, new Map())
     return
   }
 
-  const effectMap: EffectMap | undefined = targetEffectMap.get(target)
+  const effectMap: EffectMap | undefined = storageEffectMap.get(storage)
   if (effectMap) {
     const effects: Effect[] | undefined = effectMap.get(key)
     if (effects && effects.length > 0) {
@@ -62,15 +63,26 @@ export function off(
 }
 
 export function emit(
-  target: object,
+  storage: object,
   key: string,
   value: any,
   oldValue: any,
+  property?: string,
 ) {
   if (!hasChanged(value, oldValue))
     return
 
-  const effectMap: EffectMap | undefined = targetEffectMap.get(target)
+  trigger(storage, key, value, oldValue)
+  postMessage(storage, key, value, oldValue, property)
+}
+
+export function trigger(
+  storage: object,
+  key: string,
+  value: any,
+  oldValue: any,
+) {
+  const effectMap: EffectMap | undefined = storageEffectMap.get(storage)
   if (effectMap) {
     const effects: Effect[] | undefined = effectMap.get(key)
     if (effects)

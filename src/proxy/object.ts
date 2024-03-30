@@ -3,8 +3,9 @@ import { hasChanged, hasOwn, isArray, isIntegerKey } from '@/utils'
 import { emit } from '@/extends/watch'
 import { cancelDisposable } from '@/extends/disposable'
 import { getOptions } from '@/extends/options'
+import { proxyObjectMap } from '@/shared'
 
-const proxyObjectMap = new WeakMap()
+const targetStorageMap = new WeakMap()
 
 function selfEmit(
   target: object,
@@ -12,15 +13,15 @@ function selfEmit(
   value: any,
   oldValue: any,
 ) {
-  const { storage, storageProp } = proxyObjectMap.get(target)
+  const { storage, storageProp } = targetStorageMap.get(target)
   const isIntKey = isArray(target) && isIntegerKey(key)
   const actualKey = isIntKey ? `${storageProp}[${key}]` : `${storageProp}.${key}`
 
-  emit(storage, actualKey, value, oldValue)
+  emit(storage, actualKey, value, oldValue, key !== 'length' ? storageProp : '')
 }
 
 function selfCancel(target: object) {
-  const { storage, storageProp } = proxyObjectMap.get(target)
+  const { storage, storageProp } = targetStorageMap.get(target)
   const options = getOptions(storage, storageProp)
   // cancel disposable promise
   if (options.disposable)
@@ -28,8 +29,8 @@ function selfCancel(target: object) {
 }
 
 function setStorageValue(target: object) {
-  const { storage, storageProp } = proxyObjectMap.get(target)
-  const encodeValue = encode({ data: target, target: storage, property: storageProp, options: getOptions(storage, storageProp) })
+  const { storage, storageProp } = targetStorageMap.get(target)
+  const encodeValue = encode({ data: target, storage, property: storageProp, options: getOptions(storage, storageProp) })
   storage.setItem(storageProp, encodeValue)
 }
 
@@ -149,9 +150,12 @@ function deleteProperty(
 
 export function createProxyObject(
   target: object,
-  storage: Record<string, any>,
-  property: string,
+  storage?: Record<string, any>,
+  property?: string,
 ) {
+  if (!storage && !property)
+    return target
+
   const proxy = new Proxy(target, {
     get,
     set,
@@ -160,7 +164,8 @@ export function createProxyObject(
     deleteProperty,
   })
 
-  proxyObjectMap.set(target, {
+  proxyObjectMap.set(proxy, target)
+  targetStorageMap.set(target, {
     storage,
     storageProp: property,
   })
