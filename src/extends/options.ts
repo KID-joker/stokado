@@ -1,14 +1,14 @@
 import { getProxyStorageProperty } from '@/shared'
-import type { TargetObject } from '@/types'
+import type { StorageObject } from '@/types'
 import { isObject, pThen } from '@/utils'
 
 export function getOptions(
-  target: Record<string, any>,
+  storage: Record<string, any>,
   property: string,
 ) {
-  const data = getProxyStorageProperty(target, property)
+  const data = getProxyStorageProperty(storage, property)
 
-  return pThen(data, (res: TargetObject | string | null) => {
+  return pThen(data, (res: StorageObject | string | null) => {
     if (isObject(res) && res.options)
       return res.options
 

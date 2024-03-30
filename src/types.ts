@@ -26,7 +26,7 @@ export interface Effect {
   fn: EffectFn
 }
 
-export interface TargetObject {
+export interface StorageObject {
   type: string
   value: any
   options?: StorageOptions
