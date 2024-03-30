@@ -52,11 +52,13 @@ export function isStorage(storage: StorageLike) {
   try {
     const test = '__isStorage'
     storage.setItem(test, true)
-    if (storage.getItem(test) !== 'true')
-      return false
+    return pThen(storage.getItem(test), (res: string | null) => {
+      if (res !== 'true')
+        return false
 
-    storage.removeItem(test)
-    return true
+      storage.removeItem(test)
+      return true
+    })
   }
   catch (e) {
     return false
