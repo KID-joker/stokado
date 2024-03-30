@@ -1,6 +1,6 @@
 import { getOptions } from './options'
 import { encode } from '@/proxy/transform'
-import { deleteProxyProperty, getProxyProperty } from '@/shared'
+import { deleteProxyStorageProperty, getProxyStorageProperty } from '@/shared'
 import type { ExpiresType, TargetObject } from '@/types'
 import { formatTime, isObject, pThen } from '@/utils'
 
@@ -12,11 +12,11 @@ export function setExpires(
   const time = formatTime(expires)
 
   if (time <= Date.now()) {
-    deleteProxyProperty(target, property)
+    deleteProxyStorageProperty(target, property)
     return undefined
   }
 
-  const data = getProxyProperty(target, property)
+  const data = getProxyStorageProperty(target, property)
 
   pThen(data, (res: TargetObject | string | null) => {
     if (isObject(res)) {
@@ -43,7 +43,7 @@ export function removeExpires(
   target: Record<string, any>,
   property: string,
 ) {
-  const data = getProxyProperty(target, property)
+  const data = getProxyStorageProperty(target, property)
 
   pThen(data, (res: TargetObject | string | null) => {
     if (isObject(res) && res.options) {
@@ -69,7 +69,7 @@ export function checkExpired({
   const { expires } = data.options
 
   if (expires && new Date(+expires).getTime() <= Date.now()) {
-    deleteProxyProperty(target, property)
+    deleteProxyStorageProperty(target, property)
     data.value = undefined
   }
 

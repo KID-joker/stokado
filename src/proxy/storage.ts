@@ -1,5 +1,5 @@
 import { getExpires, removeExpires, setExpires } from '@/extends/expires'
-import { clearProxy, deleteProxyProperty, getProxyProperty, setProxy } from '@/shared'
+import { clearProxyStorage, deleteProxyStorageProperty, getProxyStorageProperty, setProxyStorage } from '@/shared'
 import { hasOwn, isArray, isFunction, isObject, isStorage, isString, pThen } from '@/utils'
 import { emit, off, on, once } from '@/extends/watch'
 import type { StorageLike, StorageOptions, TargetObject } from '@/types'
@@ -9,13 +9,13 @@ import { getOptions } from '@/extends/options'
 
 function clear(target: Record<string, any>) {
   return function () {
-    clearProxy(target)
+    clearProxyStorage(target)
   }
 }
 
 function getItem(target: Record<string, any>) {
   return function (key: string) {
-    const data = getProxyProperty(target, key)
+    const data = getProxyStorageProperty(target, key)
     return pThen(data, (res: TargetObject | string | null) => {
       const returnData = checkDisposable({ data: res, target, property: key })
       return isObject(returnData) ? returnData.value : returnData
@@ -25,7 +25,7 @@ function getItem(target: Record<string, any>) {
 
 function removeItem(target: Record<string, any>) {
   return function (key: string) {
-    deleteProxyProperty(target, key)
+    deleteProxyStorageProperty(target, key)
   }
 }
 
@@ -33,7 +33,7 @@ function setItem(
   target: Record<string, any>,
 ) {
   return function (property: string, value: any, options?: StorageOptions) {
-    const oldData = getProxyProperty(target, property)
+    const oldData = getProxyStorageProperty(target, property)
 
     const encodeValue = encode({ data: value, target, property, options: Object.assign({}, getOptions(target, property), options) })
     target.setItem(property, encodeValue)
@@ -96,7 +96,7 @@ function get(
     return isFunction(data) ? data.bind(target) : data
 
   // storage.getItem(property) > target[property]
-  data = getProxyProperty(target, property)
+  data = getProxyStorageProperty(target, property)
 
   return pThen(data, (res: TargetObject | string | null) => {
     const returnData = checkDisposable({ data: res, target, property })
@@ -116,8 +116,8 @@ function deleteProperty(
   target: Record<string, any>,
   property: string,
 ) {
-  const oldData = getProxyProperty(target, property)
-  deleteProxyProperty(target, property)
+  const oldData = getProxyStorageProperty(target, property)
+  deleteProxyStorageProperty(target, property)
 
   pThen(oldData, (res: TargetObject | string | null) => {
     const oldValue = isObject(res) ? res.value : (res || undefined)
@@ -137,7 +137,7 @@ export function createProxyStorage(storage: StorageLike) {
     deleteProperty,
   })
 
-  setProxy(storage, {})
+  setProxyStorage(storage, {})
 
   return proxy
 }

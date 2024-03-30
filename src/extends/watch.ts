@@ -1,7 +1,7 @@
 import type { Effect, EffectFn, EffectMap } from '@/types'
 import { hasChanged } from '@/utils'
 
-const targetMap = new WeakMap<Object, EffectMap>()
+const targetEffectMap = new WeakMap<Object, EffectMap>()
 
 export function on(
   this: any,
@@ -14,9 +14,9 @@ export function on(
     fn,
   }
 
-  let effectMap = targetMap.get(target)
+  let effectMap = targetEffectMap.get(target)
   if (!effectMap)
-    targetMap.set(target, (effectMap = new Map()))
+    targetEffectMap.set(target, (effectMap = new Map()))
 
   const effects: Effect[] | undefined = effectMap.get(key)
   if (effects)
@@ -46,11 +46,11 @@ export function off(
   fn?: EffectFn,
 ) {
   if (key === undefined) {
-    targetMap.set(target, new Map())
+    targetEffectMap.set(target, new Map())
     return
   }
 
-  const effectMap: EffectMap | undefined = targetMap.get(target)
+  const effectMap: EffectMap | undefined = targetEffectMap.get(target)
   if (effectMap) {
     const effects: Effect[] | undefined = effectMap.get(key)
     if (effects && effects.length > 0) {
@@ -70,7 +70,7 @@ export function emit(
   if (!hasChanged(value, oldValue))
     return
 
-  const effectMap: EffectMap | undefined = targetMap.get(target)
+  const effectMap: EffectMap | undefined = targetEffectMap.get(target)
   if (effectMap) {
     const effects: Effect[] | undefined = effectMap.get(key)
     if (effects)

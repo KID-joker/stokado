@@ -1,5 +1,5 @@
 import { encode } from '@/proxy/transform'
-import { deleteProxyProperty, getProxyProperty } from '@/shared'
+import { deleteProxyStorageProperty, getProxyStorageProperty } from '@/shared'
 import type { TargetObject } from '@/types'
 import { isObject, pThen } from '@/utils'
 
@@ -9,7 +9,7 @@ export function setDisposable(
   target: Record<string, any>,
   property: string,
 ) {
-  const data = getProxyProperty(target, property)
+  const data = getProxyStorageProperty(target, property)
 
   pThen(data, (res: TargetObject | string | null) => {
     if (isObject(res)) {
@@ -36,7 +36,7 @@ export function checkDisposable({
 
   if (disposable) {
     cancelId = window.setTimeout(() => {
-      deleteProxyProperty(target, property)
+      deleteProxyStorageProperty(target, property)
     }, 0)
   }
 

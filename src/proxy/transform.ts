@@ -1,7 +1,7 @@
 import type { RawType, StorageOptions, TargetObject } from '@/types'
 import { getRawType, isObject, isString, transformEval, transformJSON } from '@/utils'
 import { createProxyObject } from '@/proxy/object'
-import { setProxyProperty } from '@/shared'
+import { setProxyStorageProperty } from '@/shared'
 
 interface Serializer<T> {
   read(raw: string | object, storage?: Record<string, any>, property?: string): T
@@ -89,7 +89,7 @@ export function decode({
   nativeData.value = ['Object', 'Array'].includes(nativeData.type) ? serializer.read(nativeData.value, target, property) : serializer.read(nativeData.value)
 
   if (target && property)
-    setProxyProperty(target, property, nativeData)
+    setProxyStorageProperty(target, property, nativeData)
 
   return nativeData
 }
@@ -118,7 +118,7 @@ export function encode({
   }
 
   if (target && property) {
-    setProxyProperty(target, property, {
+    setProxyStorageProperty(target, property, {
       type: rawType,
       value: ['Object', 'Array'].includes(rawType) ? serializer.read(targetObject.value, target, property) : serializer.read(targetObject.value),
       options,
