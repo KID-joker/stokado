@@ -17,10 +17,10 @@ export function clearProxyStorage(storage: Record<string, any>): void {
 
 export function getProxyStorageProperty(storage: Record<string, any>, property: string): StorageObject | string | null {
   const proxyStorage = proxyStorageMap.get(storage)
-  const data = proxyStorage![property] || pThen(storage.getItem(property), (res: string | null) => {
+  const data = proxyStorage![property] || pThen(() => storage.getItem(property), (res: string | null) => {
     return decode({ data: res, storage, property })
   })
-  return pThen(data, (res: StorageObject | string | null) => {
+  return pThen(() => data, (res: StorageObject | string | null) => {
     return checkExpired({ data: res, storage, property })
   })
 }

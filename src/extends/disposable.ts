@@ -9,9 +9,7 @@ export function setDisposable(
   storage: Record<string, any>,
   property: string,
 ) {
-  const data = getProxyStorageProperty(storage, property)
-
-  pThen(data, (res: StorageObject | string | null) => {
+  pThen(() => getProxyStorageProperty(storage, property), (res: StorageObject | string | null) => {
     if (isObject(res)) {
       const options = Object.assign({}, res?.options, { disposable: true })
       const encodeValue = encode({ data: res.value, storage, property, options })

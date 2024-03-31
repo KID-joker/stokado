@@ -1,7 +1,7 @@
 import { getOptions } from './options'
 import { encode } from '@/proxy/transform'
 import { deleteProxyStorageProperty, getProxyStorageProperty } from '@/shared'
-import type { ExpiresType, StorageObject } from '@/types'
+import type { ExpiresType, StorageObject, StorageOptions } from '@/types'
 import { formatTime, isObject, pThen } from '@/utils'
 
 export function setExpires(
@@ -16,9 +16,7 @@ export function setExpires(
     return undefined
   }
 
-  const data = getProxyStorageProperty(storage, property)
-
-  pThen(data, (res: StorageObject | string | null) => {
+  pThen(() => getProxyStorageProperty(storage, property), (res: StorageObject | string | null) => {
     if (isObject(res)) {
       const options = Object.assign({}, res?.options, { expires: time })
       const encodeValue = encode({ data: res.value, storage, property, options })
@@ -31,21 +29,19 @@ export function getExpires(
   storage: Record<string, any>,
   property: string,
 ) {
-  const options = getOptions(storage, property)
+  return pThen(() => getOptions(storage, property), (res: StorageOptions) => {
+    if (!res?.expires || +res.expires <= Date.now())
+      return undefined
 
-  if (!options?.expires || +options.expires <= Date.now())
-    return undefined
-
-  return new Date(+options.expires)
+    return new Date(+res.expires)
+  })
 }
 
 export function removeExpires(
   storage: Record<string, any>,
   property: string,
 ) {
-  const data = getProxyStorageProperty(storage, property)
-
-  pThen(data, (res: StorageObject | string | null) => {
+  pThen(() => getProxyStorageProperty(storage, property), (res: StorageObject | string | null) => {
     if (isObject(res) && res.options) {
       delete res.options.expires
       const encodeValue = encode({ data: res.value, storage, property, options: res.options })

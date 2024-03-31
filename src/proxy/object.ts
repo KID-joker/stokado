@@ -39,7 +39,7 @@ function createInstrumentations() {
   const instrumentations: Record<string, Function> = {};
 
   // instrument length-altering mutation methods to track length
-  (['push', 'pop', 'shift', 'unshift', 'splice'] as const).forEach((key) => {
+  (['push', 'pop', 'shift', 'unshift', 'splice'] as const).forEach((key: any) => {
     instrumentations[key] = function (target: Array<any>) {
       return function (...args: any[]) {
         calling = true

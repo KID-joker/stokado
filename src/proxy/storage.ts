@@ -16,8 +16,7 @@ function clear(storage: Record<string, any>) {
 
 function getItem(storage: Record<string, any>) {
   return function (key: string) {
-    const data = getProxyStorageProperty(storage, key)
-    return pThen(data, (res: StorageObject | string | null) => {
+    return pThen(() => getProxyStorageProperty(storage, key), (res: StorageObject | string | null) => {
       const returnData = checkDisposable({ data: res, storage, property: key })
       return isObject(returnData) ? returnData.value : returnData
     })
@@ -34,9 +33,7 @@ function setItem(
   storage: Record<string, any>,
 ) {
   return function (property: string, value: any, options?: StorageOptions) {
-    const oldData = getProxyStorageProperty(storage, property)
-
-    return pThen(oldData, (res: StorageObject | string | null) => {
+    return pThen(() => getProxyStorageProperty(storage, property), (res: StorageObject | string | null) => {
       const oldValue = isObject(res) ? res.value : (res || undefined)
       const oldOptions = isObject(res) ? res.options : {}
 
@@ -92,17 +89,15 @@ function get(
   if (hasOwn(instrumentations, property))
     return instrumentations[property](storage)
 
-  let data = storage[property]
+  const data = storage[property]
 
   if (!isString(data) && data !== undefined)
     return isFunction(data) ? data.bind(storage) : data
 
-  // storage.getItem(property) > storage[property]
-  data = getProxyStorageProperty(storage, property)
-
-  return pThen(data, (res: StorageObject | string | null) => {
+  // priority: storage.getItem(property) > storage[property]
+  return pThen(() => getProxyStorageProperty(storage, property), (res: StorageObject | string | null) => {
     const returnData = checkDisposable({ data: res, storage, property })
-    return isObject(returnData) ? returnData.value : storage[property]
+    return isObject(returnData) ? returnData.value : data
   })
 }
 
@@ -118,10 +113,9 @@ function deleteProperty(
   storage: Record<string, any>,
   property: string,
 ) {
-  const oldData = getProxyStorageProperty(storage, property)
-  deleteProxyStorageProperty(storage, property)
+  pThen(() => getProxyStorageProperty(storage, property), (res: StorageObject | string | null) => {
+    deleteProxyStorageProperty(storage, property)
 
-  pThen(oldData, (res: StorageObject | string | null) => {
     const oldValue = isObject(res) ? res.value : (res || undefined)
     emit(storage, property, undefined, getRaw(oldValue), property)
   })

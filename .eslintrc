@@ -5,6 +5,7 @@
     "no-invalid-this": "off",
     "no-new-wrappers": "off",
     "prefer-regex-literals": "off",
-    "prefer-spread": "off"
+    "prefer-spread": "off",
+    "no-async-promise-executor": "off"
   }
 }

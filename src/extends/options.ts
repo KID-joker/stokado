@@ -6,9 +6,7 @@ export function getOptions(
   storage: Record<string, any>,
   property: string,
 ) {
-  const data = getProxyStorageProperty(storage, property)
-
-  return pThen(data, (res: StorageObject | string | null) => {
+  return pThen(() => getProxyStorageProperty(storage, property), (res: StorageObject | string | null) => {
     if (isObject(res) && res.options)
       return res.options
 

@@ -48,21 +48,8 @@ export function isIntegerKey(key: unknown) {
   && `${parseInt(key, 10)}` === key
 }
 
-export function isStorage(storage: StorageLike) {
-  try {
-    const test = '__isStorage'
-    storage.setItem(test, true)
-    return pThen(storage.getItem(test), (res: string | null) => {
-      if (res !== 'true')
-        return false
-
-      storage.removeItem(test)
-      return true
-    })
-  }
-  catch (e) {
-    return false
-  }
+export async function isStorage(storage: StorageLike) {
+  return ['clear', 'getItem', 'key', 'setItem', 'removeItem'].every(method => isFunction(storage[method]))
 }
 
 export function isLocalStorage(storage: StorageLike) {
@@ -125,11 +112,15 @@ export function formatTime(time: any) {
   return time
 }
 
-export function pThen(maybePromise: any, callback: Function) {
+let prevPromise = Promise.resolve()
+export function pThen(getter: Function, callback: Function) {
+  const maybePromise = getter()
   if (isPromise(maybePromise)) {
-    return maybePromise.then((res) => {
+    prevPromise = prevPromise.then(() => getter()).then((res) => {
+      prevPromise = Promise.resolve()
       return callback(res)
     })
+    return prevPromise
   }
   else {
     return callback(maybePromise)

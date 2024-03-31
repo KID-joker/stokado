@@ -33,7 +33,7 @@ export function listenMessage(storage: StorageLike) {
 
     // update proxyStorage
     if (property) {
-      pThen(storage.getItem(property), (res: string | null) => {
+      pThen(() => storage.getItem(property), (res: string | null) => {
         return decode({ data: res, storage, property })
       })
     }
