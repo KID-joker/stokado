@@ -7,6 +7,7 @@ import esbuild from 'rollup-plugin-esbuild'
 import dts from 'rollup-plugin-dts'
 import serve from 'rollup-plugin-serve'
 import { nodeResolve } from '@rollup/plugin-node-resolve'
+import template from './playground/template.js'
 
 const pkg = JSON.parse(readFileSync('./package.json', { encoding: 'utf8' }))
 
@@ -56,8 +57,12 @@ if (process.env.BUILD === 'prod') {
   })
 }
 
-if (process.env.BUILD !== 'prod')
-  plugins.push(html())
+if (process.env.BUILD !== 'prod') {
+  plugins.push(html({
+    title: pkgName,
+    template,
+  }))
+}
 
 if (process.env.BUILD === 'dev')
   plugins.push(serve('playground'))
