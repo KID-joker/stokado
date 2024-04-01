@@ -6,18 +6,22 @@ test.describe('storage', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { local, session } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
+      const session = createProxyStorage(sessionStorage)
       local.test = 'hello local'
       session.test = 'hello session'
     })
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.test
     })).toBe('hello local')
 
     expect(await page.evaluate(() => {
-      const { session } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const session = createProxyStorage(sessionStorage)
       return session.test
     })).toBe('hello session')
   })
@@ -26,18 +30,22 @@ test.describe('storage', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { local, session } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const session = createProxyStorage(sessionStorage)
+      const local = createProxyStorage(localStorage)
       session.test = 'hello session'
       local.test = 'hello local'
     })
 
     expect(await page.evaluate(() => {
-      const { session } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const session = createProxyStorage(sessionStorage)
       return session.test
     })).toBe('hello session')
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.test
     })).toBe('hello local')
   })
@@ -46,24 +54,29 @@ test.describe('storage', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { local, session } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
+      const session = createProxyStorage(sessionStorage)
       local.test = 'hello local'
       local.setDisposable('test')
       session.test = 'hello session'
     })
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.test
     })).toBe('hello local')
 
     expect(await page.evaluate(() => {
-      const { session } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const session = createProxyStorage(sessionStorage)
       return session.test
     })).toBe('hello session')
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.test
     })).toBeUndefined()
   })
@@ -72,12 +85,14 @@ test.describe('storage', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = 'hello local'
     })
 
     expect(await page.evaluate(() => {
-      const { session } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const session = createProxyStorage(sessionStorage)
       return session.test
     })).toBeUndefined()
   })
@@ -86,12 +101,14 @@ test.describe('storage', () => {
     await page.goto('/')
 
     await page.evaluate(() => {
-      const { session } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const session = createProxyStorage(sessionStorage)
       session.test = 'hello local'
     })
 
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.test
     })).toBeUndefined()
   })

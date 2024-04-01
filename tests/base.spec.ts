@@ -7,12 +7,13 @@ test.describe('basic usage', () => {
     await page.goto('/')
 
     const proxyStorage = await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = 'hello stokado'
       return localStorage.test
     })
     expect(proxyStorage).toBe(encode({ data: 'hello stokado', options: {} }))
-    expect(decode({ data: proxyStorage })).toBe('hello stokado')
+    expect(decode({ data: proxyStorage }).value).toBe('hello stokado')
   })
 
   test('set, read and delete', async ({ page }) => {
@@ -20,19 +21,22 @@ test.describe('basic usage', () => {
 
     // set
     await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = 'hello stokado'
     })
 
     // read
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.test
     })).toBe('hello stokado')
 
     // delete
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       delete local.test
       return local.test
     })).toBeUndefined()
@@ -43,7 +47,8 @@ test.describe('basic usage', () => {
 
     // key() setItem()
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = 'hello localStorage'
       local.setItem('test', 'hello stokado')
       local.setItem('foo', 'bar')
@@ -52,26 +57,30 @@ test.describe('basic usage', () => {
 
     // getItem()
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.getItem('test')
     })).toBe('hello stokado')
 
     // length
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.length
     })).toBe(2)
 
     // removeItem()
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.removeItem('test')
       return local.test
     })).toBeUndefined()
 
     // clear()
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.clear()
       return local.length
     })).toEqual(0)

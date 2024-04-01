@@ -1,35 +1,58 @@
-import { activeEffect, shouldTrackInst } from '@/shared'
+import { encode } from './transform'
 import { hasChanged, hasOwn, isArray, isIntegerKey } from '@/utils'
 import { emit } from '@/extends/watch'
+import { cancelDisposable } from '@/extends/disposable'
+import { getOptions } from '@/extends/options'
+import { proxyObjectMap } from '@/shared'
 
-const proxyObjectMap = new WeakMap()
+const targetStorageMap = new WeakMap()
 
 function selfEmit(
-  obj: object,
+  target: object,
   key: string,
-  ...args: any[]
+  value: any,
+  oldValue: any,
 ) {
-  const isIntKey = isArray(obj) && isIntegerKey(key)
-  const actualKey = isIntKey ? `${activeEffect.key}[${key}]` : `${activeEffect.key}.${key}`
+  const { storage, storageProp } = targetStorageMap.get(target)
+  const isIntKey = isArray(target) && isIntegerKey(key)
+  const actualKey = isIntKey ? `${storageProp}[${key}]` : `${storageProp}.${key}`
 
-  emit(activeEffect.storage, actualKey, ...args)
+  emit(storage, actualKey, value, oldValue, key !== 'length' ? storageProp : '')
 }
 
-let lengthAltering = false
+function selfCancel(target: object) {
+  const { storage, storageProp } = targetStorageMap.get(target)
+  const options = getOptions(storage, storageProp)
+  // cancel disposable promise
+  if (options.disposable)
+    cancelDisposable()
+}
+
+function setStorageValue(target: object) {
+  const { storage, storageProp } = targetStorageMap.get(target)
+  const encodeValue = encode({ data: target, storage, property: storageProp, options: getOptions(storage, storageProp) })
+  storage.setItem(storageProp, encodeValue)
+}
+
+let calling = false
 function createInstrumentations() {
   const instrumentations: Record<string, Function> = {};
 
   // instrument length-altering mutation methods to track length
-  (['push', 'pop', 'shift', 'unshift', 'splice'] as const).forEach((key) => {
-    instrumentations[key] = function (this: unknown[], ...args: unknown[]) {
-      lengthAltering = true
-      const oldLength: number = this.length
-      const res = (proxyObjectMap.get(this) as any)[key].apply(this, args)
-      if (this.length > oldLength)
-        selfEmit(this, 'length', this.length, oldLength)
+  (['push', 'pop', 'shift', 'unshift', 'splice'] as const).forEach((key: any) => {
+    instrumentations[key] = function (target: Array<any>) {
+      return function (...args: any[]) {
+        calling = true
 
-      lengthAltering = false
-      return res
+        const oldLength: number = target.length
+        const res = target[key].apply(target, args)
+        setStorageValue(target)
+        if (target.length !== oldLength)
+          selfEmit(target, 'length', target.length, oldLength)
+
+        calling = false
+        return res
+      }
     }
   })
 
@@ -39,51 +62,53 @@ function createInstrumentations() {
 const arrayInstrumentations: Record<string, Function> = createInstrumentations()
 function get(
   target: object,
-  property: string,
+  key: string,
   receiver: any,
 ) {
-  // target has been removed, so reset
-  if (activeEffect.options.disposable)
-    setStorageValue(target)
+  selfCancel(target)
 
-  if (isArray(target) && hasOwn(arrayInstrumentations, property))
-    return Reflect.get(arrayInstrumentations, property, receiver)
+  if (isArray(target) && hasOwn(arrayInstrumentations, key))
+    return arrayInstrumentations[key](target)
 
-  return Reflect.get(target, property, receiver)
+  return Reflect.get(target, key, receiver)
 }
 
-function setStorageValue(
-  value: object,
-) {
-  shouldTrackInst.pauseTracking()
-  activeEffect.proxy.setItem(activeEffect.key, value, activeEffect.options)
-  shouldTrackInst.enableTracking()
-}
-
+/**
+ * array = [];
+ * array[0] = 0;
+ * array.push(1);
+ * array.length = 3;
+ */
 function set(
   target: Record<string, any>,
   key: string,
-  value: unknown,
+  value: any,
   receiver: object,
 ) {
-  const arrayLengthFlag = isArray(target) && !lengthAltering
-  const arrayLength: number | undefined = arrayLengthFlag ? target.length : undefined
+  selfCancel(target)
+
+  const arrayLength: number | undefined = isArray(target) ? target.length : undefined
 
   const oldValue = target[key]
   const hadKey = (isArray(target) && isIntegerKey(key)) ? Number(key) < target.length : hasOwn(target, key)
 
   const result = Reflect.set(target, key, value, receiver)
-  if (result && hasChanged(value, oldValue)) {
-    if (hadKey)
-      selfEmit(target, key, value, oldValue)
-    else
-      selfEmit(target, key, value, undefined)
+  if (result) {
+    if (hasChanged(value, oldValue)) {
+      // track `array.length = 3` length
+      if (hadKey)
+        selfEmit(target, key, value, oldValue)
+      else
+        selfEmit(target, key, value, undefined)
+    }
 
-    // track `array[3] = 3` length
-    if (arrayLength !== undefined && Number(key) >= arrayLength)
-      selfEmit(target, 'length', target.length, arrayLength)
+    if (!calling) {
+      // track `array[0] = 0` length
+      if (key !== 'length' && arrayLength !== undefined && target.length !== arrayLength)
+        selfEmit(target, 'length', target.length, arrayLength)
 
-    setStorageValue(target)
+      setStorageValue(target)
+    }
   }
 
   return result
@@ -91,19 +116,17 @@ function set(
 
 function has(
   target: object,
-  property: string,
+  key: string,
 ): boolean {
-  if (activeEffect.options.disposable)
-    setStorageValue(target)
+  selfCancel(target)
 
-  return Reflect.has(target, property)
+  return Reflect.has(target, key)
 }
 
 function ownKeys(
   target: object,
 ): (string | symbol)[] {
-  if (activeEffect.options.disposable)
-    setStorageValue(target)
+  selfCancel(target)
 
   return Reflect.ownKeys(target)
 }
@@ -112,6 +135,8 @@ function deleteProperty(
   target: Record<string, any>,
   key: string,
 ) {
+  selfCancel(target)
+
   const hadKey = hasOwn(target, key)
   const oldValue = target[key]
   const result = Reflect.deleteProperty(target, key)
@@ -125,7 +150,12 @@ function deleteProperty(
 
 export function createProxyObject(
   target: object,
+  storage?: Record<string, any>,
+  property?: string,
 ) {
+  if (!storage && !property)
+    return target
+
   const proxy = new Proxy(target, {
     get,
     set,
@@ -135,6 +165,10 @@ export function createProxyObject(
   })
 
   proxyObjectMap.set(proxy, target)
+  targetStorageMap.set(target, {
+    storage,
+    storageProp: property,
+  })
 
   return proxy
 }

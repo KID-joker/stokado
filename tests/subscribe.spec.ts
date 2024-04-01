@@ -8,7 +8,8 @@ test.describe('subscribe', async () => {
 
     // First-level object
     expect(await page1.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       setTimeout(() => {
         local.test = {}
       })
@@ -27,7 +28,8 @@ test.describe('subscribe', async () => {
 
     // Second-level object
     expect(await page1.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       setTimeout(() => {
         local.test = {}
         local.test.foo = 'bar'
@@ -48,20 +50,22 @@ test.describe('subscribe', async () => {
 
     // clear
     page2.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.clear()
     })
 
     setTimeout(() => {
       page2.evaluate(() => {
-        const { local } = window.stokado
+        const { createProxyStorage } = window.stokado
+        const local = createProxyStorage(localStorage)
         local.test = {}
       })
     })
 
-    // When localStorage is changed in different windows or tabs, the oldValue is null.
     expect(await page1.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return new Promise((resolve) => {
         local.on('test', (newVal: any, oldVal: any) => {
           resolve({
@@ -72,7 +76,7 @@ test.describe('subscribe', async () => {
       })
     })).toEqual({
       newVal: {},
-      oldVal: null,
+      oldVal: undefined,
     })
   })
 
@@ -81,7 +85,8 @@ test.describe('subscribe', async () => {
     await page1.goto('/')
 
     expect(await page1.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       setTimeout(() => {
         local.test = ['hello', 'stokado']
         local.test.pop()
@@ -105,13 +110,15 @@ test.describe('subscribe', async () => {
 
     setTimeout(() => {
       page2.evaluate(() => {
-        const { local } = window.stokado
+        const { createProxyStorage } = window.stokado
+        const local = createProxyStorage(localStorage)
         local.test = []
       })
     })
 
     expect(await page1.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return new Promise((resolve) => {
         local.on('test.length', (newVal: any, oldVal: any) => {
           resolve({
@@ -131,7 +138,8 @@ test.describe('subscribe', async () => {
 
     // once
     await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.count = 0
       local.once('test', () => {
         local.count++
@@ -140,14 +148,16 @@ test.describe('subscribe', async () => {
 
     // trigger
     await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = {}
       local.test = []
     })
 
     // count
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.count
     })).toBe(1)
   })
@@ -157,7 +167,8 @@ test.describe('subscribe', async () => {
 
     // on
     await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.count = 0
       local.on('test', () => {
         local.count++
@@ -166,7 +177,8 @@ test.describe('subscribe', async () => {
 
     // trigger and off
     await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       local.test = {}
       local.test = []
       local.off('test')
@@ -176,7 +188,8 @@ test.describe('subscribe', async () => {
 
     // count
     expect(await page.evaluate(() => {
-      const { local } = window.stokado
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
       return local.count
     })).toBe(2)
   })

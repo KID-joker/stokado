@@ -1,4 +1,4 @@
-import type { RawType, TargetObject } from '@/types'
+import type { RawType, StorageLike } from '@/types'
 
 export const isArray = Array.isArray
 export function isSet(val: unknown): val is Set<any> {
@@ -33,11 +33,31 @@ export function isObject(val: unknown): val is Record<any, any> {
   return val !== null && typeof val === 'object'
 }
 
+export function isPromise<T = any>(val: unknown): val is Promise<T> {
+  return (
+    (isObject(val) || isFunction(val))
+    && isFunction((val as any).then)
+    && isFunction((val as any).catch)
+  )
+}
+
 export function isIntegerKey(key: unknown) {
   return typeof key === 'string'
   && key !== 'NaN'
   && key[0] !== '-'
   && `${parseInt(key, 10)}` === key
+}
+
+export async function isStorage(storage: StorageLike) {
+  return ['clear', 'getItem', 'key', 'setItem', 'removeItem'].every(method => isFunction(storage[method]))
+}
+
+export function isLocalStorage(storage: StorageLike) {
+  return storage === window.localStorage
+}
+
+export function isSessionStorage(storage: StorageLike) {
+  return storage === window.sessionStorage
 }
 
 export function getTypeString(value: unknown): string {
@@ -54,7 +74,7 @@ export function hasChanged(value: any, oldValue: any): boolean {
 
 export function transformJSON(
   data: string,
-): TargetObject | string {
+): object | string {
   try {
     return JSON.parse(data)
   }
@@ -92,19 +112,18 @@ export function formatTime(time: any) {
   return time
 }
 
-// https://github.com/reduxjs/redux/blob/master/src/compose.ts
-export function compose(...funcs: Function[]) {
-  if (funcs.length === 0) {
-    // infer the argument type so it is usable in inference down the line
-    return <T>(arg: T) => arg
+let prevPromise = Promise.resolve()
+// TODO: Maybe there is a better solution
+export function pThen(getter: Function, callback: Function) {
+  const maybePromise = getter()
+  if (isPromise(maybePromise)) {
+    prevPromise = prevPromise.then(() => getter()).then((res) => {
+      prevPromise = Promise.resolve()
+      return callback(res)
+    })
+    return prevPromise
   }
-
-  if (funcs.length === 1)
-    return funcs[0]
-
-  return funcs.reduce(
-    (a, b) =>
-      (...args: any) =>
-        a(b(...args)),
-  )
+  else {
+    return callback(maybePromise)
+  }
 }

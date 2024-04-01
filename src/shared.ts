@@ -1,40 +1,42 @@
-import type { ActiveEffect } from '@/types'
+import { checkExpired } from './extends/expires'
+import { decode } from '@/proxy/transform'
+import type { StorageObject } from '@/types'
+import { pThen } from '@/utils'
 
-class PrefixConstructor {
-  private prefix = ''
-  setPrefix(str: string) {
-    this.prefix = `${str}:`
-  }
+const proxyStorageMap = new WeakMap<Record<string, any>, Record<string, any>>()
+export const storageNameMap = new WeakMap<Record<string, any>, string>()
 
-  getPrefix(): string {
-    return this.prefix
-  }
-}
-export const prefixInst = new PrefixConstructor()
-
-export const proxyMap = new WeakMap<Record<string, any>, Record<string, any>>()
-export function deleteProxyProperty(target: Record<string, any>, property: string) {
-  const targetProxy = proxyMap.get(target)
-  delete targetProxy![property]
-}
-export function clearProxy(target: Record<string, any>) {
-  proxyMap.set(target, {})
+export function setProxyStorage(storage: Record<string, any>, proxy: Record<string, any>): void {
+  proxyStorageMap.set(storage, proxy)
 }
 
-export const activeEffect: ActiveEffect = { storage: {}, key: '', proxy: {}, options: {} }
-
-class ShouldTrackConstructor {
-  private tracking = true
-  pauseTracking() {
-    this.tracking = false
-  }
-
-  enableTracking() {
-    this.tracking = true
-  }
-
-  getTracking(): boolean {
-    return this.tracking
-  }
+export function clearProxyStorage(storage: Record<string, any>): void {
+  storage.clear()
+  proxyStorageMap.set(storage, {})
 }
-export const shouldTrackInst = new ShouldTrackConstructor()
+
+export function getProxyStorageProperty(storage: Record<string, any>, property: string): StorageObject | string | null {
+  const proxyStorage = proxyStorageMap.get(storage)
+  const data = proxyStorage![property] || pThen(() => storage.getItem(property), (res: string | null) => {
+    return decode({ data: res, storage, property })
+  })
+  return pThen(() => data, (res: StorageObject | string | null) => {
+    return checkExpired({ data: res, storage, property })
+  })
+}
+
+export function deleteProxyStorageProperty(storage: Record<string, any>, property: string) {
+  const proxyStorage = proxyStorageMap.get(storage)
+  storage.removeItem(property)
+  delete proxyStorage![property]
+}
+
+export function setProxyStorageProperty(storage: Record<string, any>, property: string, data: StorageObject) {
+  const proxyStorage = proxyStorageMap.get(storage)
+  proxyStorage![property] = data
+}
+
+export const proxyObjectMap = new WeakMap<Record<string, any>, Record<string, any>>()
+export function getRaw(value: any) {
+  return proxyObjectMap.get(value) || value
+}

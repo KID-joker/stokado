@@ -1,11 +1,13 @@
 import path from 'node:path'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import tsConfigPaths from 'rollup-plugin-tsconfig-paths'
+import alias from '@rollup/plugin-alias'
 import html from '@rollup/plugin-html'
 import esbuild from 'rollup-plugin-esbuild'
 import dts from 'rollup-plugin-dts'
 import serve from 'rollup-plugin-serve'
+import typescript from '@rollup/plugin-typescript'
+import template from './playground/template.js'
 
 const pkg = JSON.parse(readFileSync('./package.json', { encoding: 'utf8' }))
 
@@ -13,6 +15,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 const configs = []
 
+const srcDir = path.resolve(__dirname, 'src')
 const input = path.resolve(__dirname, 'src/index.ts')
 const pkgName = pkg.name
 const output = [{
@@ -22,7 +25,8 @@ const output = [{
   extend: true,
 }]
 const pluginEsbuild = process.env.BUILD === 'prod' ? esbuild({ drop: ['console'] }) : esbuild()
-const plugins = [pluginEsbuild, tsConfigPaths()]
+const pluginAlias = alias({ entries: [{ find: '@', replacement: srcDir }] })
+const plugins = [pluginEsbuild, typescript({ declaration: false }), pluginAlias]
 
 if (process.env.BUILD === 'prod') {
   output.push({
@@ -51,12 +55,17 @@ if (process.env.BUILD === 'prod') {
     },
     plugins: [
       dts(),
+      pluginAlias,
     ],
   })
 }
 
-if (process.env.BUILD !== 'prod')
-  plugins.push(html())
+if (process.env.BUILD !== 'prod') {
+  plugins.push(html({
+    title: pkgName,
+    template,
+  }))
+}
 
 if (process.env.BUILD === 'dev')
   plugins.push(serve('playground'))

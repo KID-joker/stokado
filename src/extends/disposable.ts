@@ -1,54 +1,46 @@
 import { encode } from '@/proxy/transform'
-import { deleteProxyProperty } from '@/shared'
-import type { TargetObject } from '@/types'
-import { isObject, isString, transformJSON } from '@/utils'
+import { deleteProxyStorageProperty, getProxyStorageProperty } from '@/shared'
+import type { StorageObject } from '@/types'
+import { isObject, pThen } from '@/utils'
+
+let cancelId: number | undefined
 
 export function setDisposable(
-  target: Record<string, any>,
+  storage: Record<string, any>,
   property: string,
 ) {
-  const data = target[property]
-  if (!data)
-    return undefined
-
-  const originalData = transformJSON(data)
-
-  const options = isObject(originalData) ? Object.assign({}, originalData?.options, { disposable: true }) : { disposable: true }
-
-  target[property] = encode({ data: isObject(originalData) ? originalData.value : originalData, target, property, options })
+  pThen(() => getProxyStorageProperty(storage, property), (res: StorageObject | string | null) => {
+    if (isObject(res)) {
+      const options = Object.assign({}, res?.options, { disposable: true })
+      const encodeValue = encode({ data: res.value, storage, property, options })
+      storage.setItem(property, encodeValue)
+    }
+  })
 }
 
-export function isDisposable({
+export function checkDisposable({
   data,
-  target,
+  storage,
   property,
 }: {
-  data: string
-  target: Record<string, any>
+  data: StorageObject | string | null
+  storage: Record<string, any>
   property: string
 }) {
-  if (!isString(data)) {
-    return {
-      data,
-      target,
-      property,
-    }
+  if (!isObject(data) || !data.options)
+    return data
+
+  const { disposable } = data.options
+
+  if (disposable) {
+    cancelId = window.setTimeout(() => {
+      deleteProxyStorageProperty(storage, property)
+    }, 0)
   }
 
-  const originalData: TargetObject | string = transformJSON(data)
+  return data
+}
 
-  if (isObject(originalData) && originalData.options) {
-    const { disposable } = originalData.options
-
-    if (disposable) {
-      delete target[property]
-      deleteProxyProperty(target, property)
-    }
-  }
-
-  return {
-    data,
-    target,
-    property,
-  }
+export function cancelDisposable() {
+  clearTimeout(cancelId)
 }

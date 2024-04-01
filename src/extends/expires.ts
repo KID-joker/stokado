@@ -1,102 +1,73 @@
+import { getOptions } from './options'
 import { encode } from '@/proxy/transform'
-import { deleteProxyProperty } from '@/shared'
-import type { ExpiresType, TargetObject } from '@/types'
-import { formatTime, isObject, isString, transformJSON } from '@/utils'
+import { deleteProxyStorageProperty, getProxyStorageProperty } from '@/shared'
+import type { ExpiresType, StorageObject, StorageOptions } from '@/types'
+import { formatTime, isObject, pThen } from '@/utils'
 
 export function setExpires(
-  target: Record<string, any>,
+  storage: Record<string, any>,
   property: string,
   expires: ExpiresType,
-  receiver: any,
 ) {
   const time = formatTime(expires)
 
   if (time <= Date.now()) {
-    delete receiver[property]
+    deleteProxyStorageProperty(storage, property)
     return undefined
   }
 
-  const data = target[property]
-  if (!data)
-    return undefined
-
-  const originalData = transformJSON(data)
-
-  const options = isObject(originalData) ? Object.assign({}, originalData?.options, { expires: time }) : { expires: time }
-
-  target[property] = encode({ data: isObject(originalData) ? originalData.value : originalData, target, property, options })
-  return new Date(time)
+  pThen(() => getProxyStorageProperty(storage, property), (res: StorageObject | string | null) => {
+    if (isObject(res)) {
+      const options = Object.assign({}, res?.options, { expires: time })
+      const encodeValue = encode({ data: res.value, storage, property, options })
+      storage.setItem(property, encodeValue)
+    }
+  })
 }
 
 export function getExpires(
-  target: Record<string, any>,
+  storage: Record<string, any>,
   property: string,
 ) {
-  const data = target[property]
-  if (!data)
-    return undefined
+  return pThen(() => getOptions(storage, property), (res: StorageOptions) => {
+    if (!res?.expires || +res.expires <= Date.now())
+      return undefined
 
-  const originalData = transformJSON(data)
-  if (!isObject(originalData) || !originalData.options?.expires || +originalData.options.expires <= Date.now())
-    return undefined
-
-  return new Date(+originalData.options.expires)
+    return new Date(+res.expires)
+  })
 }
 
 export function removeExpires(
-  target: Record<string, any>,
+  storage: Record<string, any>,
   property: string,
 ) {
-  const data = target[property]
-  if (!data)
-    return undefined
-
-  const originalData = transformJSON(data)
-  if (!isObject(originalData) || !originalData.options)
-    return undefined
-
-  delete originalData!.options!.expires
-
-  target[property] = encode({ data: originalData.value, target, property, options: originalData.options })
+  pThen(() => getProxyStorageProperty(storage, property), (res: StorageObject | string | null) => {
+    if (isObject(res) && res.options) {
+      delete res.options.expires
+      const encodeValue = encode({ data: res.value, storage, property, options: res.options })
+      storage.setItem(property, encodeValue)
+    }
+  })
 }
 
-export function isExpired({
+export function checkExpired({
   data,
-  target,
+  storage,
   property,
 }: {
-  data: string
-  target: Record<string, any>
+  data: StorageObject | string | null
+  storage: Record<string, any>
   property: string
 }) {
-  if (!isString(data)) {
-    return {
-      data,
-      target,
-      property,
-    }
+  if (!isObject(data) || !data.options)
+    return data
+
+  const { expires } = data.options
+
+  if (expires && new Date(+expires).getTime() <= Date.now()) {
+    deleteProxyStorageProperty(storage, property)
+    data.value = undefined
   }
 
-  const originalData: TargetObject | string = transformJSON(data)
-
-  if (isObject(originalData) && originalData.options) {
-    const { expires } = originalData.options
-
-    if (expires && new Date(+expires).getTime() <= Date.now()) {
-      delete target[property]
-      deleteProxyProperty(target, property)
-
-      return {
-        data: undefined,
-        target,
-        property,
-      }
-    }
-  }
-
-  return {
-    data,
-    target,
-    property,
-  }
+  return data
 }
