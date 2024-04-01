@@ -135,6 +135,9 @@ export function createProxyStorage(storage: StorageLike, name?: string) {
 
   setProxyStorage(storage, {})
 
+  if (!name)
+    console.warn('If you are using IndexedDB or WebSQL, `name` is required.')
+
   if (name || isLocalStorage(storage)) {
     storageNameMap.set(storage, name || 'localStorage')
     listenMessage(storage)

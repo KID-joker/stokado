@@ -113,6 +113,7 @@ export function formatTime(time: any) {
 }
 
 let prevPromise = Promise.resolve()
+// TODO: Maybe there is a better solution
 export function pThen(getter: Function, callback: Function) {
   const maybePromise = getter()
   if (isPromise(maybePromise)) {

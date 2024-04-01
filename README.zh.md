@@ -10,202 +10,188 @@
 
 **[English](./README.md) | 中文**
 
-*stokado*(/stəˈkɑːdoʊ/) 是 *storage* 的[世界语](https://zh.wikipedia.org/wiki/%E4%B8%96%E7%95%8C%E8%AF%AD)(一种国际辅助语言)，喻意为 *stokado* 也是 *storage* 的辅助代理。
+[v2 文档](./v2.zh.md)
 
-*stokado* 借助 `proxy`，更好地更方便地管理 *storage*，实现了相关语法糖、序列化、监听订阅、设置过期、一次性取值等功能。
+> *stokado*(/stəˈkɑːdoʊ/) 是 *storage* 的[世界语](https://zh.wikipedia.org/wiki/%E4%B8%96%E7%95%8C%E8%AF%AD)(一种国际辅助语言)，喻意为 *stokado* 也是 *storage* 的辅助代理。
 
-在[codesandbox](https://codesandbox.io/s/proxy-web-storage-demo-3w6uex)试一试，也可以查看 **tests** 文件夹下的测试用例。
+`stokado` 可以代理任何类 `storage` 的对象，实现简洁的 `getter`，`setter` 等语法糖，序列化，监听订阅，设置过期，一次性取值等功能。
+
+## Usage
 
 ### Install
 
 ```shell
-npm i stokado
+npm install stokado
 ```
+
+### Proxy
 
 ```js
-// mjs
-import { local, session } from 'stokado'
-```
-```js
-// cjs
-const { local, session } = require('stokado')
+import { createProxyStorage } from 'stokado'
+
+const storage = createProxyStorage(localStorage)
+
+storage.getItem('test')
 ```
 
-### CDN
+#### createProxyStorage(storage[, name])
 
-```html
-<script src="https://cdn.jsdelivr.net/npm/stokado"></script>
-<!-- or https://www.unpkg.com/stokado -->
-<script>
-  const { local, session } = window.stokado
-</script>
-```
+`createProxyStorage` 接收两个参数：类 `storage` 对象和可选的 `name`。`name` 用于同步其他页面的 `storage` 修改。`localStorage` 默认存在同名的 `name`，`sessionStorage` 则没有，其他对象需自行传入。
 
 ### Features
 
 #### 1. Syntax sugar
 
-保持`storage`值的类型不变并且可以直接操作数组和对象。
+通过对象方式直接操作 `storage`
+
+当然，`localStorage` 和 `sessionStorage` 本身也是支持的
 
 ```js
-import { local, session } from 'stokado'
+const storage = createProxyStorage(localStorage)
 
-local.test = 'hello stokado' // works
-delete local.test // works
+storage.test = 'hello stokado'
 
+storage.test // 'hello stokado'
+
+delete storage.test
+```
+
+同时也支持 `storage` 的原生方法和属性：`key()`，`getItem()`，`setItem()`，`removeItem()`，`clear()` 和 `length`。
+
+#### 2. Serializer
+
+保持值类型不变
+
+```js
 // number
-local.test = 0
-local.test === 0 // true
+storage.test = 0
+storage.test === 0
 
 // boolean
-local.test = false
-local.test === false // true
+storage.test = false
+storage.test === false
 
 // undefined
-local.test = undefined
-local.test === undefined // true
+storage.test = undefined
+storage.test === undefined
 
 // null
-local.test = null
-local.test === null // true
+storage.test = null
+storage.test === null
 
 // object
-local.test = { hello: 'world' }
-local.test.hello = 'stokado' // works
+storage.test = { hello: 'world' }
+storage.test.hello === 'stokado'
 
 // array
-local.test = ['hello']
-local.test.push('stokado') // works
-local.test.length // 2
+storage.test = ['hello']
+storage.test.push('stokado')
+storage.test.length // 2
 
 // Date
-local.test = new Date('2000-01-01T00:00:00.000Z')
-local.test.getTime() === 946684800000 // true
+storage.test = new Date('2000-01-01T00:00:00.000Z')
+storage.test.getTime() === 946684800000
 
 // RegExp
-local.test = /d(b+)d/g
-local.test.test('cdbbdbsbz') // true
+storage.test = /d(b+)d/g
+storage.test.test('cdbbdbsbz')
 
 // function
-local.test = function () {
+storage.test = function () {
   return 'hello stokado!'
 }
-local.test() === 'hello stokado!' // true
+storage.test() === 'hello stokado!'
 ```
 
-`test`和对应的`value`是实际保存到`localStorage`的。同时，`local`和`session`也支持`Web Storage`的方法和属性：`key()`，`getItem()`，`setItem()`，`removeItem()`，`clear()` 和 `length`。
+#### 3. Subscribe
 
-**Extra:**
-
-`setItem(key, value, options)` 支持设置属性，`options` 配置字段如下：
-
-| | 类型 | 作用 |
-| ---- | ---- | ---- |
-| expires | string \| number \| Date | 设置过期时间 |
-| disposable | boolean | 设置一次性 |
-
-#### 2. Subscribe
-
-监听值的变化。
+监听储值的变化
 
 ```js
-import { local } from 'stokado'
+storage.on(key, callback)
 
-local.on('test', (newVal, oldVal) => {
-  console.log('test', newVal, oldVal)
-})
-local.on('test.a', (newVal, oldVal) => {
-  console.log('test.a', newVal, oldVal)
-})
+storage.once(key, callback)
 
-local.test = {}
-// test {} undefined
-
-local.test.a = 1
-// test.a 1 undefined
+storage.off([[key], callback])
 ```
-
-##### on
-
-监听指定项。
-
-参数：
 
 - `key`：监听指定项的名字。支持对象的二级监听，例如：`obj.a` 对于 `Object` 和 `list[0]` 对于 `Array`，还支持数组长度的监听。
 - `callback`：指定项的值发生变化时，触发的回调函数。参数包括`newValue` 和 `oldValue`。
 
-##### once
+**Tips:** 对于 `off`，如果 `callback` 存在，则移除指定回调的触发；否则，移除对于 `key` 绑定的所有回调；如果 `key` 为空，移除所有监听回调。
 
-只监听指定项一次。
+#### 4. Expired
 
-- `key`：监听指定项的名字。支持对象的二级监听，例如：`obj.a` 对于 `Object` 和 `list[0]` 对于 `Array`，还支持数组长度的监听。
-- `callback`：指定项的值发生变化时，触发的回调函数。参数包括`newValue` 和 `oldValue`。
-
-##### off
-
-取消监听指定项或者移除所有监听。
-
-- `key（可选）`：期望移除监听的指定项。如果为空，则移除所有监听。
-- `callback（可选）`：移除指定项的某一回调函数。如果为空，则移除指定项绑定的所有监听事件。
-
-#### 3. Expired
-
-为指定项设置过期时间。
+为指定项设置过期时间
 
 ```js
-import { local } from 'stokado'
+storage.setExpires(key, expires)
 
-local.setItem('test', 'hello stokado', { expires: Date.now() + 10000 })
-// local.test = 'hello stokado'
-// local.setExpires('test', Date.now() + 10000)
+storage.getExpires(key)
 
-// within 10's
-local.test // 'hello stokado'
-
-// after 10's
-local.test // undefined
+storage.removeExpires(key)
 ```
-
-过期时间也会保存到`Web Storage`中，并不会刷新页面导致过期失效。
-所以在10秒内无论你怎么刷新，值还是会存在。
-但是在10秒以后，指定项就被移除了。
-
-##### setExpires
-
-为指定项设置过期时间。
 
 - `key`：设置过期的指定项名字。
 - `expires`：过期时间。接受`string`、`number` 和 `Date`类型。
 
-##### getExpires
+#### 5. Disposable
 
-获取指定的过期时间，返回类型为`Date`。
-
-- `key`: 设置了过期时间的指定项名字。
-
-##### removeExpires
-
-取消指定项的过期设置。
-
-- `key`: 设置了过期时间的指定项名字。
-
-#### 4. Disposable
-
-一次性取值。
+一次性取值，可用于借助 `storage` 进行通信
 
 ```js
-import { local } from 'stokado'
-
-local.setItem('test', 'hello stokado', { disposable: true })
-// local.test = 'hello stokado'
-// local.setDisposable('test')
-
-local.test // 'hello stokado'
-local.test // undefined
+storage.setDisposable(key)
 ```
 
-##### setDisposable
-
-为指定项设置一次性取值。
-
 - `key`：设置一次性的指定项名字。
+
+#### 6. Options
+
+获取指定项的过期、一次性等配置信息
+
+```js
+storage.getOptions(key)
+```
+
+通过 `setItem` 设置过期及一次性
+
+```js
+storage.setItem(key, value, { expires, disposable })
+```
+
+## Work with localForage
+
+因为 `localForage` 提供了跟 `localStorage` 一样的 API，它是类 `storage` 对象，可以跟 `stokado` 配合使用。
+
+```js
+import { createProxyStorage } from 'stokado'
+import localForage from 'localforage'
+
+const local = createProxyStorage(localForage, 'localForage')
+```
+
+但是因为 `localForage` 采用异步的 API，所以需要使用 `Promise` 来调用它。
+
+```js
+await (local.test = 'hello localForage')
+
+// or
+
+await local.setItem('test', 'hello localForage')
+```
+
+#### Multiple instances
+
+通过 `createInstance` 可以创建多个 `localForage` 实例，也是类 `storage` 对象。
+
+```js
+const store = localforage.createInstance({
+  name: 'nameHere'
+})
+const proxyStore = createProxyStorage(store, 'store')
+
+const otherStore = localforage.createInstance({
+  name: 'otherName'
+})
+const proxyOtherStore = createProxyStorage(otherStore, 'otherStore')
+```
