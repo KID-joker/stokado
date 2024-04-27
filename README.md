@@ -155,6 +155,10 @@ storage.getOptions(key)
 
 Set `expires` and `disposable` using `setItem`
 
+```js
+storage.setItem(key, value, { expires, disposable })
+```
+
 ## Work with localForage
 
 `localForage` provides the same API as `localStorage`, it can be used in conjunction with `stokado`.
