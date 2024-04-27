@@ -178,4 +178,33 @@ test.describe('localforage', () => {
       return await local.test
     })).toBeUndefined()
   })
+
+  test('setOptions', async ({ page }) => {
+    await page.goto('/')
+
+    expect(await page.evaluate(() => {
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(window.localforage)
+      local.setItem('test', 'hello stokado', {
+        expires: Date.now() + 1000,
+      })
+      return local.test
+    })).toBe('hello stokado')
+
+    await delay(500)
+
+    expect(await page.evaluate(() => {
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(window.localforage)
+      return local.test
+    })).toBe('hello stokado')
+
+    await delay(500)
+
+    expect(await page.evaluate(() => {
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(window.localforage)
+      return local.test
+    })).toBeUndefined()
+  })
 })
