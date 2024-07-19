@@ -1,12 +1,12 @@
 import { postMessage } from '@/proxy/broadcast'
-import type { Effect, EffectFn, EffectMap } from '@/types'
+import type { Effect, EffectFn, EffectMap, StorageLike } from '@/types'
 import { hasChanged } from '@/utils'
 
-const storageEffectMap = new WeakMap<Object, EffectMap>()
+const storageEffectMap = new WeakMap<StorageLike, EffectMap>()
 
 export function on(
   this: any,
-  storage: object,
+  storage: StorageLike,
   key: string,
   fn: EffectFn,
 ) {
@@ -28,7 +28,7 @@ export function on(
 
 export function once(
   this: any,
-  storage: object,
+  storage: StorageLike,
   key: string,
   fn: EffectFn,
 ) {
@@ -42,7 +42,7 @@ export function once(
 }
 
 export function off(
-  storage: object,
+  storage: StorageLike,
   key?: string,
   fn?: EffectFn,
 ) {
@@ -63,7 +63,7 @@ export function off(
 }
 
 export function emit(
-  storage: object,
+  storage: StorageLike,
   key: string,
   value: any,
   oldValue: any,
@@ -77,7 +77,7 @@ export function emit(
 }
 
 export function trigger(
-  storage: object,
+  storage: StorageLike,
   key: string,
   value: any,
   oldValue: any,

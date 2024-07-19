@@ -1,7 +1,7 @@
 export type RawType = 'String' | 'Number' | 'BigInt' | 'Boolean' | 'Null' | 'Undefined' | 'Object' | 'Array' | 'Set' | 'Map' | 'Date' | 'RegExp' | 'URL' | 'Function'
 
 export interface StorageLike {
-  [x: string]: any
+  [x: string | symbol]: any
   clear(): void
   getItem(key: string): string | null | Promise<string | null>
   key(key: number): string | null | Promise<string | null>
@@ -33,3 +33,8 @@ export interface StorageObject {
 }
 
 export type ExpiresType = string | number | Date
+
+export interface ProxyObject {
+  readonly storage: StorageLike
+  readonly property: string
+}

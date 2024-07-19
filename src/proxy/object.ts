@@ -1,11 +1,10 @@
-import { encode } from './transform'
+import ThenRef from 'then-ref'
 import { hasChanged, hasOwn, isArray, isIntegerKey } from '@/utils'
 import { emit } from '@/extends/watch'
 import { cancelDisposable } from '@/extends/disposable'
 import { getOptions } from '@/extends/options'
-import { proxyObjectMap } from '@/shared'
-
-const targetStorageMap = new WeakMap()
+import { setProxyStorageProperty, setRaw } from '@/shared'
+import type { ProxyObject, StorageOptions } from '@/types'
 
 function selfEmit(
   target: object,
@@ -13,25 +12,27 @@ function selfEmit(
   value: any,
   oldValue: any,
 ) {
-  const { storage, storageProp } = targetStorageMap.get(target)
+  const { storage, property } = target as ProxyObject
   const isIntKey = isArray(target) && isIntegerKey(key)
-  const actualKey = isIntKey ? `${storageProp}[${key}]` : `${storageProp}.${key}`
+  const actualKey = isIntKey ? `${property}[${key}]` : `${property}.${key}`
 
-  emit(storage, actualKey, value, oldValue, key !== 'length' ? storageProp : '')
+  emit(storage, actualKey, value, oldValue, key !== 'length' ? property : undefined)
 }
 
 function selfCancel(target: object) {
-  const { storage, storageProp } = targetStorageMap.get(target)
-  const options = getOptions(storage, storageProp)
-  // cancel disposable promise
-  if (options.disposable)
-    cancelDisposable()
+  const { storage, property } = target as ProxyObject
+  ThenRef(getOptions)(storage, property).then((options: StorageOptions) => {
+    // cancel disposable promise
+    if (options.disposable)
+      cancelDisposable()
+  })
 }
 
 function setStorageValue(target: object) {
-  const { storage, storageProp } = targetStorageMap.get(target)
-  const encodeValue = encode({ data: target, storage, property: storageProp, options: getOptions(storage, storageProp) })
-  storage.setItem(storageProp, encodeValue)
+  const { storage, property } = target as ProxyObject
+  ThenRef(getOptions)(storage, property).then((options: StorageOptions) => {
+    setProxyStorageProperty(storage, property, target, options)
+  })
 }
 
 let calling = false
@@ -62,10 +63,12 @@ function createInstrumentations() {
 const arrayInstrumentations: Record<string, Function> = createInstrumentations()
 function get(
   target: object,
-  key: string,
+  key: string | symbol,
   receiver: any,
 ) {
-  selfCancel(target)
+  // Object.prototype.toString.call
+  if (key !== Symbol.toStringTag)
+    selfCancel(target)
 
   if (isArray(target) && hasOwn(arrayInstrumentations, key))
     return arrayInstrumentations[key](target)
@@ -150,12 +153,7 @@ function deleteProperty(
 
 export function createProxyObject(
   target: object,
-  storage?: Record<string, any>,
-  property?: string,
 ) {
-  if (!storage && !property)
-    return target
-
   const proxy = new Proxy(target, {
     get,
     set,
@@ -164,11 +162,7 @@ export function createProxyObject(
     deleteProperty,
   })
 
-  proxyObjectMap.set(proxy, target)
-  targetStorageMap.set(target, {
-    storage,
-    storageProp: property,
-  })
+  setRaw(proxy, target)
 
   return proxy
 }

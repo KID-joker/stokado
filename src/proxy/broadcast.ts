@@ -1,12 +1,11 @@
+import { decode, encode } from './transform'
 import { trigger } from '@/extends/watch'
-import { decode, simpleDecode, simpleEncode } from '@/proxy/transform'
-import { storageNameMap } from '@/shared'
+import { getRaw, storageNameMap, updateProxyStorageProperty } from '@/shared'
 import type { StorageLike } from '@/types'
-import { pThen } from '@/utils'
 
 const storageChannelMap = new Map<string, BroadcastChannel>()
 
-export function postMessage(storage: object, key: string, value: any, oldValue: any, property?: string) {
+export function postMessage(storage: StorageLike, key: string, value: any, oldValue: any, property?: string) {
   const storageName = storageNameMap.get(storage)
   if (!storageName)
     return
@@ -14,8 +13,8 @@ export function postMessage(storage: object, key: string, value: any, oldValue: 
   const channel = storageChannelMap.get(storageName)
   channel?.postMessage({
     key,
-    newValue: simpleEncode(value),
-    oldValue: simpleEncode(oldValue),
+    newValue: encode(value),
+    oldValue: encode(oldValue),
     property,
   })
 }
@@ -29,13 +28,11 @@ export function listenMessage(storage: StorageLike) {
 
   channel.onmessage = function (ev: MessageEvent) {
     const { key, newValue, oldValue, property } = ev.data
-    trigger(storage, key, simpleDecode(newValue), simpleDecode(oldValue))
+
+    trigger(storage, key, getRaw(decode(newValue).value), getRaw(decode(oldValue).value))
 
     // update proxyStorage
-    if (property) {
-      pThen(() => storage.getItem(property), (res: string | null) => {
-        return decode({ data: res, storage, property })
-      })
-    }
+    if (property)
+      updateProxyStorageProperty(storage, property)
   }
 }

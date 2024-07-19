@@ -48,8 +48,11 @@ export function isIntegerKey(key: unknown) {
   && `${parseInt(key, 10)}` === key
 }
 
-export async function isStorage(storage: StorageLike) {
-  return ['clear', 'getItem', 'key', 'setItem', 'removeItem'].every(method => isFunction(storage[method]))
+export const StorageMethods = ['clear', 'getItem', 'key', 'setItem', 'removeItem']
+export const ExtendMethods = ['getExpires', 'getOptions', 'off', 'on', 'once', 'removeExpires', 'setDisposable', 'setExpires']
+export const SymbolStorageMethods = new Map([...StorageMethods, ...ExtendMethods].map(method => [method, Symbol(method)]))
+export function isStorage(storage: StorageLike) {
+  return StorageMethods.every(method => isFunction(storage[method]))
 }
 
 export function isLocalStorage(storage: StorageLike) {
@@ -110,20 +113,4 @@ export function formatTime(time: any) {
     return +time.padEnd(13, '0')
 
   return time
-}
-
-let prevPromise = Promise.resolve()
-// TODO: Maybe there is a better solution
-export function pThen(getter: Function, callback: Function) {
-  const maybePromise = getter()
-  if (isPromise(maybePromise)) {
-    prevPromise = prevPromise.then(() => getter()).then((res) => {
-      prevPromise = Promise.resolve()
-      return callback(res)
-    })
-    return prevPromise
-  }
-  else {
-    return callback(maybePromise)
-  }
 }

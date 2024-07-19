@@ -1,15 +1,15 @@
 import { getProxyStorageProperty } from '@/shared'
-import type { StorageObject } from '@/types'
-import { isObject, pThen } from '@/utils'
+import type { StorageLike, StorageObject, StorageOptions } from '@/types'
+import { isObject } from '@/utils'
 
 export function getOptions(
-  storage: Record<string, any>,
+  storage: StorageLike,
   property: string,
-) {
-  return pThen(() => getProxyStorageProperty(storage, property), (res: StorageObject | string | null) => {
+): StorageOptions {
+  return getProxyStorageProperty(storage, property).then((res: StorageObject | string | null) => {
     if (isObject(res) && res.options)
       return res.options
 
     return {}
-  })
+  }).value
 }

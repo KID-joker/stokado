@@ -246,66 +246,61 @@ test.describe('serialized value', () => {
     await page.goto('/')
 
     // Function declaration
-    expect(decode({
-      data: await page.evaluate(() => {
-        const { createProxyStorage } = window.stokado
-        const local = createProxyStorage(localStorage)
-        function foo() {
-          return 'hello stokado!'
-        }
-        local.test = foo
-        return localStorage.test
-      }),
-    }).value()).toBe('hello stokado!')
+    expect(decode(await page.evaluate(() => {
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
+      function foo() {
+        return 'hello stokado!'
+      }
+      local.test = foo
+      return localStorage.test
+    }),
+    ).value()).toBe('hello stokado!')
 
     // Function expression
-    expect(decode({
-      data: await page.evaluate(() => {
-        const { createProxyStorage } = window.stokado
-        const local = createProxyStorage(localStorage)
-        local.test = function () {
-          return 'hello stokado!'
-        }
-        return localStorage.test
-      }),
-    }).value()).toBe('hello stokado!')
+    expect(decode(await page.evaluate(() => {
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
+      local.test = function () {
+        return 'hello stokado!'
+      }
+      return localStorage.test
+    }),
+    ).value()).toBe('hello stokado!')
 
     // Arrow function
-    expect(decode({
-      data: await page.evaluate(() => {
-        const { createProxyStorage } = window.stokado
-        const local = createProxyStorage(localStorage)
-        local.test = () => {
-          return 'hello stokado!'
-        }
-        return localStorage.test
-      }),
-    }).value()).toBe('hello stokado!')
+    expect(decode(await page.evaluate(() => {
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
+      local.test = () => {
+        return 'hello stokado!'
+      }
+      return localStorage.test
+    }),
+    ).value()).toBe('hello stokado!')
   })
 
   test('Set', async ({ page }) => {
     await page.goto('/')
 
-    expect(decode({
-      data: await page.evaluate(() => {
-        const { createProxyStorage } = window.stokado
-        const local = createProxyStorage(localStorage)
-        local.test = new Set(['hello stokado'])
-        return localStorage.test
-      }),
-    }).value).toEqual(new Set(['hello stokado']))
+    expect(decode(await page.evaluate(() => {
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
+      local.test = new Set(['hello stokado'])
+      return localStorage.test
+    }),
+    ).value).toEqual(new Set(['hello stokado']))
   })
 
   test('Map', async ({ page }) => {
     await page.goto('/')
 
-    expect(decode({
-      data: await page.evaluate(() => {
-        const { createProxyStorage } = window.stokado
-        const local = createProxyStorage(localStorage)
-        local.test = new Map([['hello', 'stokado'], ['foo', 'bar']])
-        return localStorage.test
-      }),
-    }).value).toEqual(new Map([['hello', 'stokado'], ['foo', 'bar']]))
+    expect(decode(await page.evaluate(() => {
+      const { createProxyStorage } = window.stokado
+      const local = createProxyStorage(localStorage)
+      local.test = new Map([['hello', 'stokado'], ['foo', 'bar']])
+      return localStorage.test
+    }),
+    ).value).toEqual(new Map([['hello', 'stokado'], ['foo', 'bar']]))
   })
 })

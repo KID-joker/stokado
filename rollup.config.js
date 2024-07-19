@@ -7,6 +7,7 @@ import esbuild from 'rollup-plugin-esbuild'
 import dts from 'rollup-plugin-dts'
 import serve from 'rollup-plugin-serve'
 import typescript from '@rollup/plugin-typescript'
+import { nodeResolve } from '@rollup/plugin-node-resolve'
 import template from './playground/template.js'
 
 const pkg = JSON.parse(readFileSync('./package.json', { encoding: 'utf8' }))
@@ -26,7 +27,7 @@ const output = [{
 }]
 const pluginEsbuild = process.env.BUILD === 'prod' ? esbuild({ drop: ['console'] }) : esbuild()
 const pluginAlias = alias({ entries: [{ find: '@', replacement: srcDir }] })
-const plugins = [pluginEsbuild, typescript({ declaration: false }), pluginAlias]
+const plugins = [pluginEsbuild, typescript({ declaration: false }), pluginAlias, nodeResolve({ browser: true })]
 
 if (process.env.BUILD === 'prod') {
   output.push({

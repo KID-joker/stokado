@@ -27,7 +27,7 @@ test.describe('localforage', () => {
     expect(await page.evaluate(async () => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(window.localforage)
-      delete local.test
+      await (delete local.test)
       return await local.test
     })).toBeUndefined()
   })
@@ -63,7 +63,7 @@ test.describe('localforage', () => {
     expect(await page.evaluate(async () => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(window.localforage)
-      local.removeItem('test')
+      await local.removeItem('test')
       return await local.test
     })).toBeUndefined()
 
@@ -71,7 +71,7 @@ test.describe('localforage', () => {
     expect(await page.evaluate(async () => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(window.localforage)
-      local.clear()
+      await local.clear()
       return await local.length()
     })).toEqual(0)
   })
@@ -134,8 +134,8 @@ test.describe('localforage', () => {
     expect(await page.evaluate(async () => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(window.localforage)
-      local.test = 'hello stokado'
-      local.setExpires('test', Date.now() + 1000)
+      await (local.test = 'hello stokado')
+      await local.setExpires('test', Date.now() + 1000)
       return await local.test
     })).toBe('hello stokado')
 
@@ -159,11 +159,11 @@ test.describe('localforage', () => {
   test('disposable', async ({ page }) => {
     await page.goto('/')
 
-    await page.evaluate(() => {
+    await page.evaluate(async () => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(window.localforage)
-      local.test = 'hello stokado'
-      local.setDisposable('test')
+      await (local.test = 'hello stokado')
+      await local.setDisposable('test')
     })
 
     expect(await page.evaluate(async () => {

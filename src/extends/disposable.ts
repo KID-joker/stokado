@@ -1,32 +1,26 @@
-import { encode } from '@/proxy/transform'
-import { deleteProxyStorageProperty, getProxyStorageProperty } from '@/shared'
-import type { StorageObject } from '@/types'
-import { isObject, pThen } from '@/utils'
+import { getProxyStorageProperty, setProxyStorageProperty } from '@/shared'
+import type { StorageLike, StorageObject } from '@/types'
+import { isObject } from '@/utils'
 
 let cancelId: number | undefined
 
 export function setDisposable(
-  storage: Record<string, any>,
+  storage: StorageLike,
   property: string,
 ) {
-  pThen(() => getProxyStorageProperty(storage, property), (res: StorageObject | string | null) => {
+  return getProxyStorageProperty(storage, property).then((res: StorageObject | string | null) => {
     if (isObject(res)) {
       const options = Object.assign({}, res?.options, { disposable: true })
-      const encodeValue = encode({ data: res.value, storage, property, options })
-      storage.setItem(property, encodeValue)
+      setProxyStorageProperty(storage, property, res.value, options)
     }
+    return true
   })
 }
 
-export function checkDisposable({
-  data,
-  storage,
-  property,
-}: {
-  data: StorageObject | string | null
-  storage: Record<string, any>
-  property: string
-}) {
+export function checkDisposable(
+  data: StorageObject | string | null,
+  clear: Function,
+) {
   if (!isObject(data) || !data.options)
     return data
 
@@ -34,7 +28,7 @@ export function checkDisposable({
 
   if (disposable) {
     cancelId = window.setTimeout(() => {
-      deleteProxyStorageProperty(storage, property)
+      clear()
     }, 0)
   }
 

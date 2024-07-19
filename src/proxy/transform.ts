@@ -1,10 +1,9 @@
 import type { RawType, StorageObject, StorageOptions } from '@/types'
 import { getRawType, isObject, isString, transformEval, transformJSON } from '@/utils'
 import { createProxyObject } from '@/proxy/object'
-import { setProxyStorageProperty } from '@/shared'
 
 interface Serializer<T> {
-  read(raw: string | object, storage?: Record<string, any>, property?: string): T
+  read(raw: string | object): T
   write(value: T): string | object
 }
 const StorageSerializers: Record<RawType, Serializer<any>> = {
@@ -33,11 +32,11 @@ const StorageSerializers: Record<RawType, Serializer<any>> = {
     write: (v: undefined) => String(v),
   },
   Object: {
-    read: (v: object, storage?: Record<string, any>, property?: string) => createProxyObject(v, storage, property),
+    read: (v: object) => createProxyObject(v),
     write: (v: object) => v,
   },
   Array: {
-    read: (v: object, storage?: Record<string, any>, property?: string) => createProxyObject(v, storage, property),
+    read: (v: object) => createProxyObject(v),
     write: (v: object) => v,
   },
   Set: {
@@ -66,17 +65,12 @@ const StorageSerializers: Record<RawType, Serializer<any>> = {
   },
 }
 
-export function decode({
-  data,
-  storage,
-  property,
-}: {
-  data: string | null
-  storage?: Record<string, any>
-  property?: string
-}): any {
+export function decode(
+  data: string | null,
+  preprocess?: Function,
+): any {
   if (!isString(data))
-    return data
+    return data || undefined
 
   const nativeData: object | string = transformJSON(data)
   if (!isObject(nativeData))
@@ -86,25 +80,18 @@ export function decode({
   if (!serializer)
     return nativeData
 
-  nativeData.value = ['Object', 'Array'].includes(nativeData.type) ? serializer.read(nativeData.value, storage, property) : serializer.read(nativeData.value)
+  if (preprocess)
+    preprocess(nativeData.value)
 
-  if (storage && property)
-    setProxyStorageProperty(storage, property, nativeData as StorageObject)
+  nativeData.value = serializer.read(nativeData.value)
 
   return nativeData
 }
 
-export function encode({
-  data,
-  storage,
-  property,
-  options,
-}: {
-  data: any
-  storage?: Record<string, any>
-  property?: string
-  options?: StorageOptions
-}) {
+export function encode(
+  data: any,
+  options?: StorageOptions,
+) {
   const rawType = getRawType(data)
 
   const serializer = StorageSerializers[rawType]
@@ -117,30 +104,5 @@ export function encode({
     options,
   }
 
-  if (storage && property) {
-    setProxyStorageProperty(storage, property, {
-      type: rawType,
-      value: ['Object', 'Array'].includes(rawType) ? serializer.read(storageObject.value, storage, property) : serializer.read(storageObject.value),
-      options,
-    })
-  }
-
   return JSON.stringify(storageObject)
-}
-
-export function simpleDecode(data: string) {
-  const nativeData: { type: string; value: string | object } = transformJSON(data) as { type: string; value: string | object }
-  const serializer = StorageSerializers[nativeData.type as RawType]
-
-  return serializer.read(nativeData.value)
-}
-
-export function simpleEncode(data: any) {
-  const rawType = getRawType(data)
-  const serializer = StorageSerializers[rawType]
-
-  return JSON.stringify({
-    type: rawType,
-    value: serializer.write(data),
-  })
 }
