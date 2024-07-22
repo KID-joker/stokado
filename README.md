@@ -8,7 +8,7 @@
             \/__/
 ```
 
-**English | [中文](./README.zh.md)**
+**English | [中文](./README.zh.md) | [日本語](./README.ja.md)**
 
 [v2 document](./v2.md)
 
