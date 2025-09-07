@@ -1,9 +1,9 @@
-import { encode } from './transform'
-import { hasChanged, hasOwn, isArray, isIntegerKey } from '@/utils'
-import { emit } from '@/extends/watch'
 import { cancelDisposable } from '@/extends/disposable'
 import { getOptions } from '@/extends/options'
+import { emit } from '@/extends/watch'
 import { proxyObjectMap } from '@/shared'
+import { hasChanged, hasOwn, isArray, isIntegerKey } from '@/utils'
+import { encode } from './transform'
 
 const targetStorageMap = new WeakMap()
 
@@ -45,7 +45,7 @@ function createInstrumentations() {
         calling = true
 
         const oldLength: number = target.length
-        const res = target[key].apply(target, args)
+        const res = target[key](...args)
         setStorageValue(target)
         if (target.length !== oldLength)
           selfEmit(target, 'length', target.length, oldLength)

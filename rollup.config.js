@@ -1,12 +1,14 @@
-import path from 'node:path'
 import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import alias from '@rollup/plugin-alias'
 import html from '@rollup/plugin-html'
-import esbuild from 'rollup-plugin-esbuild'
-import dts from 'rollup-plugin-dts'
-import serve from 'rollup-plugin-serve'
+import { nodeResolve } from '@rollup/plugin-node-resolve'
 import typescript from '@rollup/plugin-typescript'
+import dts from 'rollup-plugin-dts'
+import esbuild from 'rollup-plugin-esbuild'
+import serve from 'rollup-plugin-serve'
 import template from './playground/template.js'
 
 const pkg = JSON.parse(readFileSync('./package.json', { encoding: 'utf8' }))
@@ -26,7 +28,7 @@ const output = [{
 }]
 const pluginEsbuild = process.env.BUILD === 'prod' ? esbuild({ drop: ['console'] }) : esbuild()
 const pluginAlias = alias({ entries: [{ find: '@', replacement: srcDir }] })
-const plugins = [pluginEsbuild, typescript({ declaration: false }), pluginAlias]
+const plugins = [pluginEsbuild, typescript({ declaration: false }), pluginAlias, nodeResolve({ browser: true })]
 
 if (process.env.BUILD === 'prod') {
   output.push({

@@ -84,7 +84,7 @@ test.describe('disposable', () => {
     await page.evaluate(() => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(localStorage)
-      local.test
+      return local.test
     })
 
     expect(await page.evaluate(() => {

@@ -1,6 +1,6 @@
+import type { StorageObject } from '@/types'
 import { encode } from '@/proxy/transform'
 import { deleteProxyStorageProperty, getProxyStorageProperty } from '@/shared'
-import type { StorageObject } from '@/types'
 import { isObject, pThen } from '@/utils'
 
 let cancelId: number | undefined

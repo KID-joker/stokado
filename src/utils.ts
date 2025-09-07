@@ -43,9 +43,9 @@ export function isPromise<T = any>(val: unknown): val is Promise<T> {
 
 export function isIntegerKey(key: unknown) {
   return typeof key === 'string'
-  && key !== 'NaN'
-  && key[0] !== '-'
-  && `${parseInt(key, 10)}` === key
+    && key !== 'NaN'
+    && key[0] !== '-'
+    && `${Number.parseInt(key, 10)}` === key
 }
 
 export async function isStorage(storage: StorageLike) {
@@ -78,7 +78,7 @@ export function transformJSON(
   try {
     return JSON.parse(data)
   }
-  catch (e) {
+  catch {
     return data
   }
 }
@@ -89,13 +89,13 @@ export function propertyIsInPrototype(object: object, prototypeName: string) {
 }
 
 const hasOwnProperty = Object.prototype.hasOwnProperty
-export function hasOwn(val: object,
-  key: string | symbol): key is keyof typeof val {
+export function hasOwn(val: object, key: string | symbol): key is keyof typeof val {
   return hasOwnProperty.call(val, key)
 }
 
 export function transformEval(code: string) {
   // runs in the global scope rather than the local one
+  // eslint-disable-next-line no-eval
   const eval2 = eval
   return (function () {
     return eval2(code)

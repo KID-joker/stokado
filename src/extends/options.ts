@@ -1,5 +1,5 @@
-import { getProxyStorageProperty } from '@/shared'
 import type { StorageObject } from '@/types'
+import { getProxyStorageProperty } from '@/shared'
 import { isObject, pThen } from '@/utils'
 
 export function getOptions(

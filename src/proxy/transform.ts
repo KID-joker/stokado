@@ -1,68 +1,72 @@
 import type { RawType, StorageObject, StorageOptions } from '@/types'
-import { getRawType, isObject, isString, transformEval, transformJSON } from '@/utils'
 import { createProxyObject } from '@/proxy/object'
 import { setProxyStorageProperty } from '@/shared'
+import { getRawType, isObject, isString, transformEval, transformJSON } from '@/utils'
 
 interface Serializer<T> {
-  read(raw: string | object, storage?: Record<string, any>, property?: string): T
-  write(value: T): string | object
+  read: (raw: any, storage?: Record<string, any>, property?: string) => T
+  write: (value: T) => any
 }
-const StorageSerializers: Record<RawType, Serializer<any>> = {
+
+const identity = <T>(v: T): T => v
+const toString = (v: any): string => String(v)
+
+const StorageSerializers: Record<string, Serializer<any>> = {
   String: {
-    read: (v: string) => v,
-    write: (v: string) => v,
+    read: identity,
+    write: identity,
   },
   Number: {
-    read: (v: string) => Number.parseFloat(v),
-    write: (v: number) => String(v),
+    read: Number.parseFloat,
+    write: toString,
   },
   BigInt: {
-    read: (v: string) => BigInt(v),
-    write: (v: bigint) => String(v),
+    read: BigInt,
+    write: toString,
   },
   Boolean: {
     read: (v: string) => v === 'true',
-    write: (v: boolean) => String(v),
+    write: toString,
   },
   Null: {
     read: () => null,
-    write: (v: null) => String(v),
+    write: () => 'null',
   },
   Undefined: {
     read: () => undefined,
-    write: (v: undefined) => String(v),
+    write: () => 'undefined',
   },
   Object: {
-    read: (v: object, storage?: Record<string, any>, property?: string) => createProxyObject(v, storage, property),
-    write: (v: object) => v,
+    read: (v, storage, property) => createProxyObject(v, storage, property),
+    write: identity,
   },
   Array: {
-    read: (v: object, storage?: Record<string, any>, property?: string) => createProxyObject(v, storage, property),
-    write: (v: object) => v,
+    read: (v, storage, property) => createProxyObject(v, storage, property),
+    write: identity,
   },
   Set: {
-    read: (v: Array<any>) => new Set(v),
-    write: (v: Set<any>) => Array.from(v),
+    read: (v: any[]) => new Set(v),
+    write: (v: Set<any>) => [...v],
   },
   Map: {
-    read: (v: Array<[any, any]>) => new Map(v),
-    write: (v: Map<any, any>) => Array.from(v),
+    read: (v: [any, any][]) => new Map(v),
+    write: (v: Map<any, any>) => [...v],
   },
   Date: {
     read: (v: string) => new Date(v),
-    write: (v: Date) => String(v),
+    write: toString,
   },
   URL: {
     read: (v: string) => new URL(v),
-    write: (v: URL) => String(v),
+    write: toString,
   },
   RegExp: {
     read: (v: string) => transformEval(v),
-    write: (v: RegExp) => String(v),
+    write: toString,
   },
   Function: {
     read: (v: string) => transformEval(`(function() { return ${v} })()`),
-    write: (v: Function) => String(v),
+    write: toString,
   },
 }
 
@@ -129,7 +133,7 @@ export function encode({
 }
 
 export function simpleDecode(data: string) {
-  const nativeData: { type: string; value: string | object } = transformJSON(data) as { type: string; value: string | object }
+  const nativeData: { type: string, value: string | object } = transformJSON(data) as { type: string, value: string | object }
   const serializer = StorageSerializers[nativeData.type as RawType]
 
   return serializer.read(nativeData.value)

@@ -4,3 +4,4 @@ dist
 playground/index.html
 playground/stokado.js
 test-results
+.vscode

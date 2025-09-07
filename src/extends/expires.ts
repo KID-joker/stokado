@@ -1,8 +1,8 @@
-import { getOptions } from './options'
+import type { ExpiresType, StorageObject, StorageOptions } from '@/types'
 import { encode } from '@/proxy/transform'
 import { deleteProxyStorageProperty, getProxyStorageProperty } from '@/shared'
-import type { ExpiresType, StorageObject, StorageOptions } from '@/types'
 import { formatTime, isObject, pThen } from '@/utils'
+import { getOptions } from './options'
 
 export function setExpires(
   storage: Record<string, any>,
