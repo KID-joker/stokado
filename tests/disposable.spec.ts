@@ -81,11 +81,11 @@ test.describe('disposable', () => {
     })).toBe('stokado')
 
     // `return local.test` will let playwright serialize the return value, and it will trigger the `get` trap
-    await page.evaluate(() => {
+    expect(await page.evaluate(() => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(localStorage)
       return local.test
-    })
+    })).toEqual({ hello: 'stokado' })
 
     expect(await page.evaluate(() => {
       const { createProxyStorage } = window.stokado
