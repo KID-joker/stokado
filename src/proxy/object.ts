@@ -1,8 +1,7 @@
-import { cancelDisposable } from '@/extends/disposable'
 import { getOptions } from '@/extends/options'
 import { emit } from '@/extends/watch'
 import { proxyObjectMap } from '@/shared'
-import { hasChanged, hasOwn, isArray, isIntegerKey } from '@/utils'
+import { hasChanged, hasOwn, isArray, isIntegerKey, pThen } from '@/utils'
 import { encode } from './transform'
 
 const targetStorageMap = new WeakMap()
@@ -20,18 +19,17 @@ function selfEmit(
   emit(storage, actualKey, value, oldValue, key !== 'length' ? storageProp : '')
 }
 
-function selfCancel(target: object) {
-  const { storage, storageProp } = targetStorageMap.get(target)
-  const options = getOptions(storage, storageProp)
-  // cancel disposable promise
-  if (options.disposable)
-    cancelDisposable()
-}
-
 function setStorageValue(target: object) {
   const { storage, storageProp } = targetStorageMap.get(target)
-  const encodeValue = encode({ data: target, storage, property: storageProp, options: getOptions(storage, storageProp) })
-  storage.setItem(storageProp, encodeValue)
+  // Check if the property still exists (not disposed)
+  return pThen(() => storage.getItem(storageProp), (currentValue: string | null) => {
+    if (currentValue === null) {
+      // Property has been disposed, don't re-save it
+      return
+    }
+    const encodeValue = encode({ data: target, storage, property: storageProp, options: getOptions(storage, storageProp) })
+    storage.setItem(storageProp, encodeValue)
+  })
 }
 
 let calling = false
@@ -65,8 +63,6 @@ function get(
   key: string,
   receiver: any,
 ) {
-  selfCancel(target)
-
   if (isArray(target) && hasOwn(arrayInstrumentations, key))
     return arrayInstrumentations[key](target)
 
@@ -85,8 +81,6 @@ function set(
   value: any,
   receiver: object,
 ) {
-  selfCancel(target)
-
   const arrayLength: number | undefined = isArray(target) ? target.length : undefined
 
   const oldValue = target[key]
@@ -114,29 +108,10 @@ function set(
   return result
 }
 
-function has(
-  target: object,
-  key: string,
-): boolean {
-  selfCancel(target)
-
-  return Reflect.has(target, key)
-}
-
-function ownKeys(
-  target: object,
-): (string | symbol)[] {
-  selfCancel(target)
-
-  return Reflect.ownKeys(target)
-}
-
 function deleteProperty(
   target: Record<string, any>,
   key: string,
 ) {
-  selfCancel(target)
-
   const hadKey = hasOwn(target, key)
   const oldValue = target[key]
   const result = Reflect.deleteProperty(target, key)
@@ -159,8 +134,6 @@ export function createProxyObject(
   const proxy = new Proxy(target, {
     get,
     set,
-    has,
-    ownKeys,
     deleteProperty,
   })
 

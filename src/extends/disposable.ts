@@ -3,8 +3,6 @@ import { encode } from '@/proxy/transform'
 import { deleteProxyStorageProperty, getProxyStorageProperty } from '@/shared'
 import { isObject, pThen } from '@/utils'
 
-let cancelId: number | undefined
-
 export function setDisposable(
   storage: Record<string, any>,
   property: string,
@@ -33,14 +31,8 @@ export function checkDisposable({
   const { disposable } = data.options
 
   if (disposable) {
-    cancelId = window.setTimeout(() => {
-      deleteProxyStorageProperty(storage, property)
-    }, 0)
+    deleteProxyStorageProperty(storage, property)
   }
 
   return data
-}
-
-export function cancelDisposable() {
-  clearTimeout(cancelId)
 }
