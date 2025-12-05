@@ -83,7 +83,7 @@ test.describe('localforage', () => {
     expect(await page1.evaluate(() => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(window.localforage, 'localforage')
-      return new Promise(async (resolve) => {
+      return new Promise((resolve) => {
         local.on('test.length', (newVal: any, oldVal: any) => {
           resolve({
             newVal,
@@ -92,7 +92,7 @@ test.describe('localforage', () => {
         })
 
         local.test = ['hello', 'stokado'];
-        (await local.test).pop()
+        (local.test).then((array: Array<string>) => array.pop())
       })
     })).toEqual({
       newVal: 1,

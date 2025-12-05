@@ -1,10 +1,10 @@
 ```shell
          __                __  __                __
-  ____  /\ \__     ___    /\ \/  \      __      /\ \     ___   
- / ,__\ \ \ ,_\   / __`\  \ \    <    /'__`\    \_\ \   / __`\ 
+  ____  /\ \__     ___    /\ \/  \      __      /\ \     ___
+ / ,__\ \ \ ,_\   / __`\  \ \    <    /'__`\    \_\ \   / __`\
 /\__, `\ \ \ \/  /\ \_\ \  \ \  ^  \ /\ \_\.\_ /\ ,. \ /\ \_\ \
 \/\____/  \ \ \_ \ \____/   \ \_\ \_\\ \__/.\_\\ \____\\ \____/
- \/___/    \ \__\ \/___/     \/_/\/_/ \/__/\/_/ \/___ / \/___/ 
+ \/___/    \ \__\ \/___/     \/_/\/_/ \/__/\/_/ \/___ / \/___/
             \/__/
 ```
 
@@ -164,8 +164,8 @@ storage.setItem(key, value, { expires, disposable })
 `localForage` provides the same API as `localStorage`, it can be used in conjunction with `stokado`.
 
 ```js
-import { createProxyStorage } from 'stokado'
 import localForage from 'localforage'
+import { createProxyStorage } from 'stokado'
 
 const local = createProxyStorage(localForage, 'localForage')
 ```
@@ -182,7 +182,7 @@ await local.setItem('test', 'hello localForage')
 
 #### Multiple instances
 
-You can create multiple instances of `localForage` that point to different stores using `createInstance`. 
+You can create multiple instances of `localForage` that point to different stores using `createInstance`.
 
 ```js
 const store = localforage.createInstance({

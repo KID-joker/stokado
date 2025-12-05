@@ -1,10 +1,10 @@
 ```shell
          __                __  __                __
-  ____  /\ \__     ___    /\ \/  \      __      /\ \     ___   
- / ,__\ \ \ ,_\   / __`\  \ \    <    /'__`\    \_\ \   / __`\ 
+  ____  /\ \__     ___    /\ \/  \      __      /\ \     ___
+ / ,__\ \ \ ,_\   / __`\  \ \    <    /'__`\    \_\ \   / __`\
 /\__, `\ \ \ \/  /\ \_\ \  \ \  ^  \ /\ \_\.\_ /\ ,. \ /\ \_\ \
 \/\____/  \ \ \_ \ \____/   \ \_\ \_\\ \__/.\_\\ \____\\ \____/
- \/___/    \ \__\ \/___/     \/_/\/_/ \/__/\/_/ \/___ / \/___/ 
+ \/___/    \ \__\ \/___/     \/_/\/_/ \/__/\/_/ \/___ / \/___/
             \/__/
 ```
 
@@ -164,8 +164,8 @@ storage.setItem(key, value, { expires, disposable })
 因为 `localForage` 提供了跟 `localStorage` 一样的 API，它是类 `storage` 对象，可以跟 `stokado` 配合使用。
 
 ```js
-import { createProxyStorage } from 'stokado'
 import localForage from 'localforage'
+import { createProxyStorage } from 'stokado'
 
 const local = createProxyStorage(localForage, 'localForage')
 ```

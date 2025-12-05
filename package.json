@@ -1,7 +1,7 @@
 {
   "name": "stokado",
   "type": "module",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "stokado can proxy objects of any `storage`-like, providing getter/setter syntax sugars, serialization, subscription listening, expiration setting, one-time value retrieval.",
   "author": "KID-joker",
   "license": "MIT",
@@ -28,8 +28,8 @@
   "exports": {
     ".": {
       "types": "./dist/stokado.d.ts",
-      "require": "./dist/stokado.cjs",
-      "import": "./dist/stokado.mjs"
+      "import": "./dist/stokado.mjs",
+      "require": "./dist/stokado.cjs"
     }
   },
   "main": "dist/stokado.cjs",
@@ -51,24 +51,25 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^0.38.6",
-    "@playwright/test": "^1.36.2",
-    "@rollup/plugin-alias": "^5.1.0",
-    "@rollup/plugin-html": "^1.0.2",
-    "@rollup/plugin-typescript": "^11.1.6",
-    "@types/node": "^18.17.3",
-    "esbuild": "^0.17.19",
-    "eslint": "^8.46.0",
-    "lint-staged": "^15.2.2",
-    "rimraf": "^5.0.5",
-    "rollup": "^3.27.2",
-    "rollup-plugin-dts": "^5.3.1",
-    "rollup-plugin-esbuild": "^5.0.0",
-    "rollup-plugin-serve": "^1.1.1",
-    "serve-then": "^1.0.0",
-    "simple-git-hooks": "^2.10.0",
-    "tslib": "^2.6.1",
-    "typescript": "^4.9.5"
+    "@antfu/eslint-config": "^5.2.2",
+    "@playwright/test": "^1.55.0",
+    "@rollup/plugin-alias": "^5.1.1",
+    "@rollup/plugin-html": "^2.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-typescript": "^12.1.4",
+    "@types/node": "^24.3.1",
+    "esbuild": "^0.25.9",
+    "eslint": "^9.35.0",
+    "http-server": "^14.1.1",
+    "lint-staged": "^16.1.6",
+    "rimraf": "^6.0.1",
+    "rollup": "^4.50.0",
+    "rollup-plugin-dts": "^6.2.3",
+    "rollup-plugin-esbuild": "^6.2.1",
+    "rollup-plugin-serve": "^3.0.0",
+    "simple-git-hooks": "^2.13.1",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.2"
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged"

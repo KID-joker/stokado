@@ -1,10 +1,10 @@
 ```shell
          __                __  __                __
-  ____  /\ \__     ___    /\ \/  \      __      /\ \     ___   
- / ,__\ \ \ ,_\   / __`\  \ \    <    /'__`\    \_\ \   / __`\ 
+  ____  /\ \__     ___    /\ \/  \      __      /\ \     ___
+ / ,__\ \ \ ,_\   / __`\  \ \    <    /'__`\    \_\ \   / __`\
 /\__, `\ \ \ \/  /\ \_\ \  \ \  ^  \ /\ \_\.\_ /\ ,. \ /\ \_\ \
 \/\____/  \ \ \_ \ \____/   \ \_\ \_\\ \__/.\_\\ \____\\ \____/
- \/___/    \ \__\ \/___/     \/_/\/_/ \/__/\/_/ \/___ / \/___/ 
+ \/___/    \ \__\ \/___/     \/_/\/_/ \/__/\/_/ \/___ / \/___/
             \/__/
 ```
 
@@ -164,8 +164,8 @@ storage.setItem(key, value, { expires, disposable })
 `localForage` は `localStorage` と同じ API を提供しているため、`stokado` と一緒に使用できます。
 
 ```js
-import { createProxyStorage } from 'stokado'
 import localForage from 'localforage'
+import { createProxyStorage } from 'stokado'
 
 const local = createProxyStorage(localForage, 'localForage')
 ```

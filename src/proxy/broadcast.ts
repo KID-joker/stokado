@@ -1,7 +1,7 @@
+import type { StorageLike } from '@/types'
 import { trigger } from '@/extends/watch'
 import { decode, simpleDecode, simpleEncode } from '@/proxy/transform'
 import { storageNameMap } from '@/shared'
-import type { StorageLike } from '@/types'
 import { pThen } from '@/utils'
 
 const storageChannelMap = new Map<string, BroadcastChannel>()

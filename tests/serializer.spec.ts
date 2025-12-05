@@ -42,7 +42,7 @@ test.describe('serialized value', () => {
     expect(await page.evaluate(() => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(localStorage)
-      local.test = NaN
+      local.test = Number.NaN
       return local.test
     })).toBeNaN()
 

@@ -1,8 +1,8 @@
-import { postMessage } from '@/proxy/broadcast'
 import type { Effect, EffectFn, EffectMap } from '@/types'
+import { postMessage } from '@/proxy/broadcast'
 import { hasChanged } from '@/utils'
 
-const storageEffectMap = new WeakMap<Object, EffectMap>()
+const storageEffectMap = new WeakMap<object, EffectMap>()
 
 export function on(
   this: any,

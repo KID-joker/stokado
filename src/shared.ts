@@ -1,7 +1,7 @@
-import { checkExpired } from './extends/expires'
-import { decode } from '@/proxy/transform'
 import type { StorageObject } from '@/types'
+import { decode } from '@/proxy/transform'
 import { pThen } from '@/utils'
+import { checkExpired } from './extends/expires'
 
 const proxyStorageMap = new WeakMap<Record<string, any>, Record<string, any>>()
 export const storageNameMap = new WeakMap<Record<string, any>, string>()

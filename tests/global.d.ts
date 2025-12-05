@@ -1,10 +1,10 @@
-import { StorageLike } from "@/types"
+import type { StorageLike } from '@/types'
 
 declare global {
   interface Window {
     stokado: {
-      createProxyStorage: Function
-    },
-    localforage: StorageLike
+      createProxyStorage: (storage: T, name?: string) => T
+    }
+    localforage: StorageLike & { length: (callback?: (err: any, numberOfKeys: number) => void) => Promise<number> }
   }
 }

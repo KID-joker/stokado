@@ -1,12 +1,12 @@
+import type { StorageLike, StorageObject, StorageOptions } from '@/types'
+import { checkDisposable, setDisposable } from '@/extends/disposable'
 import { getExpires, removeExpires, setExpires } from '@/extends/expires'
+import { getOptions } from '@/extends/options'
+import { emit, off, on, once } from '@/extends/watch'
+import { listenMessage } from '@/proxy/broadcast'
+import { encode } from '@/proxy/transform'
 import { clearProxyStorage, deleteProxyStorageProperty, getProxyStorageProperty, getRaw, setProxyStorage, storageNameMap } from '@/shared'
 import { hasOwn, isArray, isFunction, isLocalStorage, isObject, isStorage, isString, pThen } from '@/utils'
-import { emit, off, on, once } from '@/extends/watch'
-import type { StorageLike, StorageObject, StorageOptions } from '@/types'
-import { encode } from '@/proxy/transform'
-import { checkDisposable, setDisposable } from '@/extends/disposable'
-import { getOptions } from '@/extends/options'
-import { listenMessage } from '@/proxy/broadcast'
 
 function clear(storage: Record<string, any>) {
   return function () {

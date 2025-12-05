@@ -50,10 +50,11 @@ test.describe('basic usage', () => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(localStorage)
       local.test = 'hello localStorage'
-      local.setItem('test', 'hello stokado')
       local.setItem('foo', 'bar')
+      local.setItem('test', 'hello stokado')
+      // The order of keys is user-agent defined
       return local.key(0)
-    })).toBe('foo')
+    })).toBe('test')
 
     // getItem()
     expect(await page.evaluate(() => {

@@ -2,14 +2,14 @@ export type RawType = 'String' | 'Number' | 'BigInt' | 'Boolean' | 'Null' | 'Und
 
 export interface StorageLike {
   [x: string]: any
-  clear(): void
-  getItem(key: string): string | null | Promise<string | null>
-  key(key: number): string | null | Promise<string | null>
-  setItem(key: string, value: any, options?: StorageOptions): void
-  removeItem(key: string): void
+  clear: () => void
+  getItem: (key: string) => string | null | Promise<string | null>
+  key: (key: number) => string | null | Promise<string | null>
+  setItem: (key: string, value: any, options?: StorageOptions) => void
+  removeItem: (key: string) => void
   length: number
 }
-export type StorageValue = string | number | bigint | boolean | null | undefined | Object
+export type StorageValue = string | number | bigint | boolean | null | undefined | object
 
 export interface StorageOptions {
   expires?: ExpiresType
