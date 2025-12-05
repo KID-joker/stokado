@@ -1,7 +1,7 @@
 {
   "name": "stokado",
   "type": "module",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "stokado can proxy objects of any `storage`-like, providing getter/setter syntax sugars, serialization, subscription listening, expiration setting, one-time value retrieval.",
   "author": "KID-joker",
   "license": "MIT",
