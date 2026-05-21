@@ -1,6 +1,7 @@
 import type { StorageObject } from '@/types'
 import { encode } from '@/proxy/transform'
-import { deleteProxyStorageProperty, getProxyStorageProperty } from '@/shared'
+import { deleteProxyStorageProperty, setProxyStorageProperty } from '@/cache'
+import { getProxyStorageProperty } from '@/shared'
 import { isObject, pThen } from '@/utils'
 
 export function setDisposable(
@@ -10,7 +11,9 @@ export function setDisposable(
   pThen(() => getProxyStorageProperty(storage, property), (res: StorageObject | string | null) => {
     if (isObject(res)) {
       const options = Object.assign({}, res?.options, { disposable: true })
-      const encodeValue = encode({ data: res.value, storage, property, options })
+      const newItem = { ...res, options }
+      setProxyStorageProperty(storage, property, newItem)
+      const encodeValue = encode({ data: res.value, options })
       storage.setItem(property, encodeValue)
     }
   })

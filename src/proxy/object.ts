@@ -1,8 +1,8 @@
 import { getOptions } from '@/extends/options'
 import { emit } from '@/extends/watch'
-import { proxyObjectMap } from '@/shared'
+import { proxyObjectMap } from '@/cache'
 import { hasChanged, hasOwn, isArray, isIntegerKey, pThen } from '@/utils'
-import { encode } from './transform'
+import { encode, registerObjectCreator } from './transform'
 
 const targetStorageMap = new WeakMap()
 
@@ -23,11 +23,12 @@ function setStorageValue(target: object) {
   const { storage, storageProp } = targetStorageMap.get(target)
   // Check if the property still exists (not disposed)
   return pThen(() => storage.getItem(storageProp), (currentValue: string | null) => {
+    console.log('setStorageValue', storageProp, currentValue)
     if (currentValue === null) {
       // Property has been disposed, don't re-save it
       return
     }
-    const encodeValue = encode({ data: target, storage, property: storageProp, options: getOptions(storage, storageProp) })
+    const encodeValue = encode({ data: target, options: getOptions(storage, storageProp) })
     storage.setItem(storageProp, encodeValue)
   })
 }
@@ -145,3 +146,5 @@ export function createProxyObject(
 
   return proxy
 }
+
+registerObjectCreator(createProxyObject)

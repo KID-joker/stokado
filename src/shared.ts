@@ -1,42 +1,31 @@
 import type { StorageObject } from '@/types'
+import { getProxyStorage } from '@/cache'
 import { decode } from '@/proxy/transform'
 import { pThen } from '@/utils'
-import { checkExpired } from './extends/expires'
+import { checkExpired } from '@/check_expired'
 
-const proxyStorageMap = new WeakMap<Record<string, any>, Record<string, any>>()
-export const storageNameMap = new WeakMap<Record<string, any>, string>()
-
-export function setProxyStorage(storage: Record<string, any>, proxy: Record<string, any>): void {
-  proxyStorageMap.set(storage, proxy)
-}
-
-export function clearProxyStorage(storage: Record<string, any>): void {
-  storage.clear()
-  proxyStorageMap.set(storage, {})
-}
+export {
+  clearProxyStorage,
+  deleteProxyStorageProperty,
+  getRaw,
+  proxyObjectMap,
+  setProxyStorage,
+  setProxyStorageProperty,
+  storageNameMap,
+} from '@/cache'
 
 export function getProxyStorageProperty(storage: Record<string, any>, property: string): StorageObject | string | null {
-  const proxyStorage = proxyStorageMap.get(storage)
+  const proxyStorage = getProxyStorage(storage)
   const data = proxyStorage![property] || pThen(() => storage.getItem(property), (res: string | null) => {
-    return decode({ data: res, storage, property })
+    const decoded = decode({ data: res, storage, property })
+    // If decoded value is an object or array (proxy), cache it
+    if (res && typeof res === 'string') {
+      // We only cache if we actually decoded something from storage
+      proxyStorage![property] = decoded
+    }
+    return decoded
   })
   return pThen(() => data, (res: StorageObject | string | null) => {
     return checkExpired({ data: res, storage, property })
   })
-}
-
-export function deleteProxyStorageProperty(storage: Record<string, any>, property: string) {
-  const proxyStorage = proxyStorageMap.get(storage)
-  storage.removeItem(property)
-  delete proxyStorage![property]
-}
-
-export function setProxyStorageProperty(storage: Record<string, any>, property: string, data: StorageObject) {
-  const proxyStorage = proxyStorageMap.get(storage)
-  proxyStorage![property] = data
-}
-
-export const proxyObjectMap = new WeakMap<Record<string, any>, Record<string, any>>()
-export function getRaw(value: any) {
-  return proxyObjectMap.get(value) || value
 }
