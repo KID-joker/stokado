@@ -17,8 +17,10 @@ Refactor the internal architecture of Stokado while preserving the existing publ
 | Testing strategy | Keep existing Playwright E2E tests + add vitest unit tests |
 | Missing/expired/disposed key return value | `getItem()` returns `null`; property access (`proxy.key`) returns `undefined` — consistent with native Storage API |
 | `length` property | Type-check `storage.length`: if function, call `length()`; otherwise return property value directly |
-| Broadcast emission | Only broadcast when value has actually changed (`hasChanged` check) |
+| Broadcast emission (setItem) | Only broadcast when value has actually changed (`hasChanged` check) |
+| Broadcast emission (onObjectPropertySet) | Always broadcast — object was mutated in place, `hasChanged` is unreliable for reference types |
 | `removeItem` event | Only emit event and broadcast when the key existed in cache |
+| `clear()` event | Emit per-key events for all cached keys (`emit(key, undefined, oldValue)`) before clearing; also broadcast `type: 'clear'` |
 | `detectName` | Only auto-detect `localStorage`; do not auto-detect `sessionStorage` (cross-tab sync is meaningless for sessionStorage) |
 
 ## Module Structure
@@ -363,6 +365,10 @@ setItem(key: string, value: any, options?: StorageOptions) {
       if (Array.isArray(value) && Array.isArray(oldValue) && value.length !== oldValue.length) {
         this.emitter.emit(`${key}.length`, value.length, oldValue.length)
       }
+
+      // Note: when oldValue is undefined (new key), no length event is emitted.
+      // This is intentional — the transition from undefined to an array is a key-level
+      // change, not a length change. Listeners should subscribe to the key itself.
     })
   })
 }
@@ -391,16 +397,21 @@ removeItem(key: string) {
 
 ### Internal Flow: clear
 
+`clear()` emits per-key events for all cached keys before clearing. After `flushAll()` drains all active queues, the cache entries are snapshot, then the storage is cleared, and each cached key receives an `emit(key, undefined, oldValue)` event. This ensures listeners are notified when their observed keys are removed by `clear()`.
+
 ```ts
 clear() {
   const doFlush = this.scheduler.flushAll()
-  const doClear = () => {
+  return resolve(doFlush, () => {
+    const cachedEntries = Array.from(this.cache.entries())
     return resolve(this.strategy.clear(this.storage), () => {
       this.cache.clear()
+      for (const [key, cached] of cachedEntries) {
+        this.emitter.emit(key, undefined, cached.value)
+      }
       this.broadcast.post({ type: 'clear' })
     })
-  }
-  return resolve(doFlush, doClear)
+  })
 }
 ```
 
@@ -436,6 +447,7 @@ class CacheStore {
   set(key: string, item: CachedItem): void
   delete(key: string): void
   has(key: string): boolean
+  entries(): IterableIterator<[string, CachedItem]>
   clear(): void
 
   getObjectProxy(key: string): object | undefined
@@ -479,6 +491,11 @@ class EventEmitter {
 | `storage.list.push(item)` | `emit('list', list, list)` (always) + `emit('list.length', newLen, oldLen)` |
 | `storage.list.sort()` | `emit('list', list, list)` (always) — no length event (length unchanged) |
 | `delete storage.name` | `emit('name', undefined, oldValue)` (only if key existed in cache) |
+| `storage.clear()` | `emit(key, undefined, oldValue)` for each cached key + `broadcast.post({ type: 'clear' })` |
+
+**Broadcast strategy distinction:**
+- `setItem`: broadcast only when `hasChanged(newValue, oldValue)` — value replacement is detectable
+- `onObjectPropertySet`: always broadcast — object was mutated in place, `hasChanged` is unreliable for reference types
 
 ## StorageBroadcast
 
@@ -626,7 +643,7 @@ function createObjectProxy(
 ```
 
 Behavior:
-- **Property set** (`obj.prop = val`): mutates the raw object, then calls `operator.onObjectPropertySet(key, obj)` to re-serialize and write back. `onObjectPropertySet` calls `emit(key, target, target)` unconditionally (no `hasChanged` check, since the object was mutated in place and `Object.is` would incorrectly return `true`).
+- **Property set** (`obj.prop = val`): mutates the raw object, then calls `operator.onObjectPropertySet(key, obj)` to re-serialize and write back. `onObjectPropertySet` calls `emit(key, target, target)` unconditionally (no `hasChanged` check, since the object was mutated in place and `Object.is` would incorrectly return `true`). Broadcast is also unconditional for the same reason — since `hasChanged(obj, obj)` is always `false` for the same reference, the sender cannot determine whether the mutation actually changed any sub-property, so it must always broadcast to ensure other tabs stay in sync.
 - **Array mutations** (`push/pop/shift/unshift/splice`): mutates the array, then triggers re-serialization + length change events. Parent event emitted unconditionally from `onObjectPropertySet`. Uses `try/finally` to ensure the `mutating` flag is always reset, even if the mutation throws.
 - **Array mutations** (`sort/reverse`): mutates the array, then triggers re-serialization (no length change event since length is unchanged). Parent event emitted unconditionally. Also uses `try/finally`.
 - **Property delete**: removes from raw object, triggers re-serialization. Parent event emitted unconditionally.

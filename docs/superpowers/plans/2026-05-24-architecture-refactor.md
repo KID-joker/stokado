@@ -872,6 +872,10 @@ export class CacheStore {
     return this.items.has(key)
   }
 
+  entries(): IterableIterator<[string, CachedItem]> {
+    return this.items.entries()
+  }
+
   clear(): void {
     this.items.clear()
     this.objectProxies.clear()
@@ -1096,10 +1100,6 @@ export class EventEmitter {
   getRegisteredKeys(): string[] {
     return Array.from(this.listeners.keys())
   }
-}
-
-function hasChanged(value: any, oldValue: any): boolean {
-  return !Object.is(value, oldValue)
 }
 ```
 
@@ -1562,13 +1562,16 @@ export function createObjectProxy(
         return (...args: any[]) => {
           mutating = true
           const oldLength = target.length
-          const result = (target as any)[prop](...args)
-          operator.onObjectPropertySet(key, target)
-          if (target.length !== oldLength) {
-            operator.emitter.emit(`${key}.length`, target.length, oldLength)
+          try {
+            const result = (target as any)[prop](...args)
+            operator.onObjectPropertySet(key, target)
+            if (target.length !== oldLength) {
+              operator.emitter.emit(`${key}.length`, target.length, oldLength)
+            }
+            return result
+          } finally {
+            mutating = false
           }
-          mutating = false
-          return result
         }
       }
       return Reflect.get(target, prop, receiver)
@@ -1967,13 +1970,16 @@ export class StorageOperator {
         this.cache.set(key, { value, type: getRawType(value), options: Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined })
         if (hasChanged(value, oldValue)) {
           this.emitter.emit(key, value, oldValue)
+          this.broadcast.post({ type: 'set', key, encoded })
         }
 
         if (Array.isArray(value) && Array.isArray(oldValue) && value.length !== oldValue.length) {
           this.emitter.emit(`${key}.length`, value.length, oldValue.length)
         }
 
-        this.broadcast.post({ type: 'set', key, encoded })
+        // Note: when oldValue is undefined (new key), no length event is emitted.
+        // The transition from undefined to an array is a key-level change,
+        // not a length change. Listeners should subscribe to the key itself.
       })
     })
   }
@@ -1985,8 +1991,10 @@ export class StorageOperator {
 
       return resolve(this.strategy.removeItem(this.storage, key), () => {
         this.cache.delete(key)
-        this.emitter.emit(key, undefined, oldValue)
-        this.broadcast.post({ type: 'remove', key })
+        if (oldCached !== undefined) {
+          this.emitter.emit(key, undefined, oldValue)
+          this.broadcast.post({ type: 'remove', key })
+        }
       })
     })
   }
@@ -1994,8 +2002,12 @@ export class StorageOperator {
   clear(): any {
     const doFlush = this.scheduler.flushAll()
     return resolve(doFlush, () => {
+      const cachedEntries = Array.from(this.cache.entries())
       return resolve(this.strategy.clear(this.storage), () => {
         this.cache.clear()
+        for (const [key, cached] of cachedEntries) {
+          this.emitter.emit(key, undefined, cached.value)
+        }
         this.broadcast.post({ type: 'clear' })
       })
     })
@@ -2124,6 +2136,15 @@ export class StorageOperator {
 
   // --- Nested object support ---
 
+  createObjectProxy(key: string, rawValue: object): object {
+    let proxy = this.cache.getObjectProxy(key)
+    if (!proxy) {
+      proxy = createObjectProxy(rawValue, key, this)
+      this.cache.setObjectProxy(key, proxy)
+    }
+    return proxy
+  }
+
   onObjectPropertySet(key: string, target: object): any {
     return this.scheduler.enqueue(key, () => {
       const cached = this.cache.get(key)
@@ -2133,6 +2154,8 @@ export class StorageOperator {
       return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
         this.cache.set(key, { value: target, type: getRawType(target), options })
         this.emitter.emit(key, target, target)
+        // Always broadcast for object mutations — hasChanged is unreliable
+        // for reference types (Object.is(obj, obj) is always true)
         this.broadcast.post({ type: 'set', key, encoded })
       })
     })
@@ -2146,6 +2169,10 @@ export class StorageOperator {
         const decoded = decode(msg.encoded)
         if (decoded && typeof decoded !== 'string') {
           const item = decoded as DecodedItem
+          if (this.isExpired(item.options)) {
+            this.cache.delete(msg.key)
+            break
+          }
           const oldCached = this.cache.get(msg.key)
           this.cache.deleteObjectProxy(msg.key)
           this.cache.set(msg.key, { value: item.value, type: item.type, options: item.options })
@@ -2175,25 +2202,16 @@ export class StorageOperator {
 
   private extractValue(cached: { value: any; type: string; options?: StorageOptions }, key: string): any {
     if (cached.type === 'Object' || cached.type === 'Array') {
-      return this.getOrCreateObjectProxy(key, cached.value)
+      return this.createObjectProxy(key, cached.value)
     }
     return cached.value
   }
 
   private wrapIfObject(item: DecodedItem, key: string): any {
     if (item.type === 'Object' || item.type === 'Array') {
-      return this.getOrCreateObjectProxy(key, item.value)
+      return this.createObjectProxy(key, item.value)
     }
     return item.value
-  }
-
-  private getOrCreateObjectProxy(key: string, raw: object): object {
-    let proxy = this.cache.getObjectProxy(key)
-    if (!proxy) {
-      proxy = createObjectProxy(raw, key, this)
-      this.cache.setObjectProxy(key, proxy)
-    }
-    return proxy
   }
 }
 ```
@@ -2254,8 +2272,12 @@ export function createProxyHandler(operator: StorageOperator): ProxyHandler<any>
           return () => operator.clear()
         case 'key':
           return (index: number) => operator.key(index)
-        case 'length':
-          return operator.length
+        case 'length': {
+          const len = target.length
+          return typeof len === 'function'
+            ? () => operator.length
+            : operator.length
+        }
       }
 
       // Extended methods
@@ -2290,8 +2312,12 @@ export function createProxyHandler(operator: StorageOperator): ProxyHandler<any>
         return isFunction(nativeValue) ? nativeValue.bind(target) : nativeValue
       }
 
-      // Property access → getItem
-      return operator.getItem(prop)
+      // Property access → getItem, convert null → undefined
+      const result = operator.getItem(prop)
+      if (operator.isAsync) {
+        return result.then((v: any) => v === null ? undefined : v)
+      }
+      return result === null ? undefined : result
     },
 
     set(_target, prop: string, value) {
@@ -2373,7 +2399,6 @@ function detectAsync(storage: StorageLike): boolean {
 function detectName(storage: StorageLike): string | null {
   if (typeof window !== 'undefined') {
     if (storage === window.localStorage) return 'localStorage'
-    if (storage === window.sessionStorage) return 'sessionStorage'
   }
   return null
 }
