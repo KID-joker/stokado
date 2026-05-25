@@ -86,7 +86,7 @@
 - [ ] **Step 1: Install vitest**
 
 ```bash
-npm install -D vitest
+pnpm add -D vitest
 ```
 
 - [ ] **Step 2: Create vitest.config.ts**
@@ -125,7 +125,7 @@ mkdir -p src/core src/scheduler src/strategy src/serializer src/cache src/events
 - [ ] **Step 5: Run vitest to verify setup**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: No tests found (0 passed), exits cleanly.
@@ -152,6 +152,8 @@ Create `src/scheduler/types.ts`:
 
 ```ts
 export interface Scheduler {
+  readonly isAsync: boolean
+
   /**
    * Schedule an operation onto the queue for the given key.
    * Sync: executes directly and returns the result.
@@ -203,7 +205,7 @@ describe('SyncScheduler', () => {
 - [ ] **Step 3: Run tests to verify they fail**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: FAIL — cannot find module `@/scheduler/sync-scheduler`
@@ -216,6 +218,8 @@ Create `src/scheduler/sync-scheduler.ts`:
 import type { Scheduler } from './types'
 
 export class SyncScheduler implements Scheduler {
+  readonly isAsync = false
+
   enqueue<T>(_key: string, operation: () => T): T {
     return operation()
   }
@@ -229,7 +233,7 @@ export class SyncScheduler implements Scheduler {
 - [ ] **Step 5: Run tests to verify SyncScheduler passes**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: All SyncScheduler tests PASS.
@@ -347,7 +351,7 @@ function delay(ms: number) {
 - [ ] **Step 7: Run tests to verify AsyncScheduler tests fail**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: FAIL — cannot find module `@/scheduler/async-scheduler`
@@ -360,6 +364,8 @@ Create `src/scheduler/async-scheduler.ts`:
 import type { Scheduler } from './types'
 
 export class AsyncScheduler implements Scheduler {
+  readonly isAsync = true
+
   private queues = new Map<string, Promise<any>>()
 
   enqueue<T>(key: string, operation: () => Promise<T>): Promise<T> {
@@ -396,7 +402,7 @@ export class AsyncScheduler implements Scheduler {
 - [ ] **Step 9: Run tests to verify all pass**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: All scheduler tests PASS.
@@ -556,7 +562,7 @@ describe('Serializer', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: FAIL — cannot find modules.
@@ -571,7 +577,7 @@ interface Serializer<T = any> {
   decode: (raw: string) => T
 }
 
-const identity = (v: string): string => v
+const identity = (v: any): any => v
 const toString = (v: any): string => String(v)
 
 export const serializers: Record<string, Serializer> = {
@@ -600,12 +606,12 @@ export const serializers: Record<string, Serializer> = {
     decode: () => undefined,
   },
   Object: {
-    encode: (v) => JSON.stringify(v),
-    decode: (s) => JSON.parse(s),
+    encode: identity as (v: any) => any,
+    decode: identity as (v: any) => any,
   },
   Array: {
-    encode: (v) => JSON.stringify(v),
-    decode: (s) => JSON.parse(s),
+    encode: identity as (v: any) => any,
+    decode: identity as (v: any) => any,
   },
   Set: {
     encode: (v) => JSON.stringify([...v]),
@@ -653,7 +659,7 @@ import { getRawType } from '@/utils'
 
 export interface StorageEnvelope {
   type: string
-  value: string
+  value: any
   options?: StorageOptions
 }
 
@@ -722,7 +728,7 @@ export function decode(raw: string | null): DecodedItem | null | string {
 - [ ] **Step 6: Run tests to verify all pass**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: All serializer tests PASS.
@@ -730,7 +736,7 @@ Expected: All serializer tests PASS.
 - [ ] **Step 7: Run tests again**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: All PASS.
@@ -827,7 +833,7 @@ describe('CacheStore', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: FAIL — cannot find module.
@@ -888,7 +894,7 @@ export class CacheStore {
 - [ ] **Step 4: Run tests to verify all pass**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: All CacheStore tests PASS.
@@ -924,12 +930,12 @@ describe('EventEmitter', () => {
     expect(fn).toHaveBeenCalledWith('new', 'old')
   })
 
-  it('emit does not trigger if value has not changed', () => {
+  it('emit always fires regardless of value change', () => {
     const emitter = new EventEmitter()
     const fn = vi.fn()
     emitter.on('key', fn)
     emitter.emit('key', 'same', 'same')
-    expect(fn).not.toHaveBeenCalled()
+    expect(fn).toHaveBeenCalledWith('same', 'same')
   })
 
   it('off removes a specific listener', () => {
@@ -1000,13 +1006,30 @@ describe('EventEmitter', () => {
     emitter.on('b', () => {})
     expect(emitter.getRegisteredKeys()).toEqual(['a', 'b'])
   })
+
+  it('emit triggers even when newValue and oldValue are the same reference', () => {
+    const emitter = new EventEmitter()
+    const fn = vi.fn()
+    const obj = { a: 1 }
+    emitter.on('key', fn)
+    emitter.emit('key', obj, obj)
+    expect(fn).toHaveBeenCalledWith(obj, obj)
+  })
+
+  it('emit always fires — hasChanged is the caller responsibility', () => {
+    const emitter = new EventEmitter()
+    const fn = vi.fn()
+    emitter.on('key', fn)
+    emitter.emit('key', 'same', 'same')
+    expect(fn).toHaveBeenCalledWith('same', 'same')
+  })
 })
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: FAIL.
@@ -1020,7 +1043,7 @@ export type Listener = (newValue: any, oldValue: any) => void
 
 interface WrappedListener {
   fn: Listener
-  originalFn?: Listener // For once() — stores original so off() can match it
+  originalFn?: Listener
 }
 
 export class EventEmitter {
@@ -1061,14 +1084,9 @@ export class EventEmitter {
     this.listeners.clear()
   }
 
-  /**
-   * Emit an event. Only triggers listeners if value has actually changed.
-   */
   emit(key: string, newValue: any, oldValue: any): void {
-    if (!hasChanged(newValue, oldValue)) return
     const list = this.listeners.get(key)
     if (!list) return
-    // Copy to avoid mutation during iteration (once removes itself)
     const snapshot = [...list]
     for (const { fn } of snapshot) {
       fn(newValue, oldValue)
@@ -1088,7 +1106,7 @@ function hasChanged(value: any, oldValue: any): boolean {
 - [ ] **Step 4: Run tests to verify all pass**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: All EventEmitter tests PASS.
@@ -1161,7 +1179,7 @@ export class SyncStrategy implements StorageStrategy {
   }
 
   length(storage: StorageLikeMinimal): number {
-    return storage.length
+    return typeof storage.length === 'function' ? storage.length() : storage.length
   }
 }
 ```
@@ -1195,7 +1213,7 @@ export class AsyncStrategy implements StorageStrategy {
   }
 
   async length(storage: StorageLikeMinimal): Promise<number> {
-    return await storage.length()
+    return typeof storage.length === 'function' ? await storage.length() : storage.length
   }
 }
 ```
@@ -1203,7 +1221,7 @@ export class AsyncStrategy implements StorageStrategy {
 - [ ] **Step 4: Run unit tests to ensure no regressions**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: All existing tests still PASS (strategies are simple wrappers, tested via Operator later).
@@ -1341,7 +1359,7 @@ export function resolve<T, R>(val: T | Promise<T>, fn: (v: T) => R | Promise<R>)
 - [ ] **Step 2: Run unit tests**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: All PASS (existing tests import from `@/serializer/` and `@/scheduler/` which don't depend on utils changes).
@@ -1484,13 +1502,39 @@ describe('createObjectProxy', () => {
     expect(operator.onObjectPropertySet).not.toHaveBeenCalled()
     expect(operator.emitter.emit).not.toHaveBeenCalled()
   })
+
+  it('array sort triggers onObjectPropertySet', () => {
+    const operator = createMockOperator()
+    const raw = [3, 1, 2]
+    const proxy = createObjectProxy(raw, 'list', operator as any)
+    proxy.sort()
+    expect(raw).toEqual([1, 2, 3])
+    expect(operator.onObjectPropertySet).toHaveBeenCalledWith('list', raw)
+  })
+
+  it('array reverse triggers onObjectPropertySet', () => {
+    const operator = createMockOperator()
+    const raw = [1, 2, 3]
+    const proxy = createObjectProxy(raw, 'list', operator as any)
+    proxy.reverse()
+    expect(raw).toEqual([3, 2, 1])
+    expect(operator.onObjectPropertySet).toHaveBeenCalledWith('list', raw)
+  })
+
+  it('array sort does not emit length event', () => {
+    const operator = createMockOperator()
+    const raw = [3, 1, 2]
+    const proxy = createObjectProxy(raw, 'list', operator as any)
+    proxy.sort()
+    expect(operator.emitter.emit).not.toHaveBeenCalledWith('list.length', expect.anything(), expect.anything())
+  })
 })
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: FAIL.
@@ -1546,7 +1590,6 @@ export function createObjectProxy(
         operator.emitter.emit(subKey, value, hadKey ? oldValue : undefined)
 
         if (!mutating) {
-          // Track array[i] = x causing length change
           if (prop !== 'length' && arrayLength !== undefined && target.length !== arrayLength) {
             operator.emitter.emit(`${key}.length`, target.length, arrayLength)
           }
@@ -1604,7 +1647,7 @@ export interface StorageOperator {
 - [ ] **Step 5: Run tests**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: All proxy-object tests PASS.
@@ -1723,6 +1766,15 @@ describe('StorageOperator - Sync', () => {
     expect(fn).toHaveBeenCalledWith('val', undefined)
   })
 
+  it('does not emit event when setting same value', () => {
+    const op = createSyncOperator()
+    op.setItem('key', 'val')
+    const fn = vi.fn()
+    op.emitter.on('key', fn)
+    op.setItem('key', 'val')
+    expect(fn).not.toHaveBeenCalled()
+  })
+
   it('emits events on removeItem', () => {
     const op = createSyncOperator()
     op.setItem('key', 'val')
@@ -1813,7 +1865,7 @@ describe('StorageOperator - Race Condition (Issue 3.3)', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: FAIL — StorageOperator is just an interface stub.
@@ -1833,7 +1885,7 @@ import { StorageBroadcast } from '@/events/broadcast'
 import { encode } from '@/serializer/encode'
 import { decode, type DecodedItem } from '@/serializer/decode'
 import { createObjectProxy } from './proxy-object'
-import { resolve, formatTime, getRawType, isObject } from '@/utils'
+import { resolve, formatTime, getRawType, hasChanged, isObject } from '@/utils'
 
 export class StorageOperator {
   constructor(
@@ -1846,7 +1898,7 @@ export class StorageOperator {
   ) {}
 
   get isAsync(): boolean {
-    return this.scheduler instanceof Object && 'queues' in (this.scheduler as any)
+    return this.scheduler.isAsync
   }
 
   getItem(key: string): any {
@@ -1911,12 +1963,12 @@ export class StorageOperator {
       const encoded = encode(value, Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined)
 
       return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
-        // Invalidate old object proxy if value is being replaced
         this.cache.deleteObjectProxy(key)
         this.cache.set(key, { value, type: getRawType(value), options: Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined })
-        this.emitter.emit(key, value, oldValue)
+        if (hasChanged(value, oldValue)) {
+          this.emitter.emit(key, value, oldValue)
+        }
 
-        // Array length change event
         if (Array.isArray(value) && Array.isArray(oldValue) && value.length !== oldValue.length) {
           this.emitter.emit(`${key}.length`, value.length, oldValue.length)
         }
@@ -2075,16 +2127,13 @@ export class StorageOperator {
   onObjectPropertySet(key: string, target: object): any {
     return this.scheduler.enqueue(key, () => {
       const cached = this.cache.get(key)
-      // If the key was disposed/removed, don't re-save
-      return resolve(this.strategy.getItem(this.storage, key), (current: string | null) => {
-        if (current === null) return
-        const options = cached?.options
-        const encoded = encode(target, options)
-        return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
-          this.cache.set(key, { value: target, type: getRawType(target), options })
-          this.emitter.emit(key, target, target)
-          this.broadcast.post({ type: 'set', key, encoded })
-        })
+      if (!cached) return
+      const options = cached.options
+      const encoded = encode(target, options)
+      return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
+        this.cache.set(key, { value: target, type: getRawType(target), options })
+        this.emitter.emit(key, target, target)
+        this.broadcast.post({ type: 'set', key, encoded })
       })
     })
   }
@@ -2162,7 +2211,7 @@ This is already a type-only import, so no circular runtime dependency.
 - [ ] **Step 5: Run tests**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: All operator tests PASS (including the race condition test).
@@ -2300,11 +2349,15 @@ export function createProxyStorage(storage: StorageLike, name?: string) {
   // 6. Start broadcast listener
   broadcast.listen((msg) => operator.handleBroadcast(msg))
 
+  // 7. Warn if no name provided (cross-tab sync will be disabled)
+  if (!broadcastName)
+    console.warn('If you are using IndexedDB or WebSQL, `name` is required.')
+
   return proxy
 }
 
 function validateStorage(storage: StorageLike): void {
-  const required = ['getItem', 'setItem', 'removeItem', 'clear']
+  const required = ['getItem', 'setItem', 'removeItem', 'clear', 'key']
   for (const method of required) {
     if (!isFunction(storage[method])) {
       throw new Error(`Invalid storage: missing ${method} method`)
@@ -2319,8 +2372,8 @@ function detectAsync(storage: StorageLike): boolean {
 
 function detectName(storage: StorageLike): string | null {
   if (typeof window !== 'undefined') {
-    if (storage === window.localStorage) return 'local'
-    if (storage === window.sessionStorage) return 'session'
+    if (storage === window.localStorage) return 'localStorage'
+    if (storage === window.sessionStorage) return 'sessionStorage'
   }
   return null
 }
@@ -2329,7 +2382,7 @@ function detectName(storage: StorageLike): string | null {
 - [ ] **Step 3: Run unit tests**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: All PASS.
@@ -2398,7 +2451,7 @@ Expected: No errors. Fix any remaining import issues if needed.
 - [ ] **Step 4: Run unit tests**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: All PASS.
@@ -2420,7 +2473,7 @@ git add -A && git commit -m "refactor: remove old source files and update tsconf
 - [ ] **Step 1: Run the build**
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 Expected: Builds successfully. If there are errors, fix import paths or rollup config. The entry point is still `src/index.ts` which exports `createProxyStorage`, so rollup should work unchanged.
@@ -2428,7 +2481,7 @@ Expected: Builds successfully. If there are errors, fix import paths or rollup c
 - [ ] **Step 2: Run E2E tests**
 
 ```bash
-npm test
+pnpm test
 ```
 
 This runs `rollup -c --environment BUILD:test && npx playwright test`.
@@ -2505,7 +2558,7 @@ describe('StorageOperator - Complex Race Conditions', () => {
 - [ ] **Step 2: Run all unit tests**
 
 ```bash
-npm run test:unit
+pnpm run test:unit
 ```
 
 Expected: All PASS.
@@ -2523,7 +2576,7 @@ git add -A && git commit -m "test: add comprehensive race condition unit tests"
 - [ ] **Step 1: Run linting**
 
 ```bash
-npm run lint
+pnpm run lint
 ```
 
 Fix any lint errors.
@@ -2531,7 +2584,7 @@ Fix any lint errors.
 - [ ] **Step 2: Run type check**
 
 ```bash
-npm run typecheck
+pnpm run typecheck
 ```
 
 Expected: No errors.
@@ -2539,7 +2592,7 @@ Expected: No errors.
 - [ ] **Step 3: Run full test suite**
 
 ```bash
-npm run test:unit && npm test
+pnpm run test:unit && pnpm test
 ```
 
 Expected: All unit tests and E2E tests PASS.
@@ -2547,7 +2600,7 @@ Expected: All unit tests and E2E tests PASS.
 - [ ] **Step 4: Verify build output**
 
 ```bash
-npm run build && ls -la dist/
+pnpm run build && ls -la dist/
 ```
 
 Expected: `stokado.mjs`, `stokado.cjs`, `stokado.js`, `stokado.min.js`, `stokado.d.ts` all present.
