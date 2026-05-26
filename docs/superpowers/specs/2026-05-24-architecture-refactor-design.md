@@ -2,7 +2,7 @@
 
 ## Overview
 
-Refactor the internal architecture of Stokado while preserving the existing public API (`createProxyStorage(storage, name?)`) and all current functionality. The goal is to establish clear separation of concerns, eliminate global mutable state, resolve the async operation ordering problem, and improve testability.
+Refactor the internal architecture of Stokado with an updated public API (`createProxyStorage(storage, options?)`) and all current functionality. The goal is to establish clear separation of concerns, eliminate global mutable state, resolve the async operation ordering problem, and improve testability.
 
 ## Design Decisions
 
@@ -11,7 +11,7 @@ Refactor the internal architecture of Stokado while preserving the existing publ
 | Async operation queue | Per-key independent queues; same-key operations execute strictly in call order |
 | Cross-key operations | `clear()` waits for all active queues to drain before executing |
 | Sync/Async architecture | Unified core with Strategy pattern (SyncStrategy / AsyncStrategy) |
-| External API | Fully backward-compatible; no changes to `createProxyStorage` signature |
+| External API | `createProxyStorage(storage, options?)` — second parameter changed from `name?: string` to `options?: ProxyStorageOptions` (see API Changes section) |
 | Nested object proxy | Behavior unchanged; sub-property mutations re-serialize the entire parent object |
 | Refactoring scope | Core architecture + code smell removal + unit test additions |
 | Testing strategy | Keep existing Playwright E2E tests + add vitest unit tests |
@@ -19,9 +19,9 @@ Refactor the internal architecture of Stokado while preserving the existing publ
 | `length` property | Type-check `storage.length`: if function, call `length()`; otherwise return property value directly |
 | Broadcast emission (setItem) | Only broadcast when value has actually changed (`hasChanged` check) |
 | Broadcast emission (onObjectPropertySet) | Always broadcast — object was mutated in place, `hasChanged` is unreliable for reference types |
-| `removeItem` event | Only emit event and broadcast when the key existed in cache |
+| `removeItem` event | Always emit event and broadcast — consistent with `handleBroadcast` behavior |
 | `clear()` event | Emit per-key events for all cached keys (`emit(key, undefined, oldValue)`) before clearing; also broadcast `type: 'clear'` |
-| `detectName` | Only auto-detect `localStorage`; do not auto-detect `sessionStorage` (cross-tab sync is meaningless for sessionStorage) |
+| Broadcast | Controlled by `options.broadcast` (default `true`); auto-disabled for `sessionStorage`; auto-enabled for `localStorage` with name `'localStorage'` |
 
 ## Module Structure
 
@@ -75,6 +75,34 @@ events → (no external deps)
 ```
 
 Key change: The circular dependency between `transform.ts` and `object.ts` is eliminated. The serializer performs pure data transformation only; Proxy creation is handled by the Operator in `getItem`.
+
+### Types (`types.ts`)
+
+The `StorageLike` interface is split into `SyncStorageLike` and `AsyncStorageLike` for better type safety:
+
+```ts
+export interface SyncStorageLike {
+  [x: string]: any
+  clear: () => void
+  getItem: (key: string) => string | null
+  key: (key: number) => string | null
+  setItem: (key: string, value: any, options?: StorageOptions) => void
+  removeItem: (key: string) => void
+  length: number
+}
+
+export interface AsyncStorageLike {
+  [x: string]: any
+  clear: () => Promise<void>
+  getItem: (key: string) => Promise<string | null>
+  key: (key: number) => Promise<string | null>
+  setItem: (key: string, value: any, options?: StorageOptions) => Promise<void>
+  removeItem: (key: string) => Promise<void>
+  length: () => Promise<number>
+}
+
+export type StorageLike = SyncStorageLike | AsyncStorageLike
+```
 
 ## Scheduler
 
@@ -213,7 +241,7 @@ case 'length': {
 
 ```ts
 function detectAsync(storage: StorageLike): boolean {
-  const probe = storage.getItem('')
+  const probe = storage.getItem('__stokado__')
   return isPromise(probe)
 }
 ```
@@ -376,7 +404,7 @@ setItem(key: string, value: any, options?: StorageOptions) {
 
 ### Internal Flow: removeItem
 
-Only emits events and broadcasts when the key existed in cache. For the cold-start case (key exists in storage but not in cache), no event is emitted. This is acceptable because: (1) no listener could have observed the previous value through this proxy instance, so there is no observable state change to notify about; (2) the actual `storage.removeItem()` call still executes, ensuring data consistency.
+Always emits events and broadcasts on `removeItem`, regardless of whether the key existed in cache. This is consistent with the `handleBroadcast` behavior for `'remove'` messages — cross-tab updates should always notify local listeners. For keys not in cache, `oldValue` will be `undefined`.
 
 ```ts
 removeItem(key: string) {
@@ -386,10 +414,8 @@ removeItem(key: string) {
 
     return resolve(this.strategy.removeItem(this.storage, key), () => {
       this.cache.delete(key)
-      if (oldCached !== undefined) {
-        this.emitter.emit(key, undefined, oldValue)
-        this.broadcast.post({ type: 'remove', key })
-      }
+      this.emitter.emit(key, undefined, oldValue)
+      this.broadcast.post({ type: 'remove', key })
     })
   })
 }
@@ -413,6 +439,20 @@ clear() {
     })
   })
 }
+```
+
+### `clear()` Concurrency Semantics
+
+`clear()` calls `flushAll()` to wait for all currently active queues to drain, then executes the actual clear. New operations enqueued during the `flushAll()` wait will execute after `clear()` completes. This is intentional — a `setItem` call made after `clear()` should persist:
+
+```
+Timeline:
+  t1: setItem('a', '1')     → enqueued on key 'a'
+  t2: clear()               → flushAll() waits for 'a' to complete
+  t3: setItem('b', '2')     → enqueued on key 'b' (during flushAll wait)
+  t4: flushAll resolves     → all prior operations done
+  t5: clear executes        → storage is cleared, cache is cleared
+  t6: setItem('b') executes → 'b' = '2' exists after clear
 ```
 
 ### The `resolve` Helper
@@ -482,6 +522,8 @@ class EventEmitter {
 
 `emit` is a pure notification mechanism — it always fires when called, with no `hasChanged` check inside. The decision of "has this value changed?" is the caller's responsibility. This follows the same pattern as MobX (property-level notification) and Svelte (manual `set()` calls): the code that knows the context decides whether to notify.
 
+`emit` uses snapshot iteration (`[...list]`) to safely handle listeners that call `off` during execution (e.g., `once` handlers). This ensures all listeners registered at the time of `emit` are called exactly once, regardless of mutations to the listener list during iteration.
+
 ### Event Emission Rules
 
 | Trigger | Events Emitted |
@@ -490,7 +532,7 @@ class EventEmitter {
 | `storage.user.age = 18` | `emit('user', user, user)` (always, from `onObjectPropertySet`) + `hasChanged(18, oldAge)` → `emit('user.age', 18, oldAge)` |
 | `storage.list.push(item)` | `emit('list', list, list)` (always) + `emit('list.length', newLen, oldLen)` |
 | `storage.list.sort()` | `emit('list', list, list)` (always) — no length event (length unchanged) |
-| `delete storage.name` | `emit('name', undefined, oldValue)` (only if key existed in cache) |
+| `delete storage.name` | `emit('name', undefined, oldValue)` (always; `oldValue` is `undefined` if key was not in cache) |
 | `storage.clear()` | `emit(key, undefined, oldValue)` for each cached key + `broadcast.post({ type: 'clear' })` |
 
 **Broadcast strategy distinction:**
@@ -499,7 +541,7 @@ class EventEmitter {
 
 ## StorageBroadcast
 
-Cross-tab synchronization via BroadcastChannel. Only active when a `name` is provided.
+Cross-tab synchronization via BroadcastChannel. Only active when broadcast is enabled (see Entry Point Assembly for enablement logic).
 
 ```ts
 type BroadcastMessage =
@@ -541,7 +583,23 @@ case 'set': {
   }
   break
 }
+case 'remove': {
+  const oldCached = this.cache.get(msg.key)
+  this.cache.delete(msg.key)
+  this.emitter.emit(msg.key, undefined, oldCached?.value)
+  break
+}
+case 'clear': {
+  const cachedEntries = Array.from(this.cache.entries())
+  this.cache.clear()
+  for (const [key, cached] of cachedEntries) {
+    this.emitter.emit(key, undefined, cached.value)
+  }
+  break
+}
 ```
+
+> **Note:** The `'remove'` handler always emits events (even when the key was not in cache), consistent with `removeItem`'s behavior. The `'clear'` handler emits per-key events for all cached keys, consistent with `clear()`'s behavior. This ensures cross-tab listeners are always notified regardless of local cache state.
 
 ## ProxyHandler
 
@@ -646,6 +704,9 @@ Behavior:
 - **Property set** (`obj.prop = val`): mutates the raw object, then calls `operator.onObjectPropertySet(key, obj)` to re-serialize and write back. `onObjectPropertySet` calls `emit(key, target, target)` unconditionally (no `hasChanged` check, since the object was mutated in place and `Object.is` would incorrectly return `true`). Broadcast is also unconditional for the same reason — since `hasChanged(obj, obj)` is always `false` for the same reference, the sender cannot determine whether the mutation actually changed any sub-property, so it must always broadcast to ensure other tabs stay in sync.
 - **Array mutations** (`push/pop/shift/unshift/splice`): mutates the array, then triggers re-serialization + length change events. Parent event emitted unconditionally from `onObjectPropertySet`. Uses `try/finally` to ensure the `mutating` flag is always reset, even if the mutation throws.
 - **Array mutations** (`sort/reverse`): mutates the array, then triggers re-serialization (no length change event since length is unchanged). Parent event emitted unconditionally. Also uses `try/finally`.
+
+> **Note:** `sort`/`reverse` interception is a feature enhancement over the previous version, which only supported `push/pop/shift/unshift/splice`. It is included in this refactor because the `try/finally` safety mechanism naturally covers all mutation methods.
+
 - **Property delete**: removes from raw object, triggers re-serialization. Parent event emitted unconditionally.
 
 Reference stability is guaranteed: `storage.obj === storage.obj` returns `true` because `CacheStore` caches the proxy instance.
@@ -736,33 +797,36 @@ E2E test files that import `encode`/`decode` must be updated to use the new sign
 ## Entry Point Assembly
 
 ```ts
-export function createProxyStorage(storage: StorageLike, name?: string) {
+export interface ProxyStorageOptions {
+  broadcast?: boolean
+}
+
+export function createProxyStorage(storage: StorageLike, options?: ProxyStorageOptions) {
   // 1. Validate storage interface
   validateStorage(storage)
 
   // 2. Detect sync/async mode
   const isAsync = detectAsync(storage)
 
-  // 3. Create components
+  // 3. Determine broadcast configuration
+  const broadcastEnabled = shouldEnableBroadcast(storage, options?.broadcast)
+  const broadcastName = broadcastEnabled ? detectBroadcastName(storage) : null
+
+  // 4. Create components
   const scheduler = isAsync ? new AsyncScheduler() : new SyncScheduler()
   const strategy = isAsync ? new AsyncStrategy() : new SyncStrategy()
   const cache = new CacheStore()
   const emitter = new EventEmitter()
-  const broadcastName = name ?? detectName(storage)
   const broadcast = new StorageBroadcast(broadcastName)
 
-  // 4. Assemble Operator
+  // 5. Assemble Operator
   const operator = new StorageOperator(storage, scheduler, strategy, cache, emitter, broadcast)
 
-  // 5. Create Proxy
+  // 6. Create Proxy
   const proxy = new Proxy(storage, createProxyHandler(operator))
 
-  // 6. Start broadcast listener
+  // 7. Start broadcast listener
   broadcast.listen((msg) => operator.handleBroadcast(msg))
-
-  // 7. Warn if no name provided (cross-tab sync will be disabled)
-  if (!broadcastName)
-    console.warn('If you are using IndexedDB or WebSQL, `name` is required.')
 
   return proxy
 }
@@ -785,19 +849,35 @@ function validateStorage(storage: StorageLike): void {
 
 ### `detectAsync`
 
+Uses a probe key that is unlikely to conflict with user data:
+
 ```ts
 function detectAsync(storage: StorageLike): boolean {
-  const probe = storage.getItem('')
+  const probe = storage.getItem('__stokado__')
   return isPromise(probe)
 }
 ```
 
-### `detectName`
+### `shouldEnableBroadcast`
 
-Returns the storage name for BroadcastChannel. Only auto-detects `localStorage` (not `sessionStorage`, since cross-tab sync is meaningless for sessionStorage — each tab has its own sessionStorage):
+Determines whether broadcast should be enabled based on options and storage type:
+
+- `sessionStorage` always disables broadcast (cross-tab sync is meaningless — each tab has its own sessionStorage)
+- Otherwise, respects `options.broadcast` (default `true`)
 
 ```ts
-function detectName(storage: StorageLike): string | null {
+function shouldEnableBroadcast(storage: StorageLike, broadcast?: boolean): boolean {
+  if (typeof window !== 'undefined' && storage === window.sessionStorage) return false
+  return broadcast ?? true
+}
+```
+
+### `detectBroadcastName`
+
+Returns the BroadcastChannel name for the storage. Only `localStorage` is auto-detected:
+
+```ts
+function detectBroadcastName(storage: StorageLike): string | null {
   if (typeof window !== 'undefined') {
     if (storage === window.localStorage) return 'localStorage'
   }
@@ -805,15 +885,35 @@ function detectName(storage: StorageLike): string | null {
 }
 ```
 
+When `detectBroadcastName` returns `null` (non-localStorage storage), `StorageBroadcast` receives `null` and broadcast is effectively disabled (no channel is created).
+
 ### TypeScript Overloads
 
 ```ts
-export function createProxyStorage(storage: SyncStorageLike, name?: string): ProxyStorage
-export function createProxyStorage(storage: AsyncStorageLike, name?: string): AsyncProxyStorage
+export function createProxyStorage(storage: SyncStorageLike, options?: ProxyStorageOptions): ProxyStorage
+export function createProxyStorage(storage: AsyncStorageLike, options?: ProxyStorageOptions): AsyncProxyStorage
 ```
 
 - `ProxyStorage`: all methods return synchronous values
 - `AsyncProxyStorage`: all methods return Promises (except `on`/`off`/`once` which are synchronous subscriptions)
+
+### API Changes from Previous Version
+
+The second parameter has changed from `name?: string` to `options?: ProxyStorageOptions`:
+
+```ts
+// Old API
+createProxyStorage(localStorage, 'my-app')
+createProxyStorage(localForage, 'my-db')
+
+// New API
+createProxyStorage(localStorage)                    // broadcast auto-enabled for localStorage
+createProxyStorage(localStorage, { broadcast: false }) // broadcast disabled
+createProxyStorage(sessionStorage)                  // broadcast auto-disabled for sessionStorage
+createProxyStorage(localForage)                     // broadcast disabled (no auto-detect name)
+```
+
+For async storage backends (localForage, IndexedDB) that previously used the `name` parameter for cross-tab sync, broadcast is now disabled by default since there is no way to auto-detect a channel name. This may be extended in the future with additional options.
 
 ## Utility Functions
 
@@ -895,10 +995,15 @@ As part of this refactor, the following issues are also addressed:
 7. **`removeExpires` cache mutation bug** — fixed by using object spread instead of `delete` on cached options
 8. **Dead `hasChanged` function in EventEmitter** — removed
 
+## Known Limitations
+
+- **`key()` and `length` consistency**: These operations bypass the Scheduler and read directly from the storage backend. In async mode, if `setItem`/`removeItem` operations are pending, `key()` and `length` may return stale values. This is acceptable because: (1) these methods are rarely used; (2) the previous version had the same limitation; (3) fixing this would require `flushAll()` before each call, adding unnecessary latency.
+
 ## Migration Notes
 
-- No changes to the public API surface
+- **Breaking API change**: `createProxyStorage(storage, name?)` → `createProxyStorage(storage, options?)`. The `name` parameter is removed; broadcast is now controlled by `options.broadcast` (default `true`) with auto-detection for `localStorage`/`sessionStorage`.
 - No changes to the serialized storage format (existing stored data remains compatible)
 - Build output (ESM, CJS, IIFE, DTS) structure unchanged
-- BroadcastChannel message format may change (this is internal and cross-tab state is ephemeral)
+- ⚠️ **BroadcastChannel message format is incompatible** with the previous version. The format changed from `{ key, newValue, oldValue, property }` to `{ type, key?, encoded? }`. Old and new versions running in the same browser will not cross-sync. Since BroadcastChannel messages are ephemeral (lost on page reload), this does not affect persistent data.
 - `tsconfig.json` `include` paths must be updated from `["src/*.ts", "src/*/*.ts", "tests/*.ts"]` to `["src/**/*.ts", "tests/**/*.ts"]` to cover the new deeper directory structure
+- `key()` and `length` do not go through the Scheduler — they may return stale values if async operations are pending. This is a known limitation consistent with the previous version's behavior.

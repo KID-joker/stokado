@@ -1287,72 +1287,26 @@ git add -A && git commit -m "feat: implement StorageBroadcast for cross-tab sync
 ## Task 8: Utility Functions Update
 
 **Files:**
-- Create: `src/utils.ts` (overwrite existing)
+- Modify: `src/utils.ts` (append new functions, update formatTime)
 
-- [ ] **Step 1: Rewrite utils.ts — remove pThen, keep type helpers**
+- [ ] **Step 1: Add new utility functions to utils.ts — add `resolve` helper and update `formatTime` return type. Do NOT remove old functions yet (they are still used by old code that will be deleted in Task 13).**
 
-Overwrite `src/utils.ts`:
+Append the following function to the existing `src/utils.ts`:
 
 ```ts
-export type RawType = 'String' | 'Number' | 'BigInt' | 'Boolean' | 'Null' | 'Undefined' | 'Object' | 'Array' | 'Set' | 'Map' | 'Date' | 'RegExp' | 'URL' | 'Function'
-
-export function isPromise<T = any>(val: unknown): val is Promise<T> {
-  return (
-    val !== null
-    && (typeof val === 'object' || typeof val === 'function')
-    && typeof (val as any).then === 'function'
-    && typeof (val as any).catch === 'function'
-  )
-}
-
-export function isObject(val: unknown): val is Record<any, any> {
-  return val !== null && typeof val === 'object'
-}
-
-export function isFunction(val: unknown): val is Function {
-  return typeof val === 'function'
-}
-
-export function isString(val: unknown): val is string {
-  return typeof val === 'string'
-}
-
-export function isIntegerKey(key: unknown): boolean {
-  return typeof key === 'string'
-    && key !== 'NaN'
-    && key[0] !== '-'
-    && `${Number.parseInt(key, 10)}` === key
-}
-
-export function getTypeString(value: unknown): string {
-  return Object.prototype.toString.call(value)
-}
-
-export function getRawType(value: unknown): RawType {
-  return getTypeString(value).slice(8, -1) as RawType
-}
-
-export function hasChanged(value: any, oldValue: any): boolean {
-  return !Object.is(value, oldValue)
-}
-
-export function hasOwn(val: object, key: string | symbol): key is keyof typeof val {
-  return Object.prototype.hasOwnProperty.call(val, key)
-}
-
-export function formatTime(time: any): number {
-  if (time instanceof Date) return time.getTime()
-  if (typeof time === 'string') return +time.padEnd(13, '0')
-  return time
-}
-
-/**
- * Lightweight resolve helper: if val is a Promise, chain fn via .then();
- * otherwise call fn(val) synchronously.
- */
 export function resolve<T, R>(val: T | Promise<T>, fn: (v: T) => R | Promise<R>): R | Promise<R> {
   if (isPromise(val)) return (val as Promise<T>).then(fn)
   return fn(val as T)
+}
+```
+
+Also update `formatTime` to have explicit return type `number`:
+
+```ts
+export function formatTime(time: any): number {
+  if (isDate(time)) return time.getTime()
+  if (isString(time)) return +time.padEnd(13, '0')
+  return +time
 }
 ```
 
@@ -1367,7 +1321,7 @@ Expected: All PASS (existing tests import from `@/serializer/` and `@/scheduler/
 - [ ] **Step 3: Commit**
 
 ```bash
-git add -A && git commit -m "refactor: rewrite utils — remove pThen, add resolve helper"
+git add -A && git commit -m "refactor: add resolve helper and update formatTime return type"
 ```
 
 ---
@@ -1377,31 +1331,36 @@ git add -A && git commit -m "refactor: rewrite utils — remove pThen, add resol
 **Files:**
 - Modify: `src/types.ts`
 
-- [ ] **Step 1: Update types.ts**
+- [ ] **Step 1: Add new type definitions to types.ts. Do NOT remove old types yet (Effect, EffectFn, EffectMap, StorageObject are still used by old code).**
 
-Overwrite `src/types.ts`:
+ADD the following types to the existing `src/types.ts`:
 
 ```ts
-export type RawType = 'String' | 'Number' | 'BigInt' | 'Boolean' | 'Null' | 'Undefined' | 'Object' | 'Array' | 'Set' | 'Map' | 'Date' | 'RegExp' | 'URL' | 'Function'
+export interface ProxyStorageOptions {
+  broadcast?: boolean
+}
 
-export interface StorageLike {
+export interface SyncStorageLike {
   [x: string]: any
-  clear: () => any
-  getItem: (key: string) => string | null | Promise<string | null>
-  key: (key: number) => string | null | Promise<string | null>
-  setItem: (key: string, value: any, options?: StorageOptions) => any
-  removeItem: (key: string) => any
-  length: any
+  clear: () => void
+  getItem: (key: string) => string | null
+  key: (key: number) => string | null
+  setItem: (key: string, value: any, options?: StorageOptions) => void
+  removeItem: (key: string) => void
+  length: number
 }
 
-export type StorageValue = string | number | bigint | boolean | null | undefined | object
-
-export interface StorageOptions {
-  expires?: ExpiresType
-  disposable?: boolean
+export interface AsyncStorageLike {
+  [x: string]: any
+  clear: () => Promise<void>
+  getItem: (key: string) => Promise<string | null>
+  key: (key: number) => Promise<string | null>
+  setItem: (key: string, value: any, options?: StorageOptions) => Promise<void>
+  removeItem: (key: string) => Promise<void>
+  length: () => Promise<number>
 }
 
-export type ExpiresType = string | number | Date
+export type StorageLike = SyncStorageLike | AsyncStorageLike
 
 export type Listener = (newValue: any, oldValue: any) => void
 ```
@@ -1409,7 +1368,7 @@ export type Listener = (newValue: any, oldValue: any) => void
 - [ ] **Step 2: Commit**
 
 ```bash
-git add -A && git commit -m "refactor: update type definitions"
+git add -A && git commit -m "refactor: add ProxyStorageOptions and Sync/AsyncStorageLike types"
 ```
 
 ---
@@ -1787,6 +1746,14 @@ describe('StorageOperator - Sync', () => {
     expect(fn).toHaveBeenCalledWith(undefined, 'val')
   })
 
+  it('emits events on removeItem even when key not in cache', () => {
+    const op = createSyncOperator()
+    const fn = vi.fn()
+    op.emitter.on('key', fn)
+    op.removeItem('key')
+    expect(fn).toHaveBeenCalledWith(undefined, undefined)
+  })
+
   it('preserves object reference equality', () => {
     const op = createSyncOperator()
     op.setItem('obj', { a: 1 })
@@ -1991,10 +1958,8 @@ export class StorageOperator {
 
       return resolve(this.strategy.removeItem(this.storage, key), () => {
         this.cache.delete(key)
-        if (oldCached !== undefined) {
-          this.emitter.emit(key, undefined, oldValue)
-          this.broadcast.post({ type: 'remove', key })
-        }
+        this.emitter.emit(key, undefined, oldValue)
+        this.broadcast.post({ type: 'remove', key })
       })
     })
   }
@@ -2187,7 +2152,11 @@ export class StorageOperator {
         break
       }
       case 'clear': {
+        const cachedEntries = Array.from(this.cache.entries())
         this.cache.clear()
+        for (const [key, cached] of cachedEntries) {
+          this.emitter.emit(key, undefined, cached.value)
+        }
         break
       }
     }
@@ -2336,7 +2305,7 @@ export function createProxyHandler(operator: StorageOperator): ProxyHandler<any>
 - [ ] **Step 2: Rewrite src/index.ts**
 
 ```ts
-import type { StorageLike } from '@/types'
+import type { StorageLike, SyncStorageLike, AsyncStorageLike, ProxyStorageOptions } from '@/types'
 import { StorageOperator } from '@/core/operator'
 import { createProxyHandler } from '@/core/proxy-handler'
 import { SyncScheduler } from '@/scheduler/sync-scheduler'
@@ -2349,38 +2318,35 @@ import { StorageBroadcast } from '@/events/broadcast'
 import { isFunction, isPromise } from '@/utils'
 
 export { StorageOperator } from '@/core/operator'
-export type { StorageOptions, StorageLike, Listener } from '@/types'
+export { encode } from '@/serializer/encode'
+export { decode } from '@/serializer/decode'
+export type { StorageOptions, StorageLike, SyncStorageLike, AsyncStorageLike, ProxyStorageOptions, Listener } from '@/types'
 
-export function createProxyStorage(storage: StorageLike, name?: string) {
-  // 1. Validate storage interface
+export function createProxyStorage(storage: StorageLike, options?: ProxyStorageOptions) {
   validateStorage(storage)
 
-  // 2. Detect sync/async mode
   const isAsync = detectAsync(storage)
 
-  // 3. Create components
+  const broadcastEnabled = shouldEnableBroadcast(storage, options?.broadcast)
+  const broadcastName = broadcastEnabled ? detectBroadcastName(storage) : null
+
   const scheduler = isAsync ? new AsyncScheduler() : new SyncScheduler()
   const strategy = isAsync ? new AsyncStrategy() : new SyncStrategy()
   const cache = new CacheStore()
   const emitter = new EventEmitter()
-  const broadcastName = name ?? detectName(storage)
   const broadcast = new StorageBroadcast(broadcastName)
 
-  // 4. Assemble Operator
   const operator = new StorageOperator(storage, scheduler, strategy, cache, emitter, broadcast)
 
-  // 5. Create Proxy
   const proxy = new Proxy(storage, createProxyHandler(operator))
 
-  // 6. Start broadcast listener
   broadcast.listen((msg) => operator.handleBroadcast(msg))
-
-  // 7. Warn if no name provided (cross-tab sync will be disabled)
-  if (!broadcastName)
-    console.warn('If you are using IndexedDB or WebSQL, `name` is required.')
 
   return proxy
 }
+
+export function createProxyStorage(storage: SyncStorageLike, options?: ProxyStorageOptions): ProxyStorage
+export function createProxyStorage(storage: AsyncStorageLike, options?: ProxyStorageOptions): AsyncProxyStorage
 
 function validateStorage(storage: StorageLike): void {
   const required = ['getItem', 'setItem', 'removeItem', 'clear', 'key']
@@ -2392,11 +2358,16 @@ function validateStorage(storage: StorageLike): void {
 }
 
 function detectAsync(storage: StorageLike): boolean {
-  const probe = storage.getItem('')
+  const probe = storage.getItem('__stokado__')
   return isPromise(probe)
 }
 
-function detectName(storage: StorageLike): string | null {
+function shouldEnableBroadcast(storage: StorageLike, broadcast?: boolean): boolean {
+  if (typeof window !== 'undefined' && storage === window.sessionStorage) return false
+  return broadcast ?? true
+}
+
+function detectBroadcastName(storage: StorageLike): string | null {
   if (typeof window !== 'undefined') {
     if (storage === window.localStorage) return 'localStorage'
   }
@@ -2420,6 +2391,53 @@ git add -A && git commit -m "feat: implement ProxyHandler and createProxyStorage
 
 ---
 
+## Task 12.5: Update E2E Test Imports and Signatures
+
+**Files:**
+- Modify: All test files in `tests/` that import from `@/proxy/transform`
+
+- [ ] **Step 1: Identify all test files importing from `@/proxy/transform`**
+
+```bash
+grep -r "from '@/proxy/transform'" tests/
+```
+
+- [ ] **Step 2: Update import paths**
+
+For each file found:
+- Replace `import { encode } from '@/proxy/transform'` with `import { encode } from '@/serializer/encode'`
+- Replace `import { decode } from '@/proxy/transform'` with `import { decode } from '@/serializer/decode'`
+- Or use the re-exported versions from `@/index`: `import { encode, decode } from '@/index'`
+
+- [ ] **Step 3: Update encode/decode call signatures**
+
+For each usage:
+- `encode({ data: value, options })` → `encode(value, options)`
+- `encode({ data: value })` → `encode(value)`
+- `decode({ data: raw })` → `decode(raw)`
+
+- [ ] **Step 4: Update createProxyStorage calls**
+
+If any test passes a `name` as the second argument:
+- `createProxyStorage(storage, 'name')` → `createProxyStorage(storage)` (broadcast auto-detected for localStorage)
+- `createProxyStorage(storage, { broadcast: true })` if explicit control needed
+
+- [ ] **Step 5: Run E2E tests to verify**
+
+```bash
+pnpm test
+```
+
+Expected: All E2E tests PASS with updated imports and signatures.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add -A && git commit -m "refactor: update E2E test imports and encode/decode signatures"
+```
+
+---
+
 ## Task 13: Delete Old Files and Update Imports
 
 **Files:**
@@ -2435,6 +2453,27 @@ rm -f src/cache.ts src/shared.ts src/check_expired.ts src/effect.ts
 rm -rf src/proxy
 rm -rf src/extends
 ```
+
+- [ ] **Step 1b: Clean up utils.ts**
+
+Remove functions no longer needed after old code is deleted:
+- `isArray` (use `Array.isArray` directly)
+- `isSet`, `isDate`, `isRegExp`, `isURL`, `isError`
+- `isLocalStorage`, `isSessionStorage`
+- `isStorage` (replaced by `validateStorage`)
+- `transformJSON` (replaced by `decode`)
+- `propertyIsInPrototype`
+- `transformEval` (moved into serializer registry)
+- `pThen` (replaced by `resolve`)
+
+Keep: `isPromise`, `isObject`, `isFunction`, `isString`, `isIntegerKey`, `getTypeString`, `getRawType`, `hasChanged`, `hasOwn`, `formatTime`, `resolve`
+
+- [ ] **Step 1c: Clean up types.ts**
+
+Remove types no longer needed:
+- `EffectMap`, `EffectFn`, `Effect`, `StorageObject`
+
+Keep: `RawType`, `StorageValue`, `StorageOptions`, `ExpiresType`, `ProxyStorageOptions`, `SyncStorageLike`, `AsyncStorageLike`, `StorageLike`, `Listener`
 
 - [ ] **Step 2: Update tsconfig.json include paths**
 
@@ -2649,11 +2688,12 @@ git add -A && git commit -m "chore: final cleanup — lint, typecheck, all tests
 | 5 | `feat: implement EventEmitter with on/off/once/emit` |
 | 6 | `feat: implement StorageStrategy with Sync and Async variants` |
 | 7 | `feat: implement StorageBroadcast for cross-tab sync` |
-| 8 | `refactor: rewrite utils — remove pThen, add resolve helper` |
-| 9 | `refactor: update type definitions` |
+| 8 | `refactor: add resolve helper and update formatTime return type` |
+| 9 | `refactor: add ProxyStorageOptions and Sync/AsyncStorageLike types` |
 | 10 | `feat: implement nested object/array Proxy handler` |
 | 11 | `feat: implement StorageOperator — core orchestration with per-key scheduling` |
 | 12 | `feat: implement ProxyHandler and createProxyStorage entry point` |
+| 12.5 | `refactor: update E2E test imports and encode/decode signatures` |
 | 13 | `refactor: remove old source files and update tsconfig` |
 | 14 | `fix: ensure build and all E2E tests pass after refactor` |
 | 15 | `test: add comprehensive race condition unit tests` |
