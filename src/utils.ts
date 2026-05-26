@@ -102,7 +102,7 @@ export function transformEval(code: string) {
   })()
 }
 
-export function formatTime(time: any) {
+export function formatTime(time: any): number {
   if (isDate(time))
     return time.getTime()
 
@@ -126,4 +126,9 @@ export function pThen(getter: Function, callback: Function) {
   else {
     return callback(maybePromise)
   }
+}
+
+export function resolve<T, R>(val: T | Promise<T>, fn: (v: T) => R | Promise<R>): R | Promise<R> {
+  if (isPromise(val)) return (val as Promise<T>).then(fn)
+  return fn(val as T)
 }
