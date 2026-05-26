@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
-import { decode, encode } from '@/proxy/transform'
+import { decode } from '@/serializer/decode'
+import { encode } from '@/serializer/encode'
 import './global.d.ts'
 
 test.describe('basic usage', () => {
@@ -12,8 +13,8 @@ test.describe('basic usage', () => {
       local.test = 'hello stokado'
       return localStorage.test
     })
-    expect(proxyStorage).toBe(encode({ data: 'hello stokado', options: {} }))
-    expect(decode({ data: proxyStorage }).value).toBe('hello stokado')
+    expect(proxyStorage).toBe(encode('hello stokado', {}))
+    expect((decode(proxyStorage) as any).value).toBe('hello stokado')
   })
 
   test('set, read and delete', async ({ page }) => {

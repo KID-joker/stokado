@@ -82,7 +82,7 @@ test.describe('localforage', () => {
 
     expect(await page1.evaluate(() => {
       const { createProxyStorage } = window.stokado
-      const local = createProxyStorage(window.localforage, 'localforage')
+      const local = createProxyStorage(window.localforage, { channel: 'localforage' })
       return new Promise((resolve) => {
         local.on('test.length', (newVal: any, oldVal: any) => {
           resolve({
@@ -106,14 +106,14 @@ test.describe('localforage', () => {
     setTimeout(() => {
       page2.evaluate(() => {
         const { createProxyStorage } = window.stokado
-        const local = createProxyStorage(window.localforage, 'localforage')
+        const local = createProxyStorage(window.localforage, { channel: 'localforage' })
         local.test = []
       })
     })
 
     expect(await page1.evaluate(() => {
       const { createProxyStorage } = window.stokado
-      const local = createProxyStorage(window.localforage, 'localforage')
+      const local = createProxyStorage(window.localforage, { channel: 'localforage' })
       return new Promise((resolve) => {
         local.on('test.length', (newVal: any, oldVal: any) => {
           resolve({

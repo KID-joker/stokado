@@ -28,22 +28,6 @@ export interface StorageOptions {
   disposable?: boolean
 }
 
-export type EffectMap = Map<string, Effect[]>
-export type EffectFn<V = any, OV = any> = (
-  value?: V,
-  oldValue?: OV
-) => any
-export interface Effect {
-  ctx: any
-  fn: EffectFn
-}
-
-export interface StorageObject {
-  type: string
-  value: any
-  options?: StorageOptions
-}
-
 export type ExpiresType = string | number | Date
 
 export interface ProxyStorageOptions {
