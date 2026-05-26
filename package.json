@@ -47,6 +47,8 @@
     "build": "rimraf dist && rollup -c --environment BUILD:prod",
     "dev": "rollup -c -w --environment BUILD:dev",
     "test": "rollup -c --environment BUILD:test && npx playwright test",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "lint": "eslint . --fix",
     "typecheck": "tsc --noEmit"
   },
@@ -69,7 +71,8 @@
     "rollup-plugin-serve": "^3.0.0",
     "simple-git-hooks": "^2.13.1",
     "tslib": "^2.8.1",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.1"
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged"
