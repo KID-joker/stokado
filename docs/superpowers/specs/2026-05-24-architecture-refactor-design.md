@@ -19,9 +19,9 @@ Refactor the internal architecture of Stokado with an updated public API (`creat
 | `length` property | Type-check `storage.length`: if function, call `length()`; otherwise return property value directly |
 | Broadcast emission (setItem) | Only broadcast when value has actually changed (`hasChanged` check) |
 | Broadcast emission (onObjectPropertySet) | Always broadcast — object was mutated in place, `hasChanged` is unreliable for reference types |
-| `removeItem` event | Always emit event and broadcast — consistent with `handleBroadcast` behavior |
+| `removeItem` event | Only emit event and broadcast when the key exists — consistent with `handleBroadcast` behavior |
 | `clear()` event | Emit per-key events for all cached keys (`emit(key, undefined, oldValue)`) before clearing; also broadcast `type: 'clear'` |
-| Broadcast | Controlled by `options.broadcast` (default `true`); auto-disabled for `sessionStorage`; auto-enabled for `localStorage` with name `'localStorage'` |
+| Broadcast | Unified channel `stokado::channel`; controlled by `options.broadcast` (default `true`); auto-disabled for `sessionStorage`; `options.channel` provides storage identifier for message filtering; auto-detected as `'localStorage'` for `localStorage` |
 
 ## Module Structure
 
@@ -102,6 +102,30 @@ export interface AsyncStorageLike {
 }
 
 export type StorageLike = SyncStorageLike | AsyncStorageLike
+
+export interface ProxyStorage extends SyncStorageLike {
+  on(key: string, fn: Listener): void
+  once(key: string, fn: Listener): void
+  off(key?: string, fn?: Listener): void
+  setExpires(key: string, expires: ExpiresType): void
+  getExpires(key: string): Date | undefined
+  removeExpires(key: string): void
+  setDisposable(key: string): void
+  getOptions(key: string): StorageOptions | null
+}
+
+export interface AsyncProxyStorage extends AsyncStorageLike {
+  on(key: string, fn: Listener): void
+  once(key: string, fn: Listener): void
+  off(key?: string, fn?: Listener): void
+  setExpires(key: string, expires: ExpiresType): Promise<void>
+  getExpires(key: string): Promise<Date | undefined>
+  removeExpires(key: string): Promise<void>
+  setDisposable(key: string): Promise<void>
+  getOptions(key: string): Promise<StorageOptions | null>
+}
+
+export type Listener = (newValue: any, oldValue: any) => void
 ```
 
 ## Scheduler
@@ -241,7 +265,7 @@ case 'length': {
 
 ```ts
 function detectAsync(storage: StorageLike): boolean {
-  const probe = storage.getItem('__stokado__')
+  const probe = storage.getItem('__stokado_probe__')
   return isPromise(probe)
 }
 ```
@@ -271,6 +295,8 @@ The central orchestrator that composes Scheduler, Strategy, Serializer, Cache, a
 
 ```ts
 class StorageOperator {
+  private channelId: string | null
+
   constructor(
     private storage: StorageLike,
     private scheduler: Scheduler,
@@ -278,7 +304,10 @@ class StorageOperator {
     private cache: CacheStore,
     private emitter: EventEmitter,
     private broadcast: StorageBroadcast,
-  ) {}
+    channelId?: string | null,
+  ) {
+    this.channelId = channelId ?? null
+  }
 
   get isAsync(): boolean
 
@@ -292,7 +321,7 @@ class StorageOperator {
 
   // --- Extended operations ---
   setExpires(key: string, expires: number | Date): void | Promise<void>
-  getExpires(key: string): Date | null | Promise<Date | null>
+  getExpires(key: string): Date | undefined | Promise<Date | undefined>
   removeExpires(key: string): void | Promise<void>
   setDisposable(key: string): void | Promise<void>
   getOptions(key: string): StorageOptions | null | Promise<StorageOptions | null>
@@ -387,7 +416,7 @@ setItem(key: string, value: any, options?: StorageOptions) {
       this.cache.set(key, { value, type: getRawType(value), options: Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined })
       if (hasChanged(value, oldValue)) {
         this.emitter.emit(key, value, oldValue)
-        this.broadcast.post({ type: 'set', key, encoded })
+        this.broadcast.post({ type: 'set', key, encoded, channel: this.channelId ?? undefined })
       }
 
       if (Array.isArray(value) && Array.isArray(oldValue) && value.length !== oldValue.length) {
@@ -404,18 +433,33 @@ setItem(key: string, value: any, options?: StorageOptions) {
 
 ### Internal Flow: removeItem
 
-Always emits events and broadcasts on `removeItem`, regardless of whether the key existed in cache. This is consistent with the `handleBroadcast` behavior for `'remove'` messages — cross-tab updates should always notify local listeners. For keys not in cache, `oldValue` will be `undefined`.
+Only emits events and broadcasts on `removeItem` when the key exists. For keys not in cache, the storage is checked first to determine existence. This is consistent with the `handleBroadcast` behavior for `'remove'` messages — only notify listeners when the key actually existed.
 
 ```ts
 removeItem(key: string) {
   return this.scheduler.enqueue(key, () => {
     const oldCached = this.cache.get(key)
-    const oldValue = oldCached?.value
 
-    return resolve(this.strategy.removeItem(this.storage, key), () => {
-      this.cache.delete(key)
-      this.emitter.emit(key, undefined, oldValue)
-      this.broadcast.post({ type: 'remove', key })
+    if (oldCached !== undefined) {
+      const oldValue = oldCached.value
+      return resolve(this.strategy.removeItem(this.storage, key), () => {
+        this.cache.delete(key)
+        this.emitter.emit(key, undefined, oldValue)
+        this.broadcast.post({ type: 'remove', key, channel: this.channelId ?? undefined })
+      })
+    }
+
+    return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
+      if (raw === null) return
+
+      return resolve(this.strategy.removeItem(this.storage, key), () => {
+        this.cache.delete(key)
+        const decoded = decode(raw)
+        const item = typeof decoded !== 'string' && decoded !== null ? decoded as DecodedItem : null
+        const oldValue = item?.value ?? raw
+        this.emitter.emit(key, undefined, oldValue)
+        this.broadcast.post({ type: 'remove', key, channel: this.channelId ?? undefined })
+      })
     })
   })
 }
@@ -435,7 +479,7 @@ clear() {
       for (const [key, cached] of cachedEntries) {
         this.emitter.emit(key, undefined, cached.value)
       }
-      this.broadcast.post({ type: 'clear' })
+      this.broadcast.post({ type: 'clear', channel: this.channelId ?? undefined })
     })
   })
 }
@@ -532,7 +576,7 @@ class EventEmitter {
 | `storage.user.age = 18` | `emit('user', user, user)` (always, from `onObjectPropertySet`) + `hasChanged(18, oldAge)` → `emit('user.age', 18, oldAge)` |
 | `storage.list.push(item)` | `emit('list', list, list)` (always) + `emit('list.length', newLen, oldLen)` |
 | `storage.list.sort()` | `emit('list', list, list)` (always) — no length event (length unchanged) |
-| `delete storage.name` | `emit('name', undefined, oldValue)` (always; `oldValue` is `undefined` if key was not in cache) |
+| `delete storage.name` | `emit('name', undefined, oldValue)` only if key exists; no event if key does not exist |
 | `storage.clear()` | `emit(key, undefined, oldValue)` for each cached key + `broadcast.post({ type: 'clear' })` |
 
 **Broadcast strategy distinction:**
@@ -541,23 +585,29 @@ class EventEmitter {
 
 ## StorageBroadcast
 
-Cross-tab synchronization via BroadcastChannel. Only active when broadcast is enabled (see Entry Point Assembly for enablement logic).
+Cross-tab synchronization via a unified BroadcastChannel (`stokado::channel`). Only active when broadcast is enabled (see Entry Point Assembly for enablement logic). Messages include an optional `channel` field for storage instance identification — when both sender and receiver have a channel ID, messages are filtered to avoid cross-storage pollution.
 
 ```ts
 type BroadcastMessage =
-  | { type: 'set'; key: string; encoded: string }
-  | { type: 'remove'; key: string }
-  | { type: 'clear' }
+  | { type: 'set'; key: string; encoded: string; channel?: string }
+  | { type: 'remove'; key: string; channel?: string }
+  | { type: 'clear'; channel?: string }
 
 class StorageBroadcast {
-  private channel: BroadcastChannel | null
+  private channel: BroadcastChannel | null = null
+  private channelId: string | null
 
-  constructor(name: string | null)
+  constructor(channelId: string | null)
   post(message: BroadcastMessage): void
   listen(onMessage: (msg: BroadcastMessage) => void): void
   destroy(): void
 }
 ```
+
+All stokado instances share the same `BroadcastChannel('stokado::channel')`. The `channelId` is used for message filtering:
+- When posting, `channelId` is included in the `channel` field of the message
+- When receiving, if both the local `channelId` and the message's `channel` are present and differ, the message is ignored
+- If either side lacks a `channelId`, the message is always processed (backward-compatible for single-storage apps)
 
 Incoming broadcast messages bypass the Scheduler (the actual storage I/O was already performed by the sender). They directly update the cache and trigger emitter events.
 
@@ -568,38 +618,46 @@ When handling a `'set'` broadcast for a key that previously had an object proxy,
 When handling a `'set'` broadcast, the operator checks whether the incoming data is expired. If expired, the key is removed from cache and no event is emitted. For non-expired data, the event is emitted unconditionally (no `hasChanged` check) because the sender already determined the value changed, and the receiver should always be notified of cross-tab updates:
 
 ```ts
-case 'set': {
-  const decoded = decode(msg.encoded)
-  if (decoded && typeof decoded !== 'string') {
-    const item = decoded as DecodedItem
-    if (this.isExpired(item.options)) {
-      this.cache.delete(msg.key)
+handleBroadcast(msg: BroadcastMessage): void {
+  if (this.channelId && msg.channel && this.channelId !== msg.channel) return
+
+  switch (msg.type) {
+    case 'set': {
+      const decoded = decode(msg.encoded)
+      if (decoded && typeof decoded !== 'string') {
+        const item = decoded as DecodedItem
+        if (this.isExpired(item.options)) {
+          this.cache.delete(msg.key)
+          break
+        }
+        const oldCached = this.cache.get(msg.key)
+        this.cache.deleteObjectProxy(msg.key)
+        this.cache.set(msg.key, { value: item.value, type: item.type, options: item.options })
+        this.emitter.emit(msg.key, item.value, oldCached?.value)
+      }
       break
     }
-    const oldCached = this.cache.get(msg.key)
-    this.cache.deleteObjectProxy(msg.key)
-    this.cache.set(msg.key, { value: item.value, type: item.type, options: item.options })
-    this.emitter.emit(msg.key, item.value, oldCached?.value)
+    case 'remove': {
+      const oldCached = this.cache.get(msg.key)
+      if (oldCached !== undefined) {
+        this.cache.delete(msg.key)
+        this.emitter.emit(msg.key, undefined, oldCached.value)
+      }
+      break
+    }
+    case 'clear': {
+      const cachedEntries = Array.from(this.cache.entries())
+      this.cache.clear()
+      for (const [key, cached] of cachedEntries) {
+        this.emitter.emit(key, undefined, cached.value)
+      }
+      break
+    }
   }
-  break
-}
-case 'remove': {
-  const oldCached = this.cache.get(msg.key)
-  this.cache.delete(msg.key)
-  this.emitter.emit(msg.key, undefined, oldCached?.value)
-  break
-}
-case 'clear': {
-  const cachedEntries = Array.from(this.cache.entries())
-  this.cache.clear()
-  for (const [key, cached] of cachedEntries) {
-    this.emitter.emit(key, undefined, cached.value)
-  }
-  break
 }
 ```
 
-> **Note:** The `'remove'` handler always emits events (even when the key was not in cache), consistent with `removeItem`'s behavior. The `'clear'` handler emits per-key events for all cached keys, consistent with `clear()`'s behavior. This ensures cross-tab listeners are always notified regardless of local cache state.
+> **Note:** The `'remove'` handler only emits events when the key was in the local cache, consistent with `removeItem`'s behavior of only emitting for existing keys. The `'clear'` handler emits per-key events for all cached keys, consistent with `clear()`'s behavior.
 
 ## ProxyHandler
 
@@ -701,7 +759,7 @@ function createObjectProxy(
 ```
 
 Behavior:
-- **Property set** (`obj.prop = val`): mutates the raw object, then calls `operator.onObjectPropertySet(key, obj)` to re-serialize and write back. `onObjectPropertySet` calls `emit(key, target, target)` unconditionally (no `hasChanged` check, since the object was mutated in place and `Object.is` would incorrectly return `true`). Broadcast is also unconditional for the same reason — since `hasChanged(obj, obj)` is always `false` for the same reference, the sender cannot determine whether the mutation actually changed any sub-property, so it must always broadcast to ensure other tabs stay in sync.
+- **Property set** (`obj.prop = val`): mutates the raw object, then calls `operator.onObjectPropertySet(key, obj)` to re-serialize and write back. For array index sets (e.g., `arr[0] = 'x'`), `isIntegerKey` is used to detect integer keys and format sub-key events as `key[0]` instead of `key.0`. `onObjectPropertySet` calls `emit(key, target, target)` unconditionally (no `hasChanged` check, since the object was mutated in place and `Object.is` would incorrectly return `true`). Broadcast is also unconditional for the same reason — since `hasChanged(obj, obj)` is always `false` for the same reference, the sender cannot determine whether the mutation actually changed any sub-property, so it must always broadcast to ensure other tabs stay in sync.
 - **Array mutations** (`push/pop/shift/unshift/splice`): mutates the array, then triggers re-serialization + length change events. Parent event emitted unconditionally from `onObjectPropertySet`. Uses `try/finally` to ensure the `mutating` flag is always reset, even if the mutation throws.
 - **Array mutations** (`sort/reverse`): mutates the array, then triggers re-serialization (no length change event since length is unchanged). Parent event emitted unconditionally. Also uses `try/finally`.
 
@@ -799,8 +857,16 @@ E2E test files that import `encode`/`decode` must be updated to use the new sign
 ```ts
 export interface ProxyStorageOptions {
   broadcast?: boolean
+  channel?: string
 }
+```
 
+- `broadcast`: controls whether broadcast is enabled (default: `true`, auto-disabled for `sessionStorage`)
+- `channel`: storage identifier for broadcast message filtering. Auto-detected as `'localStorage'` for `localStorage`. Required for custom async storage backends (e.g., localForage) to enable cross-tab sync.
+
+```ts
+export function createProxyStorage(storage: SyncStorageLike, options?: ProxyStorageOptions): ProxyStorage
+export function createProxyStorage(storage: AsyncStorageLike, options?: ProxyStorageOptions): AsyncProxyStorage
 export function createProxyStorage(storage: StorageLike, options?: ProxyStorageOptions) {
   // 1. Validate storage interface
   validateStorage(storage)
@@ -810,14 +876,14 @@ export function createProxyStorage(storage: StorageLike, options?: ProxyStorageO
 
   // 3. Determine broadcast configuration
   const broadcastEnabled = shouldEnableBroadcast(storage, options?.broadcast)
-  const broadcastName = broadcastEnabled ? detectBroadcastName(storage) : null
+  const channelId = broadcastEnabled ? resolveChannelId(storage, options?.channel) : null
 
   // 4. Create components
   const scheduler = isAsync ? new AsyncScheduler() : new SyncScheduler()
   const strategy = isAsync ? new AsyncStrategy() : new SyncStrategy()
   const cache = new CacheStore()
   const emitter = new EventEmitter()
-  const broadcast = new StorageBroadcast(broadcastName)
+  const broadcast = new StorageBroadcast(channelId)
 
   // 5. Assemble Operator
   const operator = new StorageOperator(storage, scheduler, strategy, cache, emitter, broadcast)
@@ -853,7 +919,7 @@ Uses a probe key that is unlikely to conflict with user data:
 
 ```ts
 function detectAsync(storage: StorageLike): boolean {
-  const probe = storage.getItem('__stokado__')
+  const probe = storage.getItem('__stokado_probe__')
   return isPromise(probe)
 }
 ```
@@ -872,12 +938,17 @@ function shouldEnableBroadcast(storage: StorageLike, broadcast?: boolean): boole
 }
 ```
 
-### `detectBroadcastName`
+### `resolveChannelId`
 
-Returns the BroadcastChannel name for the storage. Only `localStorage` is auto-detected:
+Returns the channel identifier for the storage instance. Used for broadcast message filtering:
+
+- If `options.channel` is provided, use it directly
+- Auto-detect for `localStorage` as `'localStorage'`
+- Returns `null` when no channel can be determined (broadcast still works but without filtering)
 
 ```ts
-function detectBroadcastName(storage: StorageLike): string | null {
+function resolveChannelId(storage: StorageLike, channel?: string): string | null {
+  if (channel) return channel
   if (typeof window !== 'undefined') {
     if (storage === window.localStorage) return 'localStorage'
   }
@@ -885,7 +956,7 @@ function detectBroadcastName(storage: StorageLike): string | null {
 }
 ```
 
-When `detectBroadcastName` returns `null` (non-localStorage storage), `StorageBroadcast` receives `null` and broadcast is effectively disabled (no channel is created).
+When `resolveChannelId` returns `null`, `StorageBroadcast` receives `null` and messages are sent without a `channel` field. Received messages without a `channel` field are always processed (no filtering). This is acceptable for single-storage apps.
 
 ### TypeScript Overloads
 
@@ -907,13 +978,13 @@ createProxyStorage(localStorage, 'my-app')
 createProxyStorage(localForage, 'my-db')
 
 // New API
-createProxyStorage(localStorage)                    // broadcast auto-enabled for localStorage
+createProxyStorage(localStorage)                       // broadcast auto-enabled, channel auto-detected as 'localStorage'
 createProxyStorage(localStorage, { broadcast: false }) // broadcast disabled
-createProxyStorage(sessionStorage)                  // broadcast auto-disabled for sessionStorage
-createProxyStorage(localForage)                     // broadcast disabled (no auto-detect name)
+createProxyStorage(sessionStorage)                     // broadcast auto-disabled for sessionStorage
+createProxyStorage(localForage, { channel: 'my-db' })  // broadcast enabled with channel identifier
 ```
 
-For async storage backends (localForage, IndexedDB) that previously used the `name` parameter for cross-tab sync, broadcast is now disabled by default since there is no way to auto-detect a channel name. This may be extended in the future with additional options.
+For async storage backends (localForage, IndexedDB) that previously used the `name` parameter for cross-tab sync, the `channel` option now provides the storage identifier for broadcast message filtering. All instances share the same `BroadcastChannel('stokado::channel')`, and messages are filtered by the `channel` field.
 
 ## Utility Functions
 
@@ -1001,9 +1072,11 @@ As part of this refactor, the following issues are also addressed:
 
 ## Migration Notes
 
-- **Breaking API change**: `createProxyStorage(storage, name?)` → `createProxyStorage(storage, options?)`. The `name` parameter is removed; broadcast is now controlled by `options.broadcast` (default `true`) with auto-detection for `localStorage`/`sessionStorage`.
+- **Breaking API change**: `createProxyStorage(storage, name?)` → `createProxyStorage(storage, options?)`. The `name` parameter is removed; broadcast is now controlled by `options.broadcast` (default `true`) with auto-detection for `localStorage`/`sessionStorage`. Use `options.channel` to specify a storage identifier for custom backends.
+- **Behavior change**: `removeItem` no longer emits events for non-existent keys. Previously, events were emitted regardless (with `oldValue: undefined`). Now, events are only emitted when the key actually exists in storage.
 - No changes to the serialized storage format (existing stored data remains compatible)
 - Build output (ESM, CJS, IIFE, DTS) structure unchanged
-- ⚠️ **BroadcastChannel message format is incompatible** with the previous version. The format changed from `{ key, newValue, oldValue, property }` to `{ type, key?, encoded? }`. Old and new versions running in the same browser will not cross-sync. Since BroadcastChannel messages are ephemeral (lost on page reload), this does not affect persistent data.
+- ⚠️ **BroadcastChannel message format is incompatible** with the previous version. The format changed from `{ key, newValue, oldValue, property }` to `{ type, key?, encoded?, channel? }`. Old and new versions running in the same browser will not cross-sync. Since BroadcastChannel messages are ephemeral (lost on page reload), this does not affect persistent data.
+- ⚠️ **BroadcastChannel name changed** from `stokado:${name}` to the unified `stokado::channel`. Old and new versions will not see each other's broadcasts.
 - `tsconfig.json` `include` paths must be updated from `["src/*.ts", "src/*/*.ts", "tests/*.ts"]` to `["src/**/*.ts", "tests/**/*.ts"]` to cover the new deeper directory structure
 - `key()` and `length` do not go through the Scheduler — they may return stale values if async operations are pending. This is a known limitation consistent with the previous version's behavior.

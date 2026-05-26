@@ -992,6 +992,8 @@ describe('EventEmitter', () => {
     emitter.emit('key', 1, 0)
     expect(fn).not.toHaveBeenCalled()
   })
+  // NOTE: This test verifies that the WrappedListener type has an `originalFn` field,
+  // allowing `off` to match a `once` listener by its original function reference.
 
   it('multiple listeners on same key', () => {
     const emitter = new EventEmitter()
@@ -1131,22 +1133,15 @@ git add -A && git commit -m "feat: implement EventEmitter with on/off/once/emit"
 Create `src/strategy/types.ts`:
 
 ```ts
-export interface StorageLikeMinimal {
-  getItem(key: string): any
-  setItem(key: string, value: string): any
-  removeItem(key: string): any
-  clear(): any
-  key(index: number): any
-  length: any
-}
+import type { StorageLike } from '@/types'
 
 export interface StorageStrategy {
-  getItem(storage: StorageLikeMinimal, key: string): string | null | Promise<string | null>
-  setItem(storage: StorageLikeMinimal, key: string, value: string): void | Promise<void>
-  removeItem(storage: StorageLikeMinimal, key: string): void | Promise<void>
-  clear(storage: StorageLikeMinimal): void | Promise<void>
-  key(storage: StorageLikeMinimal, index: number): string | null | Promise<string | null>
-  length(storage: StorageLikeMinimal): number | Promise<number>
+  getItem(storage: StorageLike, key: string): string | null | Promise<string | null>
+  setItem(storage: StorageLike, key: string, value: string): void | Promise<void>
+  removeItem(storage: StorageLike, key: string): void | Promise<void>
+  clear(storage: StorageLike): void | Promise<void>
+  key(storage: StorageLike, index: number): string | null | Promise<string | null>
+  length(storage: StorageLike): number | Promise<number>
 }
 ```
 
@@ -1155,30 +1150,31 @@ export interface StorageStrategy {
 Create `src/strategy/sync-strategy.ts`:
 
 ```ts
-import type { StorageLikeMinimal, StorageStrategy } from './types'
+import type { StorageLike } from '@/types'
+import type { StorageStrategy } from './types'
 
 export class SyncStrategy implements StorageStrategy {
-  getItem(storage: StorageLikeMinimal, key: string): string | null {
+  getItem(storage: StorageLike, key: string): string | null {
     return storage.getItem(key)
   }
 
-  setItem(storage: StorageLikeMinimal, key: string, value: string): void {
+  setItem(storage: StorageLike, key: string, value: string): void {
     storage.setItem(key, value)
   }
 
-  removeItem(storage: StorageLikeMinimal, key: string): void {
+  removeItem(storage: StorageLike, key: string): void {
     storage.removeItem(key)
   }
 
-  clear(storage: StorageLikeMinimal): void {
+  clear(storage: StorageLike): void {
     storage.clear()
   }
 
-  key(storage: StorageLikeMinimal, index: number): string | null {
+  key(storage: StorageLike, index: number): string | null {
     return storage.key(index)
   }
 
-  length(storage: StorageLikeMinimal): number {
+  length(storage: StorageLike): number {
     return typeof storage.length === 'function' ? storage.length() : storage.length
   }
 }
@@ -1189,30 +1185,31 @@ export class SyncStrategy implements StorageStrategy {
 Create `src/strategy/async-strategy.ts`:
 
 ```ts
-import type { StorageLikeMinimal, StorageStrategy } from './types'
+import type { StorageLike } from '@/types'
+import type { StorageStrategy } from './types'
 
 export class AsyncStrategy implements StorageStrategy {
-  async getItem(storage: StorageLikeMinimal, key: string): Promise<string | null> {
+  async getItem(storage: StorageLike, key: string): Promise<string | null> {
     return await storage.getItem(key)
   }
 
-  async setItem(storage: StorageLikeMinimal, key: string, value: string): Promise<void> {
+  async setItem(storage: StorageLike, key: string, value: string): Promise<void> {
     await storage.setItem(key, value)
   }
 
-  async removeItem(storage: StorageLikeMinimal, key: string): Promise<void> {
+  async removeItem(storage: StorageLike, key: string): Promise<void> {
     await storage.removeItem(key)
   }
 
-  async clear(storage: StorageLikeMinimal): Promise<void> {
+  async clear(storage: StorageLike): void | Promise<void> {
     await storage.clear()
   }
 
-  async key(storage: StorageLikeMinimal, index: number): Promise<string | null> {
+  async key(storage: StorageLike, index: number): Promise<string | null> {
     return await storage.key(index)
   }
 
-  async length(storage: StorageLikeMinimal): Promise<number> {
+  async length(storage: StorageLike): Promise<number> {
     return typeof storage.length === 'function' ? await storage.length() : storage.length
   }
 }
@@ -1245,16 +1242,18 @@ Create `src/events/broadcast.ts`:
 
 ```ts
 export type BroadcastMessage =
-  | { type: 'set'; key: string; encoded: string }
-  | { type: 'remove'; key: string }
-  | { type: 'clear' }
+  | { type: 'set'; key: string; encoded: string; channel?: string }
+  | { type: 'remove'; key: string; channel?: string }
+  | { type: 'clear'; channel?: string }
 
 export class StorageBroadcast {
   private channel: BroadcastChannel | null = null
+  private channelId: string | null
 
-  constructor(name: string | null) {
-    if (name && typeof BroadcastChannel !== 'undefined') {
-      this.channel = new BroadcastChannel(`stokado:${name}`)
+  constructor(channelId: string | null) {
+    this.channelId = channelId
+    if (typeof BroadcastChannel !== 'undefined') {
+      this.channel = new BroadcastChannel('stokado::channel')
     }
   }
 
@@ -1265,7 +1264,9 @@ export class StorageBroadcast {
   listen(onMessage: (msg: BroadcastMessage) => void): void {
     if (!this.channel) return
     this.channel.onmessage = (ev: MessageEvent) => {
-      onMessage(ev.data)
+      const msg = ev.data as BroadcastMessage
+      if (this.channelId && msg.channel && this.channelId !== msg.channel) return
+      onMessage(msg)
     }
   }
 
@@ -1338,6 +1339,7 @@ ADD the following types to the existing `src/types.ts`:
 ```ts
 export interface ProxyStorageOptions {
   broadcast?: boolean
+  channel?: string
 }
 
 export interface SyncStorageLike {
@@ -1361,6 +1363,28 @@ export interface AsyncStorageLike {
 }
 
 export type StorageLike = SyncStorageLike | AsyncStorageLike
+
+export interface ProxyStorage extends SyncStorageLike {
+  on(key: string, fn: Listener): void
+  once(key: string, fn: Listener): void
+  off(key?: string, fn?: Listener): void
+  setExpires(key: string, expires: ExpiresType): void
+  getExpires(key: string): Date | undefined
+  removeExpires(key: string): void
+  setDisposable(key: string): void
+  getOptions(key: string): StorageOptions | null
+}
+
+export interface AsyncProxyStorage extends AsyncStorageLike {
+  on(key: string, fn: Listener): void
+  once(key: string, fn: Listener): void
+  off(key?: string, fn?: Listener): void
+  setExpires(key: string, expires: ExpiresType): Promise<void>
+  getExpires(key: string): Promise<Date | undefined>
+  removeExpires(key: string): Promise<void>
+  setDisposable(key: string): Promise<void>
+  getOptions(key: string): Promise<StorageOptions | null>
+}
 
 export type Listener = (newValue: any, oldValue: any) => void
 ```
@@ -1390,6 +1414,7 @@ import { createObjectProxy } from '@/core/proxy-object'
 describe('createObjectProxy', () => {
   function createMockOperator() {
     return {
+      [x: string]: any,
       onObjectPropertySet: vi.fn(),
       emitter: {
         emit: vi.fn(),
@@ -1659,6 +1684,7 @@ function createMockSyncStorage() {
 function createMockAsyncStorage() {
   const store = new Map<string, string>()
   return {
+    [x: string]: any,
     getItem: async (key: string) => store.get(key) ?? null,
     setItem: async (key: string, value: string) => { store.set(key, value) },
     removeItem: async (key: string) => { store.delete(key) },
@@ -1677,6 +1703,7 @@ function createSyncOperator(storage?: any) {
     new CacheStore(),
     new EventEmitter(),
     new StorageBroadcast(null),
+    null,
   )
 }
 
@@ -1689,6 +1716,7 @@ function createAsyncOperator(storage?: any) {
     new CacheStore(),
     new EventEmitter(),
     new StorageBroadcast(null),
+    null,
   )
 }
 
@@ -1744,14 +1772,6 @@ describe('StorageOperator - Sync', () => {
     op.emitter.on('key', fn)
     op.removeItem('key')
     expect(fn).toHaveBeenCalledWith(undefined, 'val')
-  })
-
-  it('emits events on removeItem even when key not in cache', () => {
-    const op = createSyncOperator()
-    const fn = vi.fn()
-    op.emitter.on('key', fn)
-    op.removeItem('key')
-    expect(fn).toHaveBeenCalledWith(undefined, undefined)
   })
 
   it('preserves object reference equality', () => {
@@ -1858,6 +1878,8 @@ import { createObjectProxy } from './proxy-object'
 import { resolve, formatTime, getRawType, hasChanged, isObject } from '@/utils'
 
 export class StorageOperator {
+  private channelId: string | null
+
   constructor(
     public readonly storage: any,
     private scheduler: Scheduler,
@@ -1865,7 +1887,10 @@ export class StorageOperator {
     public readonly cache: CacheStore,
     public readonly emitter: EventEmitter,
     private broadcast: StorageBroadcast,
-  ) {}
+    channelId?: string | null,
+  ) {
+    this.channelId = channelId ?? null
+  }
 
   get isAsync(): boolean {
     return this.scheduler.isAsync
@@ -1937,7 +1962,7 @@ export class StorageOperator {
         this.cache.set(key, { value, type: getRawType(value), options: Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined })
         if (hasChanged(value, oldValue)) {
           this.emitter.emit(key, value, oldValue)
-          this.broadcast.post({ type: 'set', key, encoded })
+          this.broadcast.post({ type: 'set', key, encoded, channel: this.channelId ?? undefined })
         }
 
         if (Array.isArray(value) && Array.isArray(oldValue) && value.length !== oldValue.length) {
@@ -1954,12 +1979,27 @@ export class StorageOperator {
   removeItem(key: string): any {
     return this.scheduler.enqueue(key, () => {
       const oldCached = this.cache.get(key)
-      const oldValue = oldCached?.value
 
-      return resolve(this.strategy.removeItem(this.storage, key), () => {
-        this.cache.delete(key)
-        this.emitter.emit(key, undefined, oldValue)
-        this.broadcast.post({ type: 'remove', key })
+      if (oldCached !== undefined) {
+        const oldValue = oldCached.value
+        return resolve(this.strategy.removeItem(this.storage, key), () => {
+          this.cache.delete(key)
+          this.emitter.emit(key, undefined, oldValue)
+          this.broadcast.post({ type: 'remove', key, channel: this.channelId ?? undefined })
+        })
+      }
+
+      return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
+        if (raw === null) return
+
+        return resolve(this.strategy.removeItem(this.storage, key), () => {
+          this.cache.delete(key)
+          const decoded = decode(raw)
+          const item = typeof decoded !== 'string' && decoded !== null ? decoded as DecodedItem : null
+          const oldValue = item?.value ?? raw
+          this.emitter.emit(key, undefined, oldValue)
+          this.broadcast.post({ type: 'remove', key, channel: this.channelId ?? undefined })
+        })
       })
     })
   }
@@ -1973,7 +2013,7 @@ export class StorageOperator {
         for (const [key, cached] of cachedEntries) {
           this.emitter.emit(key, undefined, cached.value)
         }
-        this.broadcast.post({ type: 'clear' })
+        this.broadcast.post({ type: 'clear', channel: this.channelId ?? undefined })
       })
     })
   }
@@ -2121,7 +2161,7 @@ export class StorageOperator {
         this.emitter.emit(key, target, target)
         // Always broadcast for object mutations — hasChanged is unreliable
         // for reference types (Object.is(obj, obj) is always true)
-        this.broadcast.post({ type: 'set', key, encoded })
+        this.broadcast.post({ type: 'set', key, encoded, channel: this.channelId ?? undefined })
       })
     })
   }
@@ -2129,6 +2169,8 @@ export class StorageOperator {
   // --- Broadcast handling ---
 
   handleBroadcast(msg: BroadcastMessage): void {
+    if (this.channelId && msg.channel && this.channelId !== msg.channel) return
+
     switch (msg.type) {
       case 'set': {
         const decoded = decode(msg.encoded)
@@ -2147,8 +2189,10 @@ export class StorageOperator {
       }
       case 'remove': {
         const oldCached = this.cache.get(msg.key)
-        this.cache.delete(msg.key)
-        this.emitter.emit(msg.key, undefined, oldCached?.value)
+        if (oldCached !== undefined) {
+          this.cache.delete(msg.key)
+          this.emitter.emit(msg.key, undefined, oldCached.value)
+        }
         break
       }
       case 'clear': {
@@ -2305,7 +2349,7 @@ export function createProxyHandler(operator: StorageOperator): ProxyHandler<any>
 - [ ] **Step 2: Rewrite src/index.ts**
 
 ```ts
-import type { StorageLike, SyncStorageLike, AsyncStorageLike, ProxyStorageOptions } from '@/types'
+import type { StorageLike, SyncStorageLike, AsyncStorageLike, ProxyStorageOptions, ProxyStorage, AsyncProxyStorage } from '@/types'
 import { StorageOperator } from '@/core/operator'
 import { createProxyHandler } from '@/core/proxy-handler'
 import { SyncScheduler } from '@/scheduler/sync-scheduler'
@@ -2320,23 +2364,25 @@ import { isFunction, isPromise } from '@/utils'
 export { StorageOperator } from '@/core/operator'
 export { encode } from '@/serializer/encode'
 export { decode } from '@/serializer/decode'
-export type { StorageOptions, StorageLike, SyncStorageLike, AsyncStorageLike, ProxyStorageOptions, Listener } from '@/types'
+export type { StorageOptions, StorageLike, SyncStorageLike, AsyncStorageLike, ProxyStorageOptions, ProxyStorage, AsyncProxyStorage, Listener } from '@/types'
 
+export function createProxyStorage(storage: SyncStorageLike, options?: ProxyStorageOptions): ProxyStorage
+export function createProxyStorage(storage: AsyncStorageLike, options?: ProxyStorageOptions): AsyncProxyStorage
 export function createProxyStorage(storage: StorageLike, options?: ProxyStorageOptions) {
   validateStorage(storage)
 
   const isAsync = detectAsync(storage)
 
   const broadcastEnabled = shouldEnableBroadcast(storage, options?.broadcast)
-  const broadcastName = broadcastEnabled ? detectBroadcastName(storage) : null
+  const channelId = broadcastEnabled ? resolveChannelId(storage, options?.channel) : null
 
   const scheduler = isAsync ? new AsyncScheduler() : new SyncScheduler()
   const strategy = isAsync ? new AsyncStrategy() : new SyncStrategy()
   const cache = new CacheStore()
   const emitter = new EventEmitter()
-  const broadcast = new StorageBroadcast(broadcastName)
+  const broadcast = new StorageBroadcast(channelId)
 
-  const operator = new StorageOperator(storage, scheduler, strategy, cache, emitter, broadcast)
+  const operator = new StorageOperator(storage, scheduler, strategy, cache, emitter, broadcast, channelId)
 
   const proxy = new Proxy(storage, createProxyHandler(operator))
 
@@ -2344,9 +2390,6 @@ export function createProxyStorage(storage: StorageLike, options?: ProxyStorageO
 
   return proxy
 }
-
-export function createProxyStorage(storage: SyncStorageLike, options?: ProxyStorageOptions): ProxyStorage
-export function createProxyStorage(storage: AsyncStorageLike, options?: ProxyStorageOptions): AsyncProxyStorage
 
 function validateStorage(storage: StorageLike): void {
   const required = ['getItem', 'setItem', 'removeItem', 'clear', 'key']
@@ -2358,7 +2401,7 @@ function validateStorage(storage: StorageLike): void {
 }
 
 function detectAsync(storage: StorageLike): boolean {
-  const probe = storage.getItem('__stokado__')
+  const probe = storage.getItem('__stokado_probe__')
   return isPromise(probe)
 }
 
@@ -2367,7 +2410,8 @@ function shouldEnableBroadcast(storage: StorageLike, broadcast?: boolean): boole
   return broadcast ?? true
 }
 
-function detectBroadcastName(storage: StorageLike): string | null {
+function resolveChannelId(storage: StorageLike, channel?: string): string | null {
+  if (channel) return channel
   if (typeof window !== 'undefined') {
     if (storage === window.localStorage) return 'localStorage'
   }
@@ -2473,7 +2517,7 @@ Keep: `isPromise`, `isObject`, `isFunction`, `isString`, `isIntegerKey`, `getTyp
 Remove types no longer needed:
 - `EffectMap`, `EffectFn`, `Effect`, `StorageObject`
 
-Keep: `RawType`, `StorageValue`, `StorageOptions`, `ExpiresType`, `ProxyStorageOptions`, `SyncStorageLike`, `AsyncStorageLike`, `StorageLike`, `Listener`
+Keep: `RawType`, `StorageValue`, `StorageOptions`, `ExpiresType`, `ProxyStorageOptions`, `SyncStorageLike`, `AsyncStorageLike`, `StorageLike`, `ProxyStorage`, `AsyncProxyStorage`, `Listener`
 
 - [ ] **Step 2: Update tsconfig.json include paths**
 
