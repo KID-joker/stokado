@@ -92,8 +92,8 @@ pnpm add -D vitest
 - [ ] **Step 2: Create vitest.config.ts**
 
 ```ts
-import { defineConfig } from 'vitest/config'
 import path from 'node:path'
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
@@ -159,19 +159,19 @@ export interface Scheduler {
    * Sync: executes directly and returns the result.
    * Async: appends to the key's queue, returns Promise.
    */
-  enqueue<T>(key: string, operation: () => T | Promise<T>): T | Promise<T>
+  enqueue: <T>(key: string, operation: () => T | Promise<T>) => T | Promise<T>
 
   /**
    * Wait for all queued operations on a given key to complete.
    * Sync: no-op. Async: returns Promise.
    */
-  flush(key: string): void | Promise<void>
+  flush: (key: string) => void | Promise<void>
 
   /**
    * Wait for all keys' queues to complete.
    * Used by clear() and other cross-key operations.
    */
-  flushAll(): void | Promise<void>
+  flushAll: () => void | Promise<void>
 }
 ```
 
@@ -429,8 +429,8 @@ Create `tests/unit/serializer.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest'
-import { encode } from '@/serializer/encode'
 import { decode } from '@/serializer/decode'
+import { encode } from '@/serializer/encode'
 
 describe('Serializer', () => {
   describe('round-trip encode/decode', () => {
@@ -452,7 +452,7 @@ describe('Serializer', () => {
       expect(decodeValue(0)).toBe(0)
       expect(decodeValue(-1)).toBe(-1)
       expect(decodeValue(3.14)).toBe(3.14)
-      expect(decodeValue(NaN)).toBeNaN()
+      expect(decodeValue(Number.NaN)).toBeNaN()
       expect(decodeValue(Infinity)).toBe(Infinity)
       expect(decodeValue(-Infinity)).toBe(-Infinity)
     })
@@ -587,15 +587,15 @@ export const serializers: Record<string, Serializer> = {
   },
   Number: {
     encode: toString,
-    decode: (s) => Number.parseFloat(s),
+    decode: s => Number.parseFloat(s),
   },
   BigInt: {
     encode: toString,
-    decode: (s) => BigInt(s),
+    decode: s => BigInt(s),
   },
   Boolean: {
     encode: toString,
-    decode: (s) => s === 'true',
+    decode: s => s === 'true',
   },
   Null: {
     encode: () => 'null',
@@ -614,20 +614,20 @@ export const serializers: Record<string, Serializer> = {
     decode: identity as (v: any) => any,
   },
   Set: {
-    encode: (v) => JSON.stringify([...v]),
-    decode: (s) => new Set(JSON.parse(s)),
+    encode: v => JSON.stringify([...v]),
+    decode: s => new Set(JSON.parse(s)),
   },
   Map: {
-    encode: (v) => JSON.stringify([...v]),
-    decode: (s) => new Map(JSON.parse(s)),
+    encode: v => JSON.stringify([...v]),
+    decode: s => new Map(JSON.parse(s)),
   },
   Date: {
-    encode: (v) => v.toISOString(),
-    decode: (s) => new Date(s),
+    encode: v => v.toISOString(),
+    decode: s => new Date(s),
   },
   URL: {
-    encode: (v) => v.href,
-    decode: (s) => new URL(s),
+    encode: v => v.href,
+    decode: s => new URL(s),
   },
   RegExp: {
     encode: toString, // produces /source/flags format — same as legacy
@@ -654,8 +654,8 @@ Create `src/serializer/encode.ts`:
 
 ```ts
 import type { StorageOptions } from '@/types'
-import { serializers } from './registry'
 import { getRawType } from '@/utils'
+import { serializers } from './registry'
 
 export interface StorageEnvelope {
   type: string
@@ -699,12 +699,14 @@ export interface DecodedItem {
 }
 
 export function decode(raw: string | null): DecodedItem | null | string {
-  if (raw === null) return null
+  if (raw === null)
+    return null
 
   let envelope: any
   try {
     envelope = JSON.parse(raw)
-  } catch {
+  }
+  catch {
     return raw // Not JSON, return as-is
   }
 
@@ -1077,11 +1079,13 @@ export class EventEmitter {
       return
     }
     const list = this.listeners.get(key)
-    if (!list) return
+    if (!list)
+      return
     const filtered = list.filter(w => w.fn !== fn && w.originalFn !== fn)
     if (filtered.length === 0) {
       this.listeners.delete(key)
-    } else {
+    }
+    else {
       this.listeners.set(key, filtered)
     }
   }
@@ -1092,7 +1096,8 @@ export class EventEmitter {
 
   emit(key: string, newValue: any, oldValue: any): void {
     const list = this.listeners.get(key)
-    if (!list) return
+    if (!list)
+      return
     const snapshot = [...list]
     for (const { fn } of snapshot) {
       fn(newValue, oldValue)
@@ -1136,12 +1141,12 @@ Create `src/strategy/types.ts`:
 import type { StorageLike } from '@/types'
 
 export interface StorageStrategy {
-  getItem(storage: StorageLike, key: string): string | null | Promise<string | null>
-  setItem(storage: StorageLike, key: string, value: string): void | Promise<void>
-  removeItem(storage: StorageLike, key: string): void | Promise<void>
-  clear(storage: StorageLike): void | Promise<void>
-  key(storage: StorageLike, index: number): string | null | Promise<string | null>
-  length(storage: StorageLike): number | Promise<number>
+  getItem: (storage: StorageLike, key: string) => string | null | Promise<string | null>
+  setItem: (storage: StorageLike, key: string, value: string) => void | Promise<void>
+  removeItem: (storage: StorageLike, key: string) => void | Promise<void>
+  clear: (storage: StorageLike) => void | Promise<void>
+  key: (storage: StorageLike, index: number) => string | null | Promise<string | null>
+  length: (storage: StorageLike) => number | Promise<number>
 }
 ```
 
@@ -1150,8 +1155,8 @@ export interface StorageStrategy {
 Create `src/strategy/sync-strategy.ts`:
 
 ```ts
-import type { StorageLike } from '@/types'
 import type { StorageStrategy } from './types'
+import type { StorageLike } from '@/types'
 
 export class SyncStrategy implements StorageStrategy {
   getItem(storage: StorageLike, key: string): string | null {
@@ -1185,8 +1190,8 @@ export class SyncStrategy implements StorageStrategy {
 Create `src/strategy/async-strategy.ts`:
 
 ```ts
-import type { StorageLike } from '@/types'
 import type { StorageStrategy } from './types'
+import type { StorageLike } from '@/types'
 
 export class AsyncStrategy implements StorageStrategy {
   async getItem(storage: StorageLike, key: string): Promise<string | null> {
@@ -1241,10 +1246,10 @@ git add -A && git commit -m "feat: implement StorageStrategy with Sync and Async
 Create `src/events/broadcast.ts`:
 
 ```ts
-export type BroadcastMessage =
-  | { type: 'set'; key: string; encoded: string; channel?: string }
-  | { type: 'remove'; key: string; channel?: string }
-  | { type: 'clear'; channel?: string }
+export type BroadcastMessage
+  = | { type: 'set', key: string, encoded: string, channel?: string }
+    | { type: 'remove', key: string, channel?: string }
+    | { type: 'clear', channel?: string }
 
 export class StorageBroadcast {
   private channel: BroadcastChannel | null = null
@@ -1262,10 +1267,12 @@ export class StorageBroadcast {
   }
 
   listen(onMessage: (msg: BroadcastMessage) => void): void {
-    if (!this.channel) return
+    if (!this.channel)
+      return
     this.channel.onmessage = (ev: MessageEvent) => {
       const msg = ev.data as BroadcastMessage
-      if (this.channelId && msg.channel && this.channelId !== msg.channel) return
+      if (this.channelId && msg.channel && this.channelId !== msg.channel)
+        return
       onMessage(msg)
     }
   }
@@ -1296,7 +1303,8 @@ Append the following function to the existing `src/utils.ts`:
 
 ```ts
 export function resolve<T, R>(val: T | Promise<T>, fn: (v: T) => R | Promise<R>): R | Promise<R> {
-  if (isPromise(val)) return (val as Promise<T>).then(fn)
+  if (isPromise(val))
+    return (val as Promise<T>).then(fn)
   return fn(val as T)
 }
 ```
@@ -1305,8 +1313,10 @@ Also update `formatTime` to have explicit return type `number`:
 
 ```ts
 export function formatTime(time: any): number {
-  if (isDate(time)) return time.getTime()
-  if (isString(time)) return +time.padEnd(13, '0')
+  if (isDate(time))
+    return time.getTime()
+  if (isString(time))
+    return +time.padEnd(13, '0')
   return +time
 }
 ```
@@ -1365,25 +1375,25 @@ export interface AsyncStorageLike {
 export type StorageLike = SyncStorageLike | AsyncStorageLike
 
 export interface ProxyStorage extends SyncStorageLike {
-  on(key: string, fn: Listener): void
-  once(key: string, fn: Listener): void
-  off(key?: string, fn?: Listener): void
-  setExpires(key: string, expires: ExpiresType): void
-  getExpires(key: string): Date | undefined
-  removeExpires(key: string): void
-  setDisposable(key: string): void
-  getOptions(key: string): StorageOptions | null
+  on: (key: string, fn: Listener) => void
+  once: (key: string, fn: Listener) => void
+  off: (key?: string, fn?: Listener) => void
+  setExpires: (key: string, expires: ExpiresType) => void
+  getExpires: (key: string) => Date | undefined
+  removeExpires: (key: string) => void
+  setDisposable: (key: string) => void
+  getOptions: (key: string) => StorageOptions | null
 }
 
 export interface AsyncProxyStorage extends AsyncStorageLike {
-  on(key: string, fn: Listener): void
-  once(key: string, fn: Listener): void
-  off(key?: string, fn?: Listener): void
-  setExpires(key: string, expires: ExpiresType): Promise<void>
-  getExpires(key: string): Promise<Date | undefined>
-  removeExpires(key: string): Promise<void>
-  setDisposable(key: string): Promise<void>
-  getOptions(key: string): Promise<StorageOptions | null>
+  on: (key: string, fn: Listener) => void
+  once: (key: string, fn: Listener) => void
+  off: (key?: string, fn?: Listener) => void
+  setExpires: (key: string, expires: ExpiresType) => Promise<void>
+  getExpires: (key: string) => Promise<Date | undefined>
+  removeExpires: (key: string) => Promise<void>
+  setDisposable: (key: string) => Promise<void>
+  getOptions: (key: string) => Promise<StorageOptions | null>
 }
 
 export type Listener = (newValue: any, oldValue: any) => void
@@ -1553,7 +1563,8 @@ export function createObjectProxy(
               operator.emitter.emit(`${key}.length`, target.length, oldLength)
             }
             return result
-          } finally {
+          }
+          finally {
             mutating = false
           }
         }
@@ -1627,7 +1638,7 @@ import type { EventEmitter } from '@/events/emitter'
 // Full implementation in Task 11
 export interface StorageOperator {
   emitter: EventEmitter
-  onObjectPropertySet(key: string, target: object): void | Promise<void>
+  onObjectPropertySet: (key: string, target: object) => void | Promise<void>
 }
 ```
 
@@ -1865,17 +1876,18 @@ Expected: FAIL — StorageOperator is just an interface stub.
 Replace `src/core/operator.ts` with:
 
 ```ts
+import type { BroadcastMessage } from '@/events/broadcast'
 import type { Scheduler } from '@/scheduler/types'
+import type { DecodedItem } from '@/serializer/decode'
 import type { StorageStrategy } from '@/strategy/types'
 import type { StorageOptions } from '@/types'
-import type { BroadcastMessage } from '@/events/broadcast'
 import { CacheStore } from '@/cache/store'
-import { EventEmitter } from '@/events/emitter'
 import { StorageBroadcast } from '@/events/broadcast'
+import { EventEmitter } from '@/events/emitter'
+import { decode } from '@/serializer/decode'
 import { encode } from '@/serializer/encode'
-import { decode, type DecodedItem } from '@/serializer/decode'
+import { formatTime, getRawType, hasChanged, isObject, resolve } from '@/utils'
 import { createObjectProxy } from './proxy-object'
-import { resolve, formatTime, getRawType, hasChanged, isObject } from '@/utils'
 
 export class StorageOperator {
   private channelId: string | null
@@ -1920,10 +1932,12 @@ export class StorageOperator {
 
       // Cache miss — read from storage
       return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
-        if (raw === null) return null
+        if (raw === null)
+          return null
 
         const decoded = decode(raw)
-        if (decoded === null || typeof decoded === 'string') return decoded
+        if (decoded === null || typeof decoded === 'string')
+          return decoded
 
         const item = decoded as DecodedItem
         this.cache.set(key, { value: item.value, type: item.type, options: item.options })
@@ -1990,7 +2004,8 @@ export class StorageOperator {
       }
 
       return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
-        if (raw === null) return
+        if (raw === null)
+          return
 
         return resolve(this.strategy.removeItem(this.storage, key), () => {
           this.cache.delete(key)
@@ -2045,9 +2060,11 @@ export class StorageOperator {
       }
       // No cached item — try reading from storage
       return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
-        if (raw === null) return
+        if (raw === null)
+          return
         const decoded = decode(raw) as DecodedItem
-        if (!decoded || typeof decoded === 'string') return
+        if (!decoded || typeof decoded === 'string')
+          return
         const options = { ...decoded.options, expires: time }
         const encoded = encode(decoded.value, options)
         return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
@@ -2062,16 +2079,21 @@ export class StorageOperator {
       const cached = this.cache.get(key)
       if (cached?.options?.expires) {
         const exp = +cached.options.expires
-        if (exp <= Date.now()) return undefined
+        if (exp <= Date.now())
+          return undefined
         return new Date(exp)
       }
       return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
-        if (raw === null) return undefined
+        if (raw === null)
+          return undefined
         const decoded = decode(raw) as DecodedItem
-        if (!decoded || typeof decoded === 'string') return undefined
-        if (!decoded.options?.expires) return undefined
+        if (!decoded || typeof decoded === 'string')
+          return undefined
+        if (!decoded.options?.expires)
+          return undefined
         const exp = +decoded.options.expires
-        if (exp <= Date.now()) return undefined
+        if (exp <= Date.now())
+          return undefined
         return new Date(exp)
       })
     })
@@ -2089,10 +2111,13 @@ export class StorageOperator {
         })
       }
       return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
-        if (raw === null) return
+        if (raw === null)
+          return
         const decoded = decode(raw) as DecodedItem
-        if (!decoded || typeof decoded === 'string') return
-        if (!decoded.options?.expires) return
+        if (!decoded || typeof decoded === 'string')
+          return
+        if (!decoded.options?.expires)
+          return
         const { expires, ...restOptions } = decoded.options as any
         const newOptions = Object.keys(restOptions).length > 0 ? restOptions : undefined
         const encoded = encode(decoded.value, newOptions)
@@ -2114,9 +2139,11 @@ export class StorageOperator {
         })
       }
       return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
-        if (raw === null) return
+        if (raw === null)
+          return
         const decoded = decode(raw) as DecodedItem
-        if (!decoded || typeof decoded === 'string') return
+        if (!decoded || typeof decoded === 'string')
+          return
         const options = { ...decoded.options, disposable: true }
         const encoded = encode(decoded.value, options)
         return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
@@ -2129,11 +2156,14 @@ export class StorageOperator {
   getOptions(key: string): any {
     return this.scheduler.enqueue(key, () => {
       const cached = this.cache.get(key)
-      if (cached) return cached.options ?? {}
+      if (cached)
+        return cached.options ?? {}
       return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
-        if (raw === null) return {}
+        if (raw === null)
+          return {}
         const decoded = decode(raw) as DecodedItem
-        if (!decoded || typeof decoded === 'string') return {}
+        if (!decoded || typeof decoded === 'string')
+          return {}
         return decoded.options ?? {}
       })
     })
@@ -2153,7 +2183,8 @@ export class StorageOperator {
   onObjectPropertySet(key: string, target: object): any {
     return this.scheduler.enqueue(key, () => {
       const cached = this.cache.get(key)
-      if (!cached) return
+      if (!cached)
+        return
       const options = cached.options
       const encoded = encode(target, options)
       return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
@@ -2169,7 +2200,8 @@ export class StorageOperator {
   // --- Broadcast handling ---
 
   handleBroadcast(msg: BroadcastMessage): void {
-    if (this.channelId && msg.channel && this.channelId !== msg.channel) return
+    if (this.channelId && msg.channel && this.channelId !== msg.channel)
+      return
 
     switch (msg.type) {
       case 'set': {
@@ -2209,11 +2241,12 @@ export class StorageOperator {
   // --- Private helpers ---
 
   private isExpired(options?: StorageOptions): boolean {
-    if (!options?.expires) return false
+    if (!options?.expires)
+      return false
     return new Date(+options.expires).getTime() <= Date.now()
   }
 
-  private extractValue(cached: { value: any; type: string; options?: StorageOptions }, key: string): any {
+  private extractValue(cached: { value: any, type: string, options?: StorageOptions }, key: string): any {
     if (cached.type === 'Object' || cached.type === 'Array') {
       return this.createObjectProxy(key, cached.value)
     }
@@ -2303,7 +2336,8 @@ export function createProxyHandler(operator: StorageOperator): ProxyHandler<any>
           return (key?: string, fn?: any) => {
             if (key === undefined) {
               operator.emitter.offAll()
-            } else {
+            }
+            else {
               operator.emitter.off(key, fn)
             }
           }
@@ -2349,22 +2383,22 @@ export function createProxyHandler(operator: StorageOperator): ProxyHandler<any>
 - [ ] **Step 2: Rewrite src/index.ts**
 
 ```ts
-import type { StorageLike, SyncStorageLike, AsyncStorageLike, ProxyStorageOptions, ProxyStorage, AsyncProxyStorage } from '@/types'
+import type { AsyncProxyStorage, AsyncStorageLike, ProxyStorage, ProxyStorageOptions, StorageLike, SyncStorageLike } from '@/types'
+import { CacheStore } from '@/cache/store'
 import { StorageOperator } from '@/core/operator'
 import { createProxyHandler } from '@/core/proxy-handler'
-import { SyncScheduler } from '@/scheduler/sync-scheduler'
-import { AsyncScheduler } from '@/scheduler/async-scheduler'
-import { SyncStrategy } from '@/strategy/sync-strategy'
-import { AsyncStrategy } from '@/strategy/async-strategy'
-import { CacheStore } from '@/cache/store'
-import { EventEmitter } from '@/events/emitter'
 import { StorageBroadcast } from '@/events/broadcast'
+import { EventEmitter } from '@/events/emitter'
+import { AsyncScheduler } from '@/scheduler/async-scheduler'
+import { SyncScheduler } from '@/scheduler/sync-scheduler'
+import { AsyncStrategy } from '@/strategy/async-strategy'
+import { SyncStrategy } from '@/strategy/sync-strategy'
 import { isFunction, isPromise } from '@/utils'
 
 export { StorageOperator } from '@/core/operator'
-export { encode } from '@/serializer/encode'
 export { decode } from '@/serializer/decode'
-export type { StorageOptions, StorageLike, SyncStorageLike, AsyncStorageLike, ProxyStorageOptions, ProxyStorage, AsyncProxyStorage, Listener } from '@/types'
+export { encode } from '@/serializer/encode'
+export type { AsyncProxyStorage, AsyncStorageLike, Listener, ProxyStorage, ProxyStorageOptions, StorageLike, StorageOptions, SyncStorageLike } from '@/types'
 
 export function createProxyStorage(storage: SyncStorageLike, options?: ProxyStorageOptions): ProxyStorage
 export function createProxyStorage(storage: AsyncStorageLike, options?: ProxyStorageOptions): AsyncProxyStorage
@@ -2386,7 +2420,7 @@ export function createProxyStorage(storage: StorageLike, options?: ProxyStorageO
 
   const proxy = new Proxy(storage, createProxyHandler(operator))
 
-  broadcast.listen((msg) => operator.handleBroadcast(msg))
+  broadcast.listen(msg => operator.handleBroadcast(msg))
 
   return proxy
 }
@@ -2406,14 +2440,17 @@ function detectAsync(storage: StorageLike): boolean {
 }
 
 function shouldEnableBroadcast(storage: StorageLike, broadcast?: boolean): boolean {
-  if (typeof window !== 'undefined' && storage === window.sessionStorage) return false
+  if (typeof window !== 'undefined' && storage === window.sessionStorage)
+    return false
   return broadcast ?? true
 }
 
 function resolveChannelId(storage: StorageLike, channel?: string): string | null {
-  if (channel) return channel
+  if (channel)
+    return channel
   if (typeof window !== 'undefined') {
-    if (storage === window.localStorage) return 'localStorage'
+    if (storage === window.localStorage)
+      return 'localStorage'
   }
   return null
 }

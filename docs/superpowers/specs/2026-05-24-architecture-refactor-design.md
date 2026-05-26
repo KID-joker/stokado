@@ -104,25 +104,25 @@ export interface AsyncStorageLike {
 export type StorageLike = SyncStorageLike | AsyncStorageLike
 
 export interface ProxyStorage extends SyncStorageLike {
-  on(key: string, fn: Listener): void
-  once(key: string, fn: Listener): void
-  off(key?: string, fn?: Listener): void
-  setExpires(key: string, expires: ExpiresType): void
-  getExpires(key: string): Date | undefined
-  removeExpires(key: string): void
-  setDisposable(key: string): void
-  getOptions(key: string): StorageOptions | null
+  on: (key: string, fn: Listener) => void
+  once: (key: string, fn: Listener) => void
+  off: (key?: string, fn?: Listener) => void
+  setExpires: (key: string, expires: ExpiresType) => void
+  getExpires: (key: string) => Date | undefined
+  removeExpires: (key: string) => void
+  setDisposable: (key: string) => void
+  getOptions: (key: string) => StorageOptions | null
 }
 
 export interface AsyncProxyStorage extends AsyncStorageLike {
-  on(key: string, fn: Listener): void
-  once(key: string, fn: Listener): void
-  off(key?: string, fn?: Listener): void
-  setExpires(key: string, expires: ExpiresType): Promise<void>
-  getExpires(key: string): Promise<Date | undefined>
-  removeExpires(key: string): Promise<void>
-  setDisposable(key: string): Promise<void>
-  getOptions(key: string): Promise<StorageOptions | null>
+  on: (key: string, fn: Listener) => void
+  once: (key: string, fn: Listener) => void
+  off: (key?: string, fn?: Listener) => void
+  setExpires: (key: string, expires: ExpiresType) => Promise<void>
+  getExpires: (key: string) => Promise<Date | undefined>
+  removeExpires: (key: string) => Promise<void>
+  setDisposable: (key: string) => Promise<void>
+  getOptions: (key: string) => Promise<StorageOptions | null>
 }
 
 export type Listener = (newValue: any, oldValue: any) => void
@@ -136,11 +136,11 @@ export type Listener = (newValue: any, oldValue: any) => void
 interface Scheduler {
   readonly isAsync: boolean
 
-  enqueue<T>(key: string, operation: () => T | Promise<T>): T | Promise<T>
+  enqueue: <T>(key: string, operation: () => T | Promise<T>) => T | Promise<T>
 
-  flush(key: string): void | Promise<void>
+  flush: (key: string) => void | Promise<void>
 
-  flushAll(): void | Promise<void>
+  flushAll: () => void | Promise<void>
 }
 ```
 
@@ -154,6 +154,7 @@ class SyncScheduler implements Scheduler {
   enqueue<T>(key: string, operation: () => T): T {
     return operation()
   }
+
   flush(_key: string): void {}
   flushAll(): void {}
 }
@@ -172,11 +173,13 @@ class AsyncScheduler implements Scheduler {
     const prev = this.queues.get(key) ?? Promise.resolve()
     const next = prev.then(() => operation()).then(
       (result) => {
-        if (this.queues.get(key) === next) this.queues.delete(key)
+        if (this.queues.get(key) === next)
+          this.queues.delete(key)
         return result
       },
       (error) => {
-        if (this.queues.get(key) === next) this.queues.delete(key)
+        if (this.queues.get(key) === next)
+          this.queues.delete(key)
         throw error
       }
     )
@@ -211,12 +214,12 @@ class AsyncScheduler implements Scheduler {
 
 ```ts
 interface StorageStrategy {
-  getItem(storage: StorageLike, key: string): string | null | Promise<string | null>
-  setItem(storage: StorageLike, key: string, value: string): void | Promise<void>
-  removeItem(storage: StorageLike, key: string): void | Promise<void>
-  clear(storage: StorageLike): void | Promise<void>
-  length(storage: StorageLike): number | Promise<number>
-  key(storage: StorageLike, index: number): string | null | Promise<string | null>
+  getItem: (storage: StorageLike, key: string) => string | null | Promise<string | null>
+  setItem: (storage: StorageLike, key: string, value: string) => void | Promise<void>
+  removeItem: (storage: StorageLike, key: string) => void | Promise<void>
+  clear: (storage: StorageLike) => void | Promise<void>
+  length: (storage: StorageLike) => number | Promise<number>
+  key: (storage: StorageLike, index: number) => string | null | Promise<string | null>
 }
 ```
 
@@ -505,7 +508,8 @@ A lightweight utility that avoids dual code paths:
 
 ```ts
 function resolve<T, R>(val: T | Promise<T>, fn: (v: T) => R | Promise<R>): R | Promise<R> {
-  if (isPromise(val)) return val.then(fn)
+  if (isPromise(val))
+    return val.then(fn)
   return fn(val)
 }
 ```
@@ -588,10 +592,10 @@ class EventEmitter {
 Cross-tab synchronization via a unified BroadcastChannel (`stokado::channel`). Only active when broadcast is enabled (see Entry Point Assembly for enablement logic). Messages include an optional `channel` field for storage instance identification — when both sender and receiver have a channel ID, messages are filtered to avoid cross-storage pollution.
 
 ```ts
-type BroadcastMessage =
-  | { type: 'set'; key: string; encoded: string; channel?: string }
-  | { type: 'remove'; key: string; channel?: string }
-  | { type: 'clear'; channel?: string }
+type BroadcastMessage
+  = | { type: 'set', key: string, encoded: string, channel?: string }
+    | { type: 'remove', key: string, channel?: string }
+    | { type: 'clear', channel?: string }
 
 class StorageBroadcast {
   private channel: BroadcastChannel | null = null
@@ -703,7 +707,8 @@ function createProxyHandler(operator: StorageOperator): ProxyHandler<StorageLike
           return (key?: string, fn?: any) => {
             if (key === undefined) {
               operator.emitter.offAll()
-            } else {
+            }
+            else {
               operator.emitter.off(key, fn)
             }
           }
@@ -785,7 +790,8 @@ if (Array.isArray(target) && ARRAY_MUTATION_METHODS.includes(prop as any)) {
         operator.emitter.emit(`${key}.length`, target.length, oldLength)
       }
       return result
-    } finally {
+    }
+    finally {
       mutating = false
     }
   }
@@ -892,7 +898,7 @@ export function createProxyStorage(storage: StorageLike, options?: ProxyStorageO
   const proxy = new Proxy(storage, createProxyHandler(operator))
 
   // 7. Start broadcast listener
-  broadcast.listen((msg) => operator.handleBroadcast(msg))
+  broadcast.listen(msg => operator.handleBroadcast(msg))
 
   return proxy
 }
@@ -933,7 +939,8 @@ Determines whether broadcast should be enabled based on options and storage type
 
 ```ts
 function shouldEnableBroadcast(storage: StorageLike, broadcast?: boolean): boolean {
-  if (typeof window !== 'undefined' && storage === window.sessionStorage) return false
+  if (typeof window !== 'undefined' && storage === window.sessionStorage)
+    return false
   return broadcast ?? true
 }
 ```
@@ -948,9 +955,11 @@ Returns the channel identifier for the storage instance. Used for broadcast mess
 
 ```ts
 function resolveChannelId(storage: StorageLike, channel?: string): string | null {
-  if (channel) return channel
+  if (channel)
+    return channel
   if (typeof window !== 'undefined') {
-    if (storage === window.localStorage) return 'localStorage'
+    if (storage === window.localStorage)
+      return 'localStorage'
   }
   return null
 }
@@ -978,10 +987,10 @@ createProxyStorage(localStorage, 'my-app')
 createProxyStorage(localForage, 'my-db')
 
 // New API
-createProxyStorage(localStorage)                       // broadcast auto-enabled, channel auto-detected as 'localStorage'
+createProxyStorage(localStorage) // broadcast auto-enabled, channel auto-detected as 'localStorage'
 createProxyStorage(localStorage, { broadcast: false }) // broadcast disabled
-createProxyStorage(sessionStorage)                     // broadcast auto-disabled for sessionStorage
-createProxyStorage(localForage, { channel: 'my-db' })  // broadcast enabled with channel identifier
+createProxyStorage(sessionStorage) // broadcast auto-disabled for sessionStorage
+createProxyStorage(localForage, { channel: 'my-db' }) // broadcast enabled with channel identifier
 ```
 
 For async storage backends (localForage, IndexedDB) that previously used the `name` parameter for cross-tab sync, the `channel` option now provides the storage identifier for broadcast message filtering. All instances share the same `BroadcastChannel('stokado::channel')`, and messages are filtered by the `channel` field.
@@ -994,8 +1003,10 @@ Ensures the return type is always `number`:
 
 ```ts
 export function formatTime(time: any): number {
-  if (time instanceof Date) return time.getTime()
-  if (typeof time === 'string') return +time.padEnd(13, '0')
+  if (time instanceof Date)
+    return time.getTime()
+  if (typeof time === 'string')
+    return +time.padEnd(13, '0')
   return +time
 }
 ```

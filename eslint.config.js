@@ -1,7 +1,7 @@
 import antfu from '@antfu/eslint-config'
 
 export default antfu({
-  ignores: ['.DS_Store', '**/.DS_Store/**', 'node_modules', 'dist', 'playground/stokado.js'],
+  ignores: ['.DS_Store', '**/.DS_Store/**', 'node_modules', 'dist', 'playground/stokado.js', 'docs'],
 }, {
   rules: {
     'no-new-wrappers': 'off',

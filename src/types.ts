@@ -36,25 +36,25 @@ export interface ProxyStorageOptions {
 }
 
 export interface ProxyStorage extends SyncStorageLike {
-  on(key: string, fn: Listener): void
-  once(key: string, fn: Listener): void
-  off(key?: string, fn?: Listener): void
-  setExpires(key: string, expires: ExpiresType): void
-  getExpires(key: string): Date | undefined
-  removeExpires(key: string): void
-  setDisposable(key: string): void
-  getOptions(key: string): StorageOptions | null
+  on: (key: string, fn: Listener) => void
+  once: (key: string, fn: Listener) => void
+  off: (key?: string, fn?: Listener) => void
+  setExpires: (key: string, expires: ExpiresType) => void
+  getExpires: (key: string) => Date | undefined
+  removeExpires: (key: string) => void
+  setDisposable: (key: string) => void
+  getOptions: (key: string) => StorageOptions | null
 }
 
 export interface AsyncProxyStorage extends AsyncStorageLike {
-  on(key: string, fn: Listener): void
-  once(key: string, fn: Listener): void
-  off(key?: string, fn?: Listener): void
-  setExpires(key: string, expires: ExpiresType): Promise<void>
-  getExpires(key: string): Promise<Date | undefined>
-  removeExpires(key: string): Promise<void>
-  setDisposable(key: string): Promise<void>
-  getOptions(key: string): Promise<StorageOptions | null>
+  on: (key: string, fn: Listener) => void
+  once: (key: string, fn: Listener) => void
+  off: (key?: string, fn?: Listener) => void
+  setExpires: (key: string, expires: ExpiresType) => Promise<void>
+  getExpires: (key: string) => Promise<Date | undefined>
+  removeExpires: (key: string) => Promise<void>
+  setDisposable: (key: string) => Promise<void>
+  getOptions: (key: string) => Promise<StorageOptions | null>
 }
 
 export type Listener = (newValue: any, oldValue: any) => void

@@ -1,7 +1,7 @@
-export type BroadcastMessage =
-  | { type: 'set'; key: string; encoded: string; channel?: string }
-  | { type: 'remove'; key: string; channel?: string }
-  | { type: 'clear'; channel?: string }
+export type BroadcastMessage
+  = | { type: 'set', key: string, encoded: string, channel?: string }
+    | { type: 'remove', key: string, channel?: string }
+    | { type: 'clear', channel?: string }
 
 export class StorageBroadcast {
   private channel: BroadcastChannel | null = null
@@ -19,10 +19,12 @@ export class StorageBroadcast {
   }
 
   listen(onMessage: (msg: BroadcastMessage) => void): void {
-    if (!this.channel) return
+    if (!this.channel)
+      return
     this.channel.onmessage = (ev: MessageEvent) => {
       const msg = ev.data as BroadcastMessage
-      if (this.channelId && msg.channel && this.channelId !== msg.channel) return
+      if (this.channelId && msg.channel && this.channelId !== msg.channel)
+        return
       onMessage(msg)
     }
   }

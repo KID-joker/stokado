@@ -13,15 +13,15 @@ export const serializers: Record<string, Serializer> = {
   },
   Number: {
     encode: toString,
-    decode: (s) => Number.parseFloat(s),
+    decode: s => Number.parseFloat(s),
   },
   BigInt: {
     encode: toString,
-    decode: (s) => BigInt(s),
+    decode: s => BigInt(s),
   },
   Boolean: {
     encode: toString,
-    decode: (s) => s === 'true',
+    decode: s => s === 'true',
   },
   Null: {
     encode: () => 'null',
@@ -40,33 +40,35 @@ export const serializers: Record<string, Serializer> = {
     decode: identity as (v: any) => any,
   },
   Set: {
-    encode: (v) => JSON.stringify([...v]),
-    decode: (s) => new Set(JSON.parse(s)),
+    encode: v => JSON.stringify([...v]),
+    decode: s => new Set(JSON.parse(s)),
   },
   Map: {
-    encode: (v) => JSON.stringify([...v]),
-    decode: (s) => new Map(JSON.parse(s)),
+    encode: v => JSON.stringify([...v]),
+    decode: s => new Map(JSON.parse(s)),
   },
   Date: {
-    encode: (v) => v.toISOString(),
-    decode: (s) => new Date(s),
+    encode: v => v.toISOString(),
+    decode: s => new Date(s),
   },
   URL: {
-    encode: (v) => v.href,
-    decode: (s) => new URL(s),
+    encode: v => v.href,
+    decode: s => new URL(s),
   },
   RegExp: {
     encode: toString,
     decode: (s) => {
-      const eval2 = eval
-      return eval2(s)
+      const match = s.match(/^\/(.*)\/([gimsuy]*)$/)
+      if (match)
+        return new RegExp(match[1], match[2])
+      return new RegExp(s)
     },
   },
   Function: {
     encode: toString,
     decode: (s) => {
-      const eval2 = eval
-      return eval2(`(function() { return ${s} })()`)
+      // eslint-disable-next-line no-new-func
+      return new Function(`return ${s}`)()
     },
   },
 }

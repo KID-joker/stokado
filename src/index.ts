@@ -1,19 +1,19 @@
-import type { StorageLike, SyncStorageLike, AsyncStorageLike, ProxyStorageOptions, ProxyStorage, AsyncProxyStorage } from '@/types'
+import type { AsyncProxyStorage, AsyncStorageLike, ProxyStorage, ProxyStorageOptions, StorageLike, SyncStorageLike } from '@/types'
+import { CacheStore } from '@/cache/store'
 import { StorageOperator } from '@/core/operator'
 import { createProxyHandler } from '@/core/proxy-handler'
-import { SyncScheduler } from '@/scheduler/sync-scheduler'
-import { AsyncScheduler } from '@/scheduler/async-scheduler'
-import { SyncStrategy } from '@/strategy/sync-strategy'
-import { AsyncStrategy } from '@/strategy/async-strategy'
-import { CacheStore } from '@/cache/store'
-import { EventEmitter } from '@/events/emitter'
 import { StorageBroadcast } from '@/events/broadcast'
+import { EventEmitter } from '@/events/emitter'
+import { AsyncScheduler } from '@/scheduler/async-scheduler'
+import { SyncScheduler } from '@/scheduler/sync-scheduler'
+import { AsyncStrategy } from '@/strategy/async-strategy'
+import { SyncStrategy } from '@/strategy/sync-strategy'
 import { isFunction, isPromise } from '@/utils'
 
 export { StorageOperator } from '@/core/operator'
-export { encode } from '@/serializer/encode'
 export { decode } from '@/serializer/decode'
-export type { StorageOptions, StorageLike, SyncStorageLike, AsyncStorageLike, ProxyStorageOptions, ProxyStorage, AsyncProxyStorage, Listener } from '@/types'
+export { encode } from '@/serializer/encode'
+export type { AsyncProxyStorage, AsyncStorageLike, Listener, ProxyStorage, ProxyStorageOptions, StorageLike, StorageOptions, SyncStorageLike } from '@/types'
 
 export function createProxyStorage(storage: SyncStorageLike, options?: ProxyStorageOptions): ProxyStorage
 export function createProxyStorage(storage: AsyncStorageLike, options?: ProxyStorageOptions): AsyncProxyStorage
@@ -35,7 +35,7 @@ export function createProxyStorage(storage: StorageLike, options?: ProxyStorageO
 
   const proxy = new Proxy(storage, createProxyHandler(operator))
 
-  broadcast.listen((msg) => operator.handleBroadcast(msg))
+  broadcast.listen(msg => operator.handleBroadcast(msg))
 
   return proxy
 }
@@ -55,14 +55,17 @@ function detectAsync(storage: StorageLike): boolean {
 }
 
 function shouldEnableBroadcast(storage: StorageLike, broadcast?: boolean): boolean {
-  if (typeof window !== 'undefined' && storage === window.sessionStorage) return false
+  if (typeof window !== 'undefined' && storage === window.sessionStorage)
+    return false
   return broadcast ?? true
 }
 
 function resolveChannelId(storage: StorageLike, channel?: string): string | null {
-  if (channel) return channel
+  if (channel)
+    return channel
   if (typeof window !== 'undefined') {
-    if (storage === window.localStorage) return 'localStorage'
+    if (storage === window.localStorage)
+      return 'localStorage'
   }
   return null
 }

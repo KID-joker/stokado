@@ -33,7 +33,8 @@ export function createProxyHandler(operator: StorageOperator): ProxyHandler<any>
           return (key?: string, fn?: any) => {
             if (key === undefined) {
               operator.emitter.offAll()
-            } else {
+            }
+            else {
               operator.emitter.off(key, fn)
             }
           }

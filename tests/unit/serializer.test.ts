@@ -1,88 +1,88 @@
 import { describe, expect, it } from 'vitest'
-import { encode } from '@/serializer/encode'
 import { decode } from '@/serializer/decode'
+import { encode } from '@/serializer/encode'
 
-describe('Serializer', () => {
+describe('serializer', () => {
   describe('round-trip encode/decode', () => {
     function decodeValue(data: any): any {
       const result = decode(encode(data))
       return (result as any).value
     }
 
-    it('String', () => {
+    it('string', () => {
       const encoded = encode('hello', {})
       const decoded = decode(encoded) as any
       expect(decoded.value).toBe('hello')
       expect(decoded.type).toBe('String')
     })
 
-    it('Number', () => {
+    it('number', () => {
       expect(decodeValue(42)).toBe(42)
       expect(decodeValue(0)).toBe(0)
       expect(decodeValue(-1)).toBe(-1)
       expect(decodeValue(3.14)).toBe(3.14)
-      expect(decodeValue(NaN)).toBeNaN()
+      expect(decodeValue(Number.NaN)).toBeNaN()
       expect(decodeValue(Infinity)).toBe(Infinity)
       expect(decodeValue(-Infinity)).toBe(-Infinity)
     })
 
-    it('BigInt', () => {
+    it('bigInt', () => {
       expect(decodeValue(1n)).toBe(1n)
       expect(decodeValue(9007199254740993n)).toBe(9007199254740993n)
     })
 
-    it('Boolean', () => {
+    it('boolean', () => {
       expect(decodeValue(true)).toBe(true)
       expect(decodeValue(false)).toBe(false)
     })
 
-    it('Null', () => {
+    it('null', () => {
       expect(decodeValue(null)).toBeNull()
     })
 
-    it('Undefined', () => {
+    it('undefined', () => {
       expect(decodeValue(undefined)).toBeUndefined()
     })
 
-    it('Object', () => {
+    it('object', () => {
       const obj = { a: 1, b: 'test', c: null }
       expect(decodeValue(obj)).toEqual(obj)
     })
 
-    it('Array', () => {
+    it('array', () => {
       const arr = [1, 'two', null, { nested: true }]
       expect(decodeValue(arr)).toEqual(arr)
     })
 
-    it('Date', () => {
+    it('date', () => {
       const d = new Date('2024-01-01T00:00:00.000Z')
       expect(decodeValue(d)).toEqual(d)
     })
 
-    it('URL', () => {
+    it('uRL', () => {
       const url = new URL('https://example.com/path?q=1')
       expect(decodeValue(url)).toEqual(url)
     })
 
-    it('RegExp', () => {
+    it('regExp', () => {
       const regex = /ab+c/gi
       const result = decodeValue(regex)
       expect(result.source).toBe(regex.source)
       expect(result.flags).toBe(regex.flags)
     })
 
-    it('Function', () => {
+    it('function', () => {
       const fn = () => 'hello'
       const result = decodeValue(fn)
       expect(result()).toBe('hello')
     })
 
-    it('Set', () => {
+    it('set', () => {
       const s = new Set([1, 2, 3])
       expect(decodeValue(s)).toEqual(s)
     })
 
-    it('Map', () => {
+    it('map', () => {
       const m = new Map([['a', 1], ['b', 2]])
       expect(decodeValue(m)).toEqual(m)
     })

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { CacheStore } from '@/cache/store'
 
-describe('CacheStore', () => {
+describe('cacheStore', () => {
   it('get returns undefined for missing key', () => {
     const cache = new CacheStore()
     expect(cache.get('missing')).toBeUndefined()

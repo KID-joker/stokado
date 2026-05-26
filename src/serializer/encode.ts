@@ -1,6 +1,6 @@
 import type { StorageOptions } from '@/types'
-import { serializers } from './registry'
 import { getRawType } from '@/utils'
+import { serializers } from './registry'
 
 export interface StorageEnvelope {
   type: string

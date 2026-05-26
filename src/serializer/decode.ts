@@ -8,12 +8,14 @@ export interface DecodedItem {
 }
 
 export function decode(raw: string | null): DecodedItem | null | string {
-  if (raw === null) return null
+  if (raw === null)
+    return null
 
   let envelope: any
   try {
     envelope = JSON.parse(raw)
-  } catch {
+  }
+  catch {
     return raw
   }
 

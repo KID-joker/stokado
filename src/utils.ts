@@ -67,6 +67,7 @@ export function formatTime(time: any): number {
 }
 
 export function resolve<T, R>(val: T | Promise<T>, fn: (v: T) => R | Promise<R>): R | Promise<R> {
-  if (isPromise(val)) return (val as Promise<T>).then(fn)
+  if (isPromise(val))
+    return (val as Promise<T>).then(fn)
   return fn(val as T)
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { EventEmitter } from '@/events/emitter'
 
-describe('EventEmitter', () => {
+describe('eventEmitter', () => {
   it('on registers a listener and emit triggers it', () => {
     const emitter = new EventEmitter()
     const fn = vi.fn()

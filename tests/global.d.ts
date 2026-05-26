@@ -1,4 +1,4 @@
-import type { StorageLike, ProxyStorageOptions } from '@/types'
+import type { ProxyStorageOptions, StorageLike } from '@/types'
 
 declare global {
   interface Window {

@@ -30,11 +30,13 @@ export class EventEmitter {
       return
     }
     const list = this.listeners.get(key)
-    if (!list) return
+    if (!list)
+      return
     const filtered = list.filter(w => w.fn !== fn && w.originalFn !== fn)
     if (filtered.length === 0) {
       this.listeners.delete(key)
-    } else {
+    }
+    else {
       this.listeners.set(key, filtered)
     }
   }
@@ -45,7 +47,8 @@ export class EventEmitter {
 
   emit(key: string, newValue: any, oldValue: any): void {
     const list = this.listeners.get(key)
-    if (!list) return
+    if (!list)
+      return
     const snapshot = [...list]
     for (const { fn } of snapshot) {
       fn(newValue, oldValue)

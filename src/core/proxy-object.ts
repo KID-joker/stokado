@@ -23,7 +23,8 @@ export function createObjectProxy(
               operator.emitter.emit(`${key}.length`, target.length, oldLength)
             }
             return result
-          } finally {
+          }
+          finally {
             mutating = false
           }
         }

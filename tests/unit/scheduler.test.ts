@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { SyncScheduler } from '@/scheduler/sync-scheduler'
 import { AsyncScheduler } from '@/scheduler/async-scheduler'
+import { SyncScheduler } from '@/scheduler/sync-scheduler'
 
-describe('SyncScheduler', () => {
+describe('syncScheduler', () => {
   it('executes operation directly and returns result', () => {
     const scheduler = new SyncScheduler()
     const result = scheduler.enqueue('key', () => 42)
@@ -20,7 +20,7 @@ describe('SyncScheduler', () => {
   })
 })
 
-describe('AsyncScheduler', () => {
+describe('asyncScheduler', () => {
   it('enqueue returns a Promise', async () => {
     const scheduler = new AsyncScheduler()
     const result = scheduler.enqueue('key', async () => 42)
