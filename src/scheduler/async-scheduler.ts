@@ -6,7 +6,7 @@ export class AsyncScheduler implements Scheduler {
   private queues = new Map<string, Promise<any>>()
 
   enqueue<T>(key: string, operation: () => Promise<T>): Promise<T> {
-    const prev = this.queues.get(key) ?? Promise.resolve()
+    const prev = (this.queues.get(key) ?? Promise.resolve()).catch(() => {})
     const next = prev.then(() => operation()).then(
       (result) => {
         if (this.queues.get(key) === next) {

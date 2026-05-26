@@ -1,13 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { StorageOperator } from '@/core/operator'
-import { SyncScheduler } from '@/scheduler/sync-scheduler'
-import { AsyncScheduler } from '@/scheduler/async-scheduler'
-import { SyncStrategy } from '@/strategy/sync-strategy'
-import { AsyncStrategy } from '@/strategy/async-strategy'
 import { CacheStore } from '@/cache/store'
-import { EventEmitter } from '@/events/emitter'
+import { StorageOperator } from '@/core/operator'
 import { StorageBroadcast } from '@/events/broadcast'
-import { encode } from '@/serializer/encode'
+import { EventEmitter } from '@/events/emitter'
+import { AsyncScheduler } from '@/scheduler/async-scheduler'
+import { SyncScheduler } from '@/scheduler/sync-scheduler'
+import { AsyncStrategy } from '@/strategy/async-strategy'
+import { SyncStrategy } from '@/strategy/sync-strategy'
 
 function createMockSyncStorage() {
   const store = new Map<string, string>()
@@ -24,7 +23,6 @@ function createMockSyncStorage() {
 function createMockAsyncStorage() {
   const store = new Map<string, string>()
   return {
-    [x: string]: any,
     getItem: async (key: string) => store.get(key) ?? null,
     setItem: async (key: string, value: string) => { store.set(key, value) },
     removeItem: async (key: string) => { store.delete(key) },
@@ -60,7 +58,7 @@ function createAsyncOperator(storage?: any) {
   )
 }
 
-describe('StorageOperator - Sync', () => {
+describe('storageOperator - Sync', () => {
   it('setItem and getItem round-trip', () => {
     const op = createSyncOperator()
     op.setItem('name', 'hello')
@@ -141,7 +139,7 @@ describe('StorageOperator - Sync', () => {
   })
 })
 
-describe('StorageOperator - Async', () => {
+describe('storageOperator - Async', () => {
   it('setItem and getItem round-trip', async () => {
     const op = createAsyncOperator()
     await op.setItem('name', 'hello')
@@ -170,7 +168,7 @@ describe('StorageOperator - Async', () => {
   })
 })
 
-describe('StorageOperator - Race Condition (Issue 3.3)', () => {
+describe('storageOperator - Race Condition (Issue 3.3)', () => {
   it('getItem after removeItem on same key returns null', async () => {
     const op = createAsyncOperator()
     await op.setItem('key', 'value')

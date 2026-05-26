@@ -4,7 +4,6 @@ import { createObjectProxy } from '@/core/proxy-object'
 describe('createObjectProxy', () => {
   function createMockOperator() {
     return {
-      [x: string]: any,
       onObjectPropertySet: vi.fn(),
       emitter: {
         emit: vi.fn(),

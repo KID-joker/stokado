@@ -10,6 +10,7 @@ const port = 8080
 
 const config: PlaywrightTestConfig = {
   testDir: 'tests',
+  testIgnore: ['**/unit/**'],
   webServer: {
     command: `npx http-server ${root} -p ${port} --cors`,
     port,

@@ -129,7 +129,7 @@ test.describe('serialized value', () => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(localStorage)
       local.test = null
-      return local.test
+      return local.getItem('test')
     })).toBeNull()
   })
 
