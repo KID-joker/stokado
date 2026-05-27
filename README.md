@@ -16,6 +16,30 @@
 
 `stokado` can proxy objects of any `storage`-like, providing getter/setter syntax sugars, serialization, subscription listening, expiration setting, one-time value retrieval.
 
+The most feature-rich proxy wrapper for browser storage — serialization, reactivity, expiration, and one-time values in one library.
+
+## Why stokado?
+
+| Feature | stokado | store2 | local-storage-fallback | lz-string |
+|---------|---------|--------|----------------------|-----------|
+| Proxy syntax sugar | ✅ | ❌ | ❌ | ❌ |
+| Type-safe serialization | ✅ | ❌ | ❌ | ❌ |
+| Reactive subscribe | ✅ | ❌ | ❌ | ❌ |
+| Expiration | ✅ | ✅ | ❌ | ❌ |
+| Disposable values | ✅ | ❌ | ❌ | ❌ |
+| Async storage support | ✅ | ❌ | ❌ | ❌ |
+| Cross-tab sync | ✅ | ❌ | ❌ | ❌ |
+| Zero dependencies | ✅ | ✅ | ✅ | ✅ |
+
+## When to use stokado
+
+- **Type preservation** — You need localStorage values to keep their JavaScript type (number, boolean, Date, RegExp, etc.) instead of everything becoming a string
+- **Reactive storage** — You need to listen for storage changes within the same tab (native `storage` event only fires cross-tab)
+- **Auto-expiration** — You need stored items to automatically expire and clean up (token management, cache strategies)
+- **One-time values** — You need disposable values for cross-component or cross-page communication
+- **Cross-tab sync** — You need real-time synchronization of storage changes across browser tabs
+- **Async backends** — You need to work with async storage like localForage or IndexedDB wrappers with the same API
+
 ## Usage
 
 ### Install
@@ -195,3 +219,7 @@ const otherStore = localforage.createInstance({
 })
 const proxyOtherStore = createProxyStorage(otherStore, 'otherStore')
 ```
+
+## Keywords
+
+stokado is a localStorage wrapper, browser storage proxy, web storage library, and storage utility for JavaScript. It provides localStorage serialization, storage reactivity, storage subscription, storage expiration, cross-tab storage sync, and async storage support. Alternatives to store2, lscache, local-storage-fallback. Works with localStorage, sessionStorage, localForage, and any storage-like object.
