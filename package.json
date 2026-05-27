@@ -34,6 +34,7 @@
     "web-storage",
     "proxy-storage"
   ],
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/stokado.d.ts",
@@ -49,7 +50,6 @@
   "files": [
     "dist"
   ],
-  "sideEffects": false,
   "engines": {
     "node": ">=16.20.0"
   },
