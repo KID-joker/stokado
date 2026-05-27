@@ -2,7 +2,7 @@
   "name": "stokado",
   "type": "module",
   "version": "3.0.1",
-  "description": "stokado can proxy objects of any `storage`-like, providing getter/setter syntax sugars, serialization, subscription listening, expiration setting, one-time value retrieval.",
+  "description": "Feature-rich proxy wrapper for browser storage with serialization, reactivity, expiration, and one-time values. Works with localStorage, sessionStorage, and async storages like localForage.",
   "author": "KID-joker",
   "license": "MIT",
   "homepage": "https://github.com/KID-joker/stokado#readme",
@@ -23,7 +23,16 @@
     "subscribe",
     "expires",
     "once",
-    "disposable"
+    "disposable",
+    "localStorage-wrapper",
+    "storage-proxy",
+    "storage-reactivity",
+    "storage-serialization",
+    "storage-expiration",
+    "localForage",
+    "browser-storage",
+    "web-storage",
+    "proxy-storage"
   ],
   "exports": {
     ".": {
@@ -40,6 +49,7 @@
   "files": [
     "dist"
   ],
+  "sideEffects": false,
   "engines": {
     "node": ">=16.20.0"
   },
