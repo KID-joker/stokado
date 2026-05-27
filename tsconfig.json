@@ -18,5 +18,6 @@
     "skipDefaultLibCheck": true,
     "skipLibCheck": true
   },
-  "include": ["src/*.ts", "src/*/*.ts", "tests/*.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  "exclude": ["src/cache.ts", "src/shared.ts", "src/check_expired.ts", "src/effect.ts", "src/proxy", "src/extends"]
 }

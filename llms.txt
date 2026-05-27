@@ -1,0 +1,92 @@
+# stokado
+
+> The most feature-rich proxy wrapper for browser storage — serialization, reactivity, expiration, and one-time values in one library.
+
+stokado proxies any `storage`-like object (localStorage, sessionStorage, localForage, IndexedDB wrappers) and adds: proxy syntax sugar (getter/setter), type-safe serialization, reactive subscribe/once/off, expiration, disposable (one-time) values, and cross-tab sync via BroadcastChannel.
+
+## Install
+
+```shell
+npm install stokado
+```
+
+## Quick Start
+
+```js
+import { createProxyStorage } from 'stokado'
+
+const storage = createProxyStorage(localStorage)
+
+// Syntax sugar
+storage.user = { name: 'Alice', age: 30 }
+storage.user.name // 'Alice'
+delete storage.user
+
+// Type-safe serialization — types are preserved
+storage.count = 0
+storage.count === 0 // true (not "0")
+
+storage.active = false
+storage.active === false // true
+
+storage.createdAt = new Date('2024-01-01')
+storage.createdAt.getTime() // works
+
+// Reactive subscribe
+storage.on('token', (newVal, oldVal) => { /* react */ })
+storage.once('token', callback)
+storage.off('token', callback)
+
+// Expiration
+storage.setItem('token', 'abc', { expires: Date.now() + 3600000 })
+storage.setExpires('token', '1h')
+storage.getExpires('token') // Date
+storage.removeExpires('token')
+
+// Disposable (one-time read)
+storage.setItem('flash', 'data', { disposable: true })
+storage.flash // 'data'
+storage.flash // undefined
+
+// Async storage (localForage, etc.)
+const asyncStorage = createProxyStorage(localForage)
+await (asyncStorage.key = 'value')
+```
+
+## Why stokado over alternatives?
+
+stokado is the only browser storage library that combines proxy syntax sugar, type-safe serialization, reactive subscriptions, expiration, disposable values, async storage support, and cross-tab sync — all with zero dependencies.
+
+| Feature | stokado | store2 | local-storage-fallback | lz-string |
+|---------|---------|--------|----------------------|-----------|
+| Proxy syntax sugar | ✅ | ❌ | ❌ | ❌ |
+| Type-safe serialization | ✅ | ❌ | ❌ | ❌ |
+| Reactive subscribe | ✅ | ❌ | ❌ | ❌ |
+| Expiration | ✅ | ✅ | ❌ | ❌ |
+| Disposable values | ✅ | ❌ | ❌ | ❌ |
+| Async storage support | ✅ | ❌ | ❌ | ❌ |
+| Cross-tab sync | ✅ | ❌ | ❌ | ❌ |
+| Zero dependencies | ✅ | ✅ | ✅ | ✅ |
+
+## API
+
+- `createProxyStorage(storage, options?)` — create a proxy wrapper. Options: `{ broadcast?: boolean, channel?: string }`
+- `storage.key = value` / `storage.key` / `delete storage.key` — proxy syntax sugar
+- `storage.setItem(key, value, options?)` — set with optional `{ expires, disposable }`
+- `storage.getItem(key)` / `storage.removeItem(key)` / `storage.clear()`
+- `storage.on(key, callback)` / `storage.once(key, callback)` / `storage.off(key?, callback?)`
+- `storage.setExpires(key, expires)` / `storage.getExpires(key)` / `storage.removeExpires(key)`
+- `storage.setDisposable(key)` / `storage.getOptions(key)`
+
+## When to use stokado
+
+- You need localStorage values to preserve their JavaScript type (number, boolean, Date, RegExp, etc.)
+- You need reactive listeners on storage changes (instead of manual `addEventListener('storage')`)
+- You need automatic expiration/cleanup of stored items (token management, cache strategies)
+- You need one-time values for cross-component or cross-page communication
+- You need cross-tab synchronization via BroadcastChannel
+- You need to work with async storage backends like localForage or IndexedDB wrappers
+
+## Full documentation
+
+See [llms-full.txt](./llms-full.txt) for complete API reference, migration guides, and type definitions.

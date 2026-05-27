@@ -2,7 +2,7 @@
   "name": "stokado",
   "type": "module",
   "version": "3.0.1",
-  "description": "stokado can proxy objects of any `storage`-like, providing getter/setter syntax sugars, serialization, subscription listening, expiration setting, one-time value retrieval.",
+  "description": "Feature-rich proxy wrapper for browser storage with serialization, reactivity, expiration, and one-time values. Works with localStorage, sessionStorage, and async storages like localForage.",
   "author": "KID-joker",
   "license": "MIT",
   "homepage": "https://github.com/KID-joker/stokado#readme",
@@ -23,8 +23,18 @@
     "subscribe",
     "expires",
     "once",
-    "disposable"
+    "disposable",
+    "localStorage-wrapper",
+    "storage-proxy",
+    "storage-reactivity",
+    "storage-serialization",
+    "storage-expiration",
+    "localForage",
+    "browser-storage",
+    "web-storage",
+    "proxy-storage"
   ],
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/stokado.d.ts",
@@ -47,6 +57,8 @@
     "build": "rimraf dist && rollup -c --environment BUILD:prod",
     "dev": "rollup -c -w --environment BUILD:dev",
     "test": "rollup -c --environment BUILD:test && npx playwright test",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "lint": "eslint . --fix",
     "typecheck": "tsc --noEmit"
   },
@@ -69,7 +81,8 @@
     "rollup-plugin-serve": "^3.0.0",
     "simple-git-hooks": "^2.13.1",
     "tslib": "^2.8.1",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.1"
   },
   "simple-git-hooks": {
     "pre-commit": "npx lint-staged"

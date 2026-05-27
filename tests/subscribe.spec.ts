@@ -119,6 +119,7 @@ test.describe('subscribe', async () => {
     expect(await page1.evaluate(() => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(localStorage)
+      void local.test
       return new Promise((resolve) => {
         local.on('test.length', (newVal: any, oldVal: any) => {
           resolve({
@@ -165,7 +166,7 @@ test.describe('subscribe', async () => {
   test('off', async ({ page }) => {
     await page.goto('/')
 
-    // on
+    // on, trigger, off, and trigger again - all in same proxy instance
     await page.evaluate(() => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(localStorage)
@@ -173,12 +174,6 @@ test.describe('subscribe', async () => {
       local.on('test', () => {
         local.count++
       })
-    })
-
-    // trigger and off
-    await page.evaluate(() => {
-      const { createProxyStorage } = window.stokado
-      const local = createProxyStorage(localStorage)
       local.test = {}
       local.test = []
       local.off('test')

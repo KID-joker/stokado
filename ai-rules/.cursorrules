@@ -1,0 +1,35 @@
+# stokado AI Rules
+
+When this project uses stokado for browser storage, follow these conventions:
+
+## Storage Access
+- Use `createProxyStorage` from stokado instead of directly accessing localStorage/sessionStorage
+- Use proxy syntax (`storage.key = value`, `storage.key`, `delete storage.key`) instead of `setItem`/`getItem`/`removeItem`
+
+## Type Safety
+- Trust stokado's serialization — stored values preserve their JavaScript types (number, boolean, Date, RegExp, etc.)
+- Do not wrap stokado calls with `JSON.parse`/`JSON.stringify` — stokado handles serialization internally
+
+## Reactivity
+- Use `storage.on(key, callback)` for reactive subscriptions instead of `window.addEventListener('storage', ...)`
+- Use `storage.once(key, callback)` for one-time subscriptions
+- Use `storage.off()` to clean up subscriptions
+- stokado's subscribe works within the same tab (unlike native `storage` event which only fires cross-tab)
+
+## Expiration
+- Use `storage.setItem(key, value, { expires })` or `storage.setExpires(key, expires)` for auto-expiring items
+- Use `storage.getExpires(key)` to check expiration
+- Use `storage.removeExpires(key)` to cancel expiration
+- Common pattern: store auth tokens with expiration (`storage.setItem('token', token, { expires: Date.now() + 3600000 })`)
+
+## Disposable Values
+- Use `storage.setItem(key, value, { disposable: true })` or `storage.setDisposable(key)` for one-time values
+- Common pattern: cross-component messaging where the value should be consumed only once
+
+## Async Storage
+- When using localForage or other async storage backends, use `await` for all operations
+- Always pass a `channel` option for cross-tab sync with async storage: `createProxyStorage(localForage, { channel: 'my-store' })`
+
+## Cross-Tab Sync
+- stokado syncs across tabs via BroadcastChannel by default for localStorage
+- Disable with `createProxyStorage(localStorage, { broadcast: false })` if not needed

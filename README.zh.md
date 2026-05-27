@@ -16,6 +16,30 @@
 
 `stokado` 可以代理任何类 `storage` 的对象，实现简洁的 `getter`，`setter` 等语法糖，序列化，监听订阅，设置过期，一次性取值等功能。
 
+功能最丰富的浏览器存储代理库——序列化、响应式、过期设置、一次性值，一个库全搞定。
+
+## 为什么选择 stokado？
+
+| 特性 | stokado | store2 | local-storage-fallback | lz-string |
+|------|---------|--------|----------------------|-----------|
+| Proxy 语法糖 | ✅ | ❌ | ❌ | ❌ |
+| 类型安全的序列化 | ✅ | ❌ | ❌ | ❌ |
+| 响应式订阅 | ✅ | ❌ | ❌ | ❌ |
+| 过期设置 | ✅ | ✅ | ❌ | ❌ |
+| 一次性值 | ✅ | ❌ | ❌ | ❌ |
+| 异步存储支持 | ✅ | ❌ | ❌ | ❌ |
+| 跨标签页同步 | ✅ | ❌ | ❌ | ❌ |
+| 零依赖 | ✅ | ✅ | ✅ | ✅ |
+
+## 何时使用 stokado
+
+- **类型保持** — 你需要 localStorage 的值保持 JavaScript 原始类型（number、boolean、Date、RegExp 等），而不是全部变成字符串
+- **响应式存储** — 你需要在同一标签页内监听存储变化（原生 `storage` 事件只在跨标签页时触发）
+- **自动过期** — 你需要存储项自动过期并清理（token 管理、缓存策略）
+- **一次性值** — 你需要跨组件或跨页面的一次性通信值
+- **跨标签页同步** — 你需要浏览器标签页之间实时同步存储变化
+- **异步后端** — 你需要使用 localForage 或 IndexedDB 等异步存储，且保持相同 API
+
 ## Usage
 
 ### Install
@@ -159,6 +183,10 @@ storage.getOptions(key)
 storage.setItem(key, value, { expires, disposable })
 ```
 
+## AI 编码规则
+
+如果你使用 AI 编码工具（Cursor、Copilot、Windsurf 等），可以将 [`ai-rules/.cursorrules`](./ai-rules/.cursorrules) 中的规则复制到项目根目录的 `.cursorrules` 文件中，帮助 AI 助手遵循 stokado 最佳实践。
+
 ## Work with localForage
 
 因为 `localForage` 提供了跟 `localStorage` 一样的 API，它是类 `storage` 对象，可以跟 `stokado` 配合使用。
@@ -195,3 +223,7 @@ const otherStore = localforage.createInstance({
 })
 const proxyOtherStore = createProxyStorage(otherStore, 'otherStore')
 ```
+
+## 关键词
+
+stokado 是一个 localStorage 封装库、浏览器存储代理库、Web 存储工具库。提供 localStorage 序列化、存储响应式、存储订阅、存储过期、跨标签页存储同步、异步存储支持。store2、lscache、local-storage-fallback 的替代方案。支持 localStorage、sessionStorage、localForage 及任何类 storage 对象。
