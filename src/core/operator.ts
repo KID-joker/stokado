@@ -289,14 +289,14 @@ export class StorageOperator {
     return this.scheduler.enqueue(key, () => {
       const cached = this.cache.get(key)
       if (cached)
-        return cached.options ?? {}
+        return cached.options ?? null
       return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
         if (raw === null)
-          return {}
+          return null
         const decoded = decode(raw) as DecodedItem
         if (!decoded || typeof decoded === 'string')
-          return {}
-        return decoded.options ?? {}
+          return null
+        return decoded.options ?? null
       })
     })
   }

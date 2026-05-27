@@ -21,7 +21,7 @@ Refactor the internal architecture of Stokado with an updated public API (`creat
 | Broadcast emission (onObjectPropertySet) | Always broadcast — object was mutated in place, `hasChanged` is unreliable for reference types |
 | `removeItem` event | Only emit event and broadcast when the key exists — consistent with `handleBroadcast` behavior |
 | `clear()` event | Emit per-key events for all cached keys (`emit(key, undefined, oldValue)`) before clearing; also broadcast `type: 'clear'` |
-| Broadcast | Unified channel `stokado::channel`; controlled by `options.broadcast` (default `true`); auto-disabled for `sessionStorage`; `options.channel` provides storage identifier for message filtering; auto-detected as `'localStorage'` for `localStorage` |
+| Broadcast | Per-channel BroadcastChannel isolation; `stokado::channel` for instances without a channel ID, `stokado::channel::{channelId}` for instances with one; controlled by `options.broadcast` (default `true`); auto-disabled for `sessionStorage`; `options.channel` provides storage identifier for channel naming; auto-detected as `'localStorage'` for `localStorage` |
 
 ## Module Structure
 
@@ -170,7 +170,7 @@ class AsyncScheduler implements Scheduler {
   private queues = new Map<string, Promise<any>>()
 
   enqueue<T>(key: string, operation: () => Promise<T>): Promise<T> {
-    const prev = this.queues.get(key) ?? Promise.resolve()
+    const prev = (this.queues.get(key) ?? Promise.resolve()).catch(() => {})
     const next = prev.then(() => operation()).then(
       (result) => {
         if (this.queues.get(key) === next)
@@ -298,8 +298,6 @@ The central orchestrator that composes Scheduler, Strategy, Serializer, Cache, a
 
 ```ts
 class StorageOperator {
-  private channelId: string | null
-
   constructor(
     private storage: StorageLike,
     private scheduler: Scheduler,
@@ -307,10 +305,7 @@ class StorageOperator {
     private cache: CacheStore,
     private emitter: EventEmitter,
     private broadcast: StorageBroadcast,
-    channelId?: string | null,
-  ) {
-    this.channelId = channelId ?? null
-  }
+  ) {}
 
   get isAsync(): boolean
 
@@ -403,34 +398,74 @@ getItem(key: string) {
 
 ### Internal Flow: setItem
 
-Broadcast and event emission only occur when the value has actually changed:
+Broadcast and event emission only occur when the value has actually changed. Values are normalized via `toPrimitive` to convert wrapper objects (`new Number()`, `new Boolean()`, `new String()`) to their primitive equivalents before storage.
+
+When the cache does not contain the key, `setItem` reads from storage first to preserve existing `options` (e.g., expires, disposable) that would otherwise be lost.
 
 ```ts
 setItem(key: string, value: any, options?: StorageOptions) {
   return this.scheduler.enqueue(key, () => {
+    const normalizedValue = toPrimitive(value)
     const oldCached = this.cache.get(key)
     const oldValue = oldCached?.value
-    const oldOptions = oldCached?.options ?? {}
+    let oldOptions = oldCached?.options ?? {}
+
+    if (!oldCached) {
+      return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
+        if (raw !== null) {
+          const decoded = decode(raw)
+          if (decoded && typeof decoded !== 'string') {
+            oldOptions = (decoded as DecodedItem).options ?? {}
+          }
+        }
+        const mergedOptions = options ? { ...oldOptions, ...options } : (Object.keys(oldOptions).length > 0 ? oldOptions : {})
+        const encoded = encode(normalizedValue, Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined)
+
+        return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
+          this.cache.deleteObjectProxy(key)
+          this.cache.set(key, { value: normalizedValue, type: getRawType(normalizedValue), options: Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined })
+          if (hasChanged(normalizedValue, oldValue)) {
+            this.emitter.emit(key, normalizedValue, oldValue)
+            this.broadcast.post({ type: 'set', key, encoded })
+          }
+
+          if (Array.isArray(normalizedValue) && Array.isArray(oldValue) && normalizedValue.length !== oldValue.length) {
+            this.emitter.emit(`${key}.length`, normalizedValue.length, oldValue.length)
+          }
+        })
+      })
+    }
+
     const mergedOptions = options ? { ...oldOptions, ...options } : oldOptions
-    const encoded = encode(value, Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined)
+    const encoded = encode(normalizedValue, Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined)
 
     return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
       this.cache.deleteObjectProxy(key)
-      this.cache.set(key, { value, type: getRawType(value), options: Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined })
-      if (hasChanged(value, oldValue)) {
-        this.emitter.emit(key, value, oldValue)
-        this.broadcast.post({ type: 'set', key, encoded, channel: this.channelId ?? undefined })
+      this.cache.set(key, { value: normalizedValue, type: getRawType(normalizedValue), options: Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined })
+      if (hasChanged(normalizedValue, oldValue)) {
+        this.emitter.emit(key, normalizedValue, oldValue)
+        this.broadcast.post({ type: 'set', key, encoded })
       }
 
-      if (Array.isArray(value) && Array.isArray(oldValue) && value.length !== oldValue.length) {
-        this.emitter.emit(`${key}.length`, value.length, oldValue.length)
+      if (Array.isArray(normalizedValue) && Array.isArray(oldValue) && normalizedValue.length !== oldValue.length) {
+        this.emitter.emit(`${key}.length`, normalizedValue.length, oldValue.length)
       }
-
-      // Note: when oldValue is undefined (new key), no length event is emitted.
-      // This is intentional — the transition from undefined to an array is a key-level
-      // change, not a length change. Listeners should subscribe to the key itself.
     })
   })
+}
+```
+
+### `toPrimitive` Helper
+
+Normalizes wrapper objects to their primitive values before serialization:
+
+```ts
+function toPrimitive(value: any): any {
+  const type = getRawType(value)
+  if (type === 'Number' && typeof value !== 'number') return value.valueOf()
+  if (type === 'Boolean' && typeof value !== 'boolean') return value.valueOf()
+  if (type === 'String' && typeof value !== 'string') return value.valueOf()
+  return value
 }
 ```
 
@@ -448,7 +483,7 @@ removeItem(key: string) {
       return resolve(this.strategy.removeItem(this.storage, key), () => {
         this.cache.delete(key)
         this.emitter.emit(key, undefined, oldValue)
-        this.broadcast.post({ type: 'remove', key, channel: this.channelId ?? undefined })
+        this.broadcast.post({ type: 'remove', key })
       })
     }
 
@@ -461,7 +496,7 @@ removeItem(key: string) {
         const item = typeof decoded !== 'string' && decoded !== null ? decoded as DecodedItem : null
         const oldValue = item?.value ?? raw
         this.emitter.emit(key, undefined, oldValue)
-        this.broadcast.post({ type: 'remove', key, channel: this.channelId ?? undefined })
+        this.broadcast.post({ type: 'remove', key })
       })
     })
   })
@@ -482,7 +517,7 @@ clear() {
       for (const [key, cached] of cachedEntries) {
         this.emitter.emit(key, undefined, cached.value)
       }
-      this.broadcast.post({ type: 'clear', channel: this.channelId ?? undefined })
+      this.broadcast.post({ type: 'clear' })
     })
   })
 }
@@ -589,29 +624,32 @@ class EventEmitter {
 
 ## StorageBroadcast
 
-Cross-tab synchronization via a unified BroadcastChannel (`stokado::channel`). Only active when broadcast is enabled (see Entry Point Assembly for enablement logic). Messages include an optional `channel` field for storage instance identification — when both sender and receiver have a channel ID, messages are filtered to avoid cross-storage pollution.
+Cross-tab synchronization via per-channel BroadcastChannel instances. Only active when broadcast is enabled (see Entry Point Assembly for enablement logic). Each `StorageBroadcast` instance creates its own `BroadcastChannel`, physically isolating different storage instances at the channel level.
 
 ```ts
 type BroadcastMessage
-  = | { type: 'set', key: string, encoded: string, channel?: string }
-    | { type: 'remove', key: string, channel?: string }
-    | { type: 'clear', channel?: string }
+  = | { type: 'set', key: string, encoded: string }
+    | { type: 'remove', key: string }
+    | { type: 'clear' }
 
 class StorageBroadcast {
   private channel: BroadcastChannel | null = null
-  private channelId: string | null
 
-  constructor(channelId: string | null)
+  constructor(channelId: string | null) {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const name = channelId ? `stokado::channel::${channelId}` : 'stokado::channel'
+      this.channel = new BroadcastChannel(name)
+    }
+  }
   post(message: BroadcastMessage): void
   listen(onMessage: (msg: BroadcastMessage) => void): void
   destroy(): void
 }
 ```
 
-All stokado instances share the same `BroadcastChannel('stokado::channel')`. The `channelId` is used for message filtering:
-- When posting, `channelId` is included in the `channel` field of the message
-- When receiving, if both the local `channelId` and the message's `channel` are present and differ, the message is ignored
-- If either side lacks a `channelId`, the message is always processed (backward-compatible for single-storage apps)
+Instances without a `channelId` use `BroadcastChannel('stokado::channel')`. Instances with a `channelId` use `BroadcastChannel('stokado::channel::{channelId}')`. This provides physical isolation between different storage backends — no message filtering is needed because each channel only receives its own messages.
+
+This is a change from the original design which used a single shared `BroadcastChannel` with message-level filtering. The per-channel approach is more efficient (no irrelevant messages to filter) and simpler (no `channelId` field in messages, no filtering logic in `listen`).
 
 Incoming broadcast messages bypass the Scheduler (the actual storage I/O was already performed by the sender). They directly update the cache and trigger emitter events.
 
@@ -619,12 +657,10 @@ When handling a `'set'` broadcast for a key that previously had an object proxy,
 
 ### Broadcast Expiration Check
 
-When handling a `'set'` broadcast, the operator checks whether the incoming data is expired. If expired, the key is removed from cache and no event is emitted. For non-expired data, the event is emitted unconditionally (no `hasChanged` check) because the sender already determined the value changed, and the receiver should always be notified of cross-tab updates:
+When handling a `'set'` broadcast, the operator checks whether the incoming data is expired. If expired, the key is removed from cache and no event is emitted. For non-expired data, the event is emitted unconditionally (no `hasChanged` check) because the sender already determined the value changed, and the receiver should always be notified of cross-tab updates. If the value is an array and its length differs from the cached value, a `.length` event is also emitted:
 
 ```ts
 handleBroadcast(msg: BroadcastMessage): void {
-  if (this.channelId && msg.channel && this.channelId !== msg.channel) return
-
   switch (msg.type) {
     case 'set': {
       const decoded = decode(msg.encoded)
@@ -638,6 +674,9 @@ handleBroadcast(msg: BroadcastMessage): void {
         this.cache.deleteObjectProxy(msg.key)
         this.cache.set(msg.key, { value: item.value, type: item.type, options: item.options })
         this.emitter.emit(msg.key, item.value, oldCached?.value)
+        if (Array.isArray(item.value) && oldCached && Array.isArray(oldCached.value) && item.value.length !== oldCached.value.length) {
+          this.emitter.emit(`${msg.key}.length`, item.value.length, oldCached.value.length)
+        }
       }
       break
     }
@@ -836,7 +875,10 @@ This means the Object/Array serializer uses `identity` for both encode and decod
 
 String, Number, BigInt, Boolean, Null, Undefined, Object, Array, Date, URL, RegExp, Function, Set, Map.
 
-Each type has a registered `{ encode, decode }` pair in a serializer registry. The registry is a plain object (not a class), making it easy to extend if needed in the future.
+Each type has a registered `{ encode, decode }` pair in a serializer registry. The registry is a plain object (not a class), making it easy to extend if needed in the future. Notable implementations:
+
+- **RegExp**: Encoded via `String()` (produces `/source/flags` format), decoded via regex parsing (`new RegExp(source, flags)`) instead of `eval` for security.
+- **Function**: Encoded via `String()`, decoded via `new Function()` instead of `eval` for security.
 
 ### Separation from Proxy Creation
 
@@ -947,11 +989,11 @@ function shouldEnableBroadcast(storage: StorageLike, broadcast?: boolean): boole
 
 ### `resolveChannelId`
 
-Returns the channel identifier for the storage instance. Used for broadcast message filtering:
+Returns the channel identifier for the storage instance. Used for BroadcastChannel naming:
 
 - If `options.channel` is provided, use it directly
 - Auto-detect for `localStorage` as `'localStorage'`
-- Returns `null` when no channel can be determined (broadcast still works but without filtering)
+- Returns `null` when no channel can be determined (broadcast uses the default `stokado::channel` channel)
 
 ```ts
 function resolveChannelId(storage: StorageLike, channel?: string): string | null {
@@ -965,7 +1007,7 @@ function resolveChannelId(storage: StorageLike, channel?: string): string | null
 }
 ```
 
-When `resolveChannelId` returns `null`, `StorageBroadcast` receives `null` and messages are sent without a `channel` field. Received messages without a `channel` field are always processed (no filtering). This is acceptable for single-storage apps.
+When `resolveChannelId` returns `null`, `StorageBroadcast` creates a `BroadcastChannel('stokado::channel')`. When it returns a channel ID, `StorageBroadcast` creates a `BroadcastChannel('stokado::channel::{channelId}')`. Instances on different channels are physically isolated — they never see each other's messages.
 
 ### TypeScript Overloads
 
@@ -993,7 +1035,7 @@ createProxyStorage(sessionStorage) // broadcast auto-disabled for sessionStorage
 createProxyStorage(localForage, { channel: 'my-db' }) // broadcast enabled with channel identifier
 ```
 
-For async storage backends (localForage, IndexedDB) that previously used the `name` parameter for cross-tab sync, the `channel` option now provides the storage identifier for broadcast message filtering. All instances share the same `BroadcastChannel('stokado::channel')`, and messages are filtered by the `channel` field.
+For async storage backends (localForage, IndexedDB) that previously used the `name` parameter for cross-tab sync, the `channel` option now provides the storage identifier for BroadcastChannel naming. Each channel ID creates a separate `BroadcastChannel('stokado::channel::{channelId}')`, providing physical isolation between different storage backends.
 
 ## Utility Functions
 
@@ -1003,9 +1045,9 @@ Ensures the return type is always `number`:
 
 ```ts
 export function formatTime(time: any): number {
-  if (time instanceof Date)
+  if (isDate(time))
     return time.getTime()
-  if (typeof time === 'string')
+  if (isString(time))
     return +time.padEnd(13, '0')
   return +time
 }
@@ -1087,7 +1129,7 @@ As part of this refactor, the following issues are also addressed:
 - **Behavior change**: `removeItem` no longer emits events for non-existent keys. Previously, events were emitted regardless (with `oldValue: undefined`). Now, events are only emitted when the key actually exists in storage.
 - No changes to the serialized storage format (existing stored data remains compatible)
 - Build output (ESM, CJS, IIFE, DTS) structure unchanged
-- ⚠️ **BroadcastChannel message format is incompatible** with the previous version. The format changed from `{ key, newValue, oldValue, property }` to `{ type, key?, encoded?, channel? }`. Old and new versions running in the same browser will not cross-sync. Since BroadcastChannel messages are ephemeral (lost on page reload), this does not affect persistent data.
-- ⚠️ **BroadcastChannel name changed** from `stokado:${name}` to the unified `stokado::channel`. Old and new versions will not see each other's broadcasts.
+- ⚠️ **BroadcastChannel message format is incompatible** with the previous version. The format changed from `{ key, newValue, oldValue, property }` to `{ type, key?, encoded? }`. Old and new versions running in the same browser will not cross-sync. Since BroadcastChannel messages are ephemeral (lost on page reload), this does not affect persistent data.
+- ⚠️ **BroadcastChannel name changed** from `stokado:${name}` to `stokado::channel` (no channel ID) or `stokado::channel::{channelId}` (with channel ID). Old and new versions will not see each other's broadcasts.
 - `tsconfig.json` `include` paths must be updated from `["src/*.ts", "src/*/*.ts", "tests/*.ts"]` to `["src/**/*.ts", "tests/**/*.ts"]` to cover the new deeper directory structure
 - `key()` and `length` do not go through the Scheduler — they may return stale values if async operations are pending. This is a known limitation consistent with the previous version's behavior.

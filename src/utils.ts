@@ -1,9 +1,5 @@
 import type { RawType } from '@/types'
 
-export function isMap(val: unknown): val is Map<any, any> {
-  return getTypeString(val) === '[object Map]'
-}
-
 export function isDate(val: unknown): val is Date {
   return getTypeString(val) === '[object Date]'
 }
@@ -63,7 +59,7 @@ export function formatTime(time: any): number {
   if (isString(time))
     return +time.padEnd(13, '0')
 
-  return time
+  return +time
 }
 
 export function resolve<T, R>(val: T | Promise<T>, fn: (v: T) => R | Promise<R>): R | Promise<R> {
