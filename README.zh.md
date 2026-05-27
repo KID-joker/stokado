@@ -183,6 +183,10 @@ storage.getOptions(key)
 storage.setItem(key, value, { expires, disposable })
 ```
 
+## AI 编码规则
+
+如果你使用 AI 编码工具（Cursor、Copilot、Windsurf 等），可以将 [`ai-rules/.cursorrules`](./ai-rules/.cursorrules) 中的规则复制到项目根目录的 `.cursorrules` 文件中，帮助 AI 助手遵循 stokado 最佳实践。
+
 ## Work with localForage
 
 因为 `localForage` 提供了跟 `localStorage` 一样的 API，它是类 `storage` 对象，可以跟 `stokado` 配合使用。

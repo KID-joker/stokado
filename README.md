@@ -183,6 +183,10 @@ Set `expires` and `disposable` using `setItem`
 storage.setItem(key, value, { expires, disposable })
 ```
 
+## AI Coding Rules
+
+If you're using AI coding tools (Cursor, Copilot, Windsurf, etc.), copy the rules from [`ai-rules/.cursorrules`](./ai-rules/.cursorrules) to your project root as `.cursorrules` to help your AI assistant follow stokado best practices.
+
 ## Work with localForage
 
 `localForage` provides the same API as `localStorage`, it can be used in conjunction with `stokado`.

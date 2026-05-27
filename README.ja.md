@@ -183,6 +183,10 @@ storage.getOptions(key)
 storage.setItem(key, value, { expires, disposable })
 ```
 
+## AI コーディングルール
+
+AI コーディングツール（Cursor、Copilot、Windsurf など）を使用している場合、[`ai-rules/.cursorrules`](./ai-rules/.cursorrules) のルールをプロジェクトルートの `.cursorrules` としてコピーすると、AI アシスタントが stokado のベストプラクティスに従います。
+
 ## localForage と一緒に使う
 
 `localForage` は `localStorage` と同じ API を提供しているため、`stokado` と一緒に使用できます。
