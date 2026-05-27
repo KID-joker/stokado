@@ -155,15 +155,20 @@ export class StorageOperator {
   }
 
   clear(): any {
-    const doFlush = this.scheduler.flushAll()
+    const doFlush = this.scheduler.startClear()
     return resolve(doFlush, () => {
       const cachedEntries = Array.from(this.cache.entries())
       return resolve(this.strategy.clear(this.storage), () => {
-        this.cache.clear()
-        for (const [key, cached] of cachedEntries) {
-          this.emitter.emit(key, undefined, cached.value)
+        try {
+          this.cache.clear()
+          for (const [key, cached] of cachedEntries) {
+            this.emitter.emit(key, undefined, cached.value)
+          }
+          this.broadcast.post({ type: 'clear' })
         }
-        this.broadcast.post({ type: 'clear' })
+        finally {
+          this.scheduler.endClear()
+        }
       })
     })
   }

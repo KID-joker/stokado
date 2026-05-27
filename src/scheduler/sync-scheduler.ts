@@ -10,4 +10,8 @@ export class SyncScheduler implements Scheduler {
   flush(_key: string): void {}
 
   flushAll(): void {}
+
+  startClear(): void {}
+
+  endClear(): void {}
 }

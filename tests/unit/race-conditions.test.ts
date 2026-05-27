@@ -156,4 +156,40 @@ describe('race Conditions', () => {
     await (op as any).scheduler.flush('key')
     expect(resolved).toBe(true)
   })
+
+  it('setItem after clear on different key persists after clear completes', async () => {
+    const op = createAsyncOperator()
+    op.setItem('a', 1)
+    op.clear()
+    op.setItem('b', 2)
+
+    await op.setItem('c', 3)
+
+    expect(await op.getItem('a')).toBeNull()
+    expect(await op.getItem('b')).toBe(2)
+    expect(await op.getItem('c')).toBe(3)
+  })
+
+  it('clear does not discard setItem enqueued during flushAll wait', async () => {
+    const op = createAsyncOperator()
+    await op.setItem('a', 1)
+
+    op.clear()
+    const setP = op.setItem('b', 2)
+
+    await setP
+    expect(await op.getItem('a')).toBeNull()
+    expect(await op.getItem('b')).toBe(2)
+  })
+
+  it('clear barrier allows setItem on same key after clear completes', async () => {
+    const op = createAsyncOperator()
+    await op.setItem('key', 'old')
+
+    const clearP = op.clear()
+    const setP = op.setItem('key', 'new')
+
+    await Promise.all([clearP, setP])
+    expect(await op.getItem('key')).toBe('new')
+  })
 })
