@@ -41,7 +41,6 @@ function createSyncOperator(storage?: any) {
     new CacheStore(),
     new EventEmitter(),
     new StorageBroadcast(null),
-    null,
   )
 }
 
@@ -54,7 +53,6 @@ function createAsyncOperator(storage?: any) {
     new CacheStore(),
     new EventEmitter(),
     new StorageBroadcast(null),
-    null,
   )
 }
 

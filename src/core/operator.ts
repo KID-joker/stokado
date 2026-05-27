@@ -11,8 +11,6 @@ import { formatTime, getRawType, hasChanged, resolve } from '@/utils'
 import { createObjectProxy } from './proxy-object'
 
 export class StorageOperator {
-  private channelId: string | null
-
   constructor(
     public readonly storage: any,
     private scheduler: Scheduler,
@@ -20,9 +18,7 @@ export class StorageOperator {
     public readonly cache: CacheStore,
     public readonly emitter: EventEmitter,
     private broadcast: StorageBroadcast,
-    channelId?: string | null,
   ) {
-    this.channelId = channelId ?? null
   }
 
   get isAsync(): boolean {
@@ -101,7 +97,7 @@ export class StorageOperator {
             this.cache.set(key, { value: normalizedValue, type: getRawType(normalizedValue), options: Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined })
             if (hasChanged(normalizedValue, oldValue)) {
               this.emitter.emit(key, normalizedValue, oldValue)
-              this.broadcast.post({ type: 'set', key, encoded, channel: this.channelId ?? undefined })
+              this.broadcast.post({ type: 'set', key, encoded })
             }
 
             if (Array.isArray(normalizedValue) && Array.isArray(oldValue) && normalizedValue.length !== oldValue.length) {
@@ -119,7 +115,7 @@ export class StorageOperator {
         this.cache.set(key, { value: normalizedValue, type: getRawType(normalizedValue), options: Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined })
         if (hasChanged(normalizedValue, oldValue)) {
           this.emitter.emit(key, normalizedValue, oldValue)
-          this.broadcast.post({ type: 'set', key, encoded, channel: this.channelId ?? undefined })
+          this.broadcast.post({ type: 'set', key, encoded })
         }
 
         if (Array.isArray(normalizedValue) && Array.isArray(oldValue) && normalizedValue.length !== oldValue.length) {
@@ -138,7 +134,7 @@ export class StorageOperator {
         return resolve(this.strategy.removeItem(this.storage, key), () => {
           this.cache.delete(key)
           this.emitter.emit(key, undefined, oldValue)
-          this.broadcast.post({ type: 'remove', key, channel: this.channelId ?? undefined })
+          this.broadcast.post({ type: 'remove', key })
         })
       }
 
@@ -152,7 +148,7 @@ export class StorageOperator {
           const item = typeof decoded !== 'string' && decoded !== null ? decoded as DecodedItem : null
           const oldValue = item?.value ?? raw
           this.emitter.emit(key, undefined, oldValue)
-          this.broadcast.post({ type: 'remove', key, channel: this.channelId ?? undefined })
+          this.broadcast.post({ type: 'remove', key })
         })
       })
     })
@@ -167,7 +163,7 @@ export class StorageOperator {
         for (const [key, cached] of cachedEntries) {
           this.emitter.emit(key, undefined, cached.value)
         }
-        this.broadcast.post({ type: 'clear', channel: this.channelId ?? undefined })
+        this.broadcast.post({ type: 'clear' })
       })
     })
   }
@@ -324,15 +320,12 @@ export class StorageOperator {
       return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
         this.cache.set(key, { value: target, type: getRawType(target), options })
         this.emitter.emit(key, target, target)
-        this.broadcast.post({ type: 'set', key, encoded, channel: this.channelId ?? undefined })
+        this.broadcast.post({ type: 'set', key, encoded })
       })
     })
   }
 
   handleBroadcast(msg: BroadcastMessage): void {
-    if (this.channelId && msg.channel && this.channelId !== msg.channel)
-      return
-
     switch (msg.type) {
       case 'set': {
         const decoded = decode(msg.encoded)

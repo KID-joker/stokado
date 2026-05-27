@@ -1,16 +1,15 @@
 export type BroadcastMessage
-  = | { type: 'set', key: string, encoded: string, channel?: string }
-    | { type: 'remove', key: string, channel?: string }
-    | { type: 'clear', channel?: string }
+  = | { type: 'set', key: string, encoded: string }
+    | { type: 'remove', key: string }
+    | { type: 'clear' }
 
 export class StorageBroadcast {
   private channel: BroadcastChannel | null = null
-  private channelId: string | null
 
   constructor(channelId: string | null) {
-    this.channelId = channelId
     if (typeof BroadcastChannel !== 'undefined') {
-      this.channel = new BroadcastChannel('stokado::channel')
+      const name = channelId ? `stokado::channel::${channelId}` : 'stokado::channel'
+      this.channel = new BroadcastChannel(name)
     }
   }
 
@@ -22,10 +21,7 @@ export class StorageBroadcast {
     if (!this.channel)
       return
     this.channel.onmessage = (ev: MessageEvent) => {
-      const msg = ev.data as BroadcastMessage
-      if (this.channelId && msg.channel && this.channelId !== msg.channel)
-        return
-      onMessage(msg)
+      onMessage(ev.data as BroadcastMessage)
     }
   }
 

@@ -40,7 +40,6 @@ function createAsyncOperator() {
     new CacheStore(),
     new EventEmitter(),
     new StorageBroadcast(null),
-    null,
   )
 }
 

@@ -31,7 +31,7 @@ export function createProxyStorage(storage: StorageLike, options?: ProxyStorageO
   const emitter = new EventEmitter()
   const broadcast = new StorageBroadcast(channelId)
 
-  const operator = new StorageOperator(storage, scheduler, strategy, cache, emitter, broadcast, channelId)
+  const operator = new StorageOperator(storage, scheduler, strategy, cache, emitter, broadcast)
 
   const proxy = new Proxy(storage, createProxyHandler(operator))
 
