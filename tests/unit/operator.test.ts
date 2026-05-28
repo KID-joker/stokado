@@ -3,6 +3,7 @@ import { CacheStore } from '@/cache/store'
 import { StorageOperator } from '@/core/operator'
 import { StorageBroadcast } from '@/events/broadcast'
 import { EventEmitter } from '@/events/emitter'
+import { SizeTracker } from '@/quota/size-tracker'
 import { AsyncScheduler } from '@/scheduler/async-scheduler'
 import { SyncScheduler } from '@/scheduler/sync-scheduler'
 import { AsyncStrategy } from '@/strategy/async-strategy'
@@ -186,5 +187,102 @@ describe('storageOperator - Race Condition (Issue 3.3)', () => {
     const getPromise = op.getItem('key')
     await setPromise
     expect(await getPromise).toBe('new')
+  })
+})
+
+describe('storageOperator - Quota (Sync)', () => {
+  function createSyncOperatorWithQuota(quota: number, onQuotaExceeded?: any) {
+    const storage = createMockSyncStorage()
+    const sizeTracker = new SizeTracker(quota, onQuotaExceeded)
+    const operator = new StorageOperator(
+      storage,
+      new SyncScheduler(),
+      new SyncStrategy(),
+      new CacheStore(),
+      new EventEmitter(),
+      new StorageBroadcast(null),
+      sizeTracker,
+    )
+    return { operator, sizeTracker, storage }
+  }
+
+  it('tracks size after setItem', () => {
+    const { operator, sizeTracker } = createSyncOperatorWithQuota(10000)
+    operator.setItem('key', 'hello')
+    expect(sizeTracker.current).toBeGreaterThan(0)
+  })
+
+  it('tracks size after removeItem', () => {
+    const { operator, sizeTracker } = createSyncOperatorWithQuota(10000)
+    operator.setItem('key', 'hello')
+    const sizeAfterSet = sizeTracker.current
+    operator.removeItem('key')
+    expect(sizeTracker.current).toBeLessThan(sizeAfterSet)
+  })
+
+  it('tracks size after clear', () => {
+    const { operator, sizeTracker } = createSyncOperatorWithQuota(10000)
+    operator.setItem('a', 1)
+    operator.setItem('b', 2)
+    operator.clear()
+    expect(sizeTracker.current).toBe(0)
+  })
+
+  it('calls onQuotaExceeded when over limit', () => {
+    const onQuotaExceeded = vi.fn()
+    const { operator } = createSyncOperatorWithQuota(1, onQuotaExceeded)
+    operator.setItem('key', 'hello')
+    expect(onQuotaExceeded).toHaveBeenCalled()
+  })
+
+  it('blocks write when callback returns false', () => {
+    const onQuotaExceeded = vi.fn().mockReturnValue(false)
+    const { operator, storage } = createSyncOperatorWithQuota(1, onQuotaExceeded)
+    operator.setItem('key', 'hello')
+    expect(storage.getItem('key')).toBeNull()
+  })
+
+  it('allows write when callback returns undefined', () => {
+    const onQuotaExceeded = vi.fn().mockReturnValue(undefined)
+    const { operator, storage } = createSyncOperatorWithQuota(1, onQuotaExceeded)
+    operator.setItem('key', 'hello')
+    expect(storage.getItem('key')).not.toBeNull()
+  })
+})
+
+describe('storageOperator - Quota (Async)', () => {
+  function createAsyncOperatorWithQuota(quota: number, onQuotaExceeded?: any) {
+    const storage = createMockAsyncStorage()
+    const sizeTracker = new SizeTracker(quota, onQuotaExceeded)
+    const operator = new StorageOperator(
+      storage,
+      new AsyncScheduler(),
+      new AsyncStrategy(),
+      new CacheStore(),
+      new EventEmitter(),
+      new StorageBroadcast(null),
+      sizeTracker,
+    )
+    return { operator, sizeTracker, storage }
+  }
+
+  it('tracks size after setItem', async () => {
+    const { operator, sizeTracker } = createAsyncOperatorWithQuota(10000)
+    await operator.setItem('key', 'hello')
+    expect(sizeTracker.current).toBeGreaterThan(0)
+  })
+
+  it('blocks write when async callback returns false', async () => {
+    const onQuotaExceeded = vi.fn().mockResolvedValue(false)
+    const { operator, storage } = createAsyncOperatorWithQuota(1, onQuotaExceeded)
+    await operator.setItem('key', 'hello')
+    expect(await storage.getItem('key')).toBeNull()
+  })
+
+  it('allows write when async callback returns undefined', async () => {
+    const onQuotaExceeded = vi.fn().mockResolvedValue(undefined)
+    const { operator, storage } = createAsyncOperatorWithQuota(1, onQuotaExceeded)
+    await operator.setItem('key', 'hello')
+    expect(await storage.getItem('key')).not.toBeNull()
   })
 })
