@@ -1,7 +1,7 @@
 {
   "name": "stokado",
   "type": "module",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Feature-rich proxy wrapper for browser storage with serialization, reactivity, expiration, and one-time values. Works with localStorage, sessionStorage, and async storages like localForage.",
   "author": "KID-joker",
   "license": "MIT",
