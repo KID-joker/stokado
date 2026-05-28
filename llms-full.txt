@@ -2,7 +2,7 @@
 
 > The most feature-rich proxy wrapper for browser storage — serialization, reactivity, expiration, and one-time values in one library.
 
-stokado proxies any `storage`-like object (localStorage, sessionStorage, localForage, IndexedDB wrappers) using JavaScript Proxy. It preserves value types through serialization, enables reactive subscriptions, supports expiration and disposable values, and synchronizes across tabs via BroadcastChannel.
+stokado proxies any `storage`-like object (localStorage, sessionStorage, localForage, IndexedDB wrappers) using JavaScript Proxy. It preserves value types through serialization, enables reactive subscriptions, supports expiration and disposable values, synchronizes across tabs via BroadcastChannel, and provides quota alert with write blocking.
 
 ## Installation
 
@@ -29,6 +29,8 @@ Creates a proxy wrapper around any storage-like object.
 - `options` (ProxyStorageOptions, optional):
   - `broadcast` (boolean) — Enable cross-tab sync via BroadcastChannel. Default: `true` for localStorage, `false` for sessionStorage.
   - `channel` (string) — Custom BroadcastChannel name. Default: `'localStorage'` for localStorage, `null` for others.
+  - `quota` (number) — Storage size limit in bytes. When set, stokado tracks the size of all data written through the proxy and triggers `onQuotaExceeded` when the limit is exceeded.
+  - `onQuotaExceeded` ((info: QuotaInfo) => boolean | void | Promise<boolean | void>) — Callback triggered when storage usage exceeds the `quota` limit. Receives `{ current, limit, key, value }`. Return `false` to block the write, any other value to allow it. Supports async callbacks.
 
 **Returns:** ProxyStorage (sync) or AsyncProxyStorage (async), depending on whether the storage backend is async.
 
@@ -241,6 +243,75 @@ storage.getOptions('token') // { expires: 1704070800000, disposable: false }
 storage.setItem(key, value, { expires, disposable })
 ```
 
+## Feature 7: Quota Alert
+
+Monitor storage usage and get notified when approaching storage limits. You can optionally block writes that would exceed the quota.
+
+```js
+import { createProxyStorage, MB } from 'stokado'
+
+const storage = createProxyStorage(localStorage, {
+  quota: 5 * MB,
+  onQuotaExceeded({ current, limit, key }) {
+    console.warn(`Storage quota exceeded: ${current}/${limit} bytes, key: "${key}"`)
+    return false // block the write
+  }
+})
+
+// Check current usage
+storage.getUsage() // { current: 1234, limit: 5242880 }
+
+// Wait for init to complete (relevant for async storages like localForage)
+await storage.ready
+```
+
+### storage.getUsage()
+
+Returns `{ current: number, limit: number }` — the current storage usage in bytes and the configured quota limit.
+
+```js
+const { current, limit } = storage.getUsage()
+console.log(`Using ${current} of ${limit} bytes`)
+```
+
+### storage.ready
+
+A `Promise<void>` that resolves when the size tracker has finished scanning existing keys at initialization. For sync storages (localStorage, sessionStorage), it resolves immediately. For async storages (localForage), you should `await` it before relying on quota tracking accuracy.
+
+```js
+await storage.ready
+```
+
+### Constants
+
+- `KB` — 1024 bytes
+- `MB` — 1024 * 1024 bytes
+
+```js
+import { KB, MB } from 'stokado'
+
+const storage = createProxyStorage(localStorage, { quota: 5 * MB })
+```
+
+### QuotaInfo
+
+The `onQuotaExceeded` callback receives a `QuotaInfo` object:
+
+- `current` (number) — The projected total usage in bytes after the write
+- `limit` (number) — The configured quota limit in bytes
+- `key` (string) — The key that triggered the quota check
+- `value` (any) — The value being written
+
+### How size is calculated
+
+The size calculation is based on the UTF-8 byte size of the encoded envelope (key name + serialized value) actually stored in the underlying storage. This closely approximates but may not exactly match the browser's internal storage accounting.
+
+### Limitations
+
+- Quota tracking covers data written through the stokado proxy and pre-existing keys scanned at initialization.
+- Direct writes to the underlying storage from the same tab (bypassing stokado) are not tracked and may cause actual usage to exceed the quota without triggering an alert.
+- Cross-tab writes are tracked through the `storage` event when broadcast is enabled, but there may be a brief delay.
+
 ## Async Storage (localForage, IndexedDB)
 
 stokado automatically detects async storage backends and returns Promises.
@@ -346,6 +417,15 @@ Advantages: same-tab reactivity (native `storage` event only fires cross-tab), t
 interface ProxyStorageOptions {
   broadcast?: boolean
   channel?: string
+  quota?: number
+  onQuotaExceeded?: (info: QuotaInfo) => boolean | void | Promise<boolean | void>
+}
+
+interface QuotaInfo {
+  current: number
+  limit: number
+  key: string
+  value: any
 }
 
 interface StorageOptions {
@@ -380,6 +460,10 @@ interface ProxyStorage {
 
   // Options
   getOptions(key: string): StorageOptions | null
+
+  // Quota
+  getUsage(): { current: number; limit: number }
+  ready: Promise<void>
 }
 
 interface AsyncProxyStorage {
@@ -401,6 +485,10 @@ interface AsyncProxyStorage {
 
   setDisposable(key: string): Promise<void>
   getOptions(key: string): Promise<StorageOptions | null>
+
+  // Quota
+  getUsage(): { current: number; limit: number }
+  ready: Promise<void>
 }
 ```
 
@@ -411,4 +499,5 @@ interface AsyncProxyStorage {
 3. **Set expiration for tokens and caches**: Use `{ expires }` in `setItem` to auto-clean stale data
 4. **Use disposable for one-time messages**: Cross-component communication via `setDisposable`
 5. **Name async storage channels**: When using localForage, always pass a `channel` option for cross-tab sync
-6. **Avoid storing massive objects**: stokado serializes to strings; keep values reasonably sized
+6. **Set quota for storage limits**: Use `{ quota: 5 * MB }` to monitor storage usage and prevent exceeding browser limits
+7. **Avoid storing massive objects**: stokado serializes to strings; keep values reasonably sized

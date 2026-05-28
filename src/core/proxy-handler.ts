@@ -1,11 +1,16 @@
 import type { StorageOperator } from './operator'
+import type { SizeTracker } from '@/quota/size-tracker'
 import type { StorageOptions } from '@/types'
 import { isFunction, isString } from '@/utils'
 
-export function createProxyHandler(operator: StorageOperator): ProxyHandler<any> {
+export function createProxyHandler(operator: StorageOperator, sizeTracker: SizeTracker | null, ready: Promise<void>): ProxyHandler<any> {
   return {
     get(target, prop: string) {
       switch (prop) {
+        case 'getUsage':
+          return () => sizeTracker?.getUsage() ?? { current: 0, limit: 0 }
+        case 'ready':
+          return ready
         case 'getItem':
           return (key: string) => operator.getItem(key)
         case 'setItem':

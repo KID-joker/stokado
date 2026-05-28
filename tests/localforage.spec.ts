@@ -6,9 +6,12 @@ async function delay(ms?: number) {
 }
 
 test.describe('localforage', () => {
-  test('base', async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.goto('/')
+    await page.waitForFunction(() => (window as any).localforage !== undefined)
+  })
 
+  test('base', async ({ page }) => {
     // set
     await page.evaluate(async () => {
       const { createProxyStorage } = window.stokado
@@ -33,8 +36,6 @@ test.describe('localforage', () => {
   })
 
   test('methods', async ({ page }) => {
-    await page.goto('/')
-
     // key() setItem()
     expect(await page.evaluate(async () => {
       const { createProxyStorage } = window.stokado
@@ -76,9 +77,10 @@ test.describe('localforage', () => {
     })).toEqual(0)
   })
 
-  test('subscribe', async ({ context }) => {
+  test('subscribe', async ({ context, page: _page }) => {
     const page1 = await context.newPage()
     await page1.goto('/')
+    await page1.waitForFunction(() => (window as any).localforage !== undefined)
 
     expect(await page1.evaluate(async () => {
       const { createProxyStorage } = window.stokado
@@ -104,6 +106,7 @@ test.describe('localforage', () => {
     // another tab
     const page2 = await context.newPage()
     await page2.goto('/')
+    await page2.waitForFunction(() => (window as any).localforage !== undefined)
 
     setTimeout(() => {
       page2.evaluate(async () => {
@@ -132,8 +135,6 @@ test.describe('localforage', () => {
   })
 
   test('expired', async ({ page }) => {
-    await page.goto('/')
-
     expect(await page.evaluate(async () => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(window.localforage)
@@ -160,8 +161,6 @@ test.describe('localforage', () => {
   })
 
   test('disposable', async ({ page }) => {
-    await page.goto('/')
-
     await page.evaluate(async () => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(window.localforage)
@@ -183,8 +182,6 @@ test.describe('localforage', () => {
   })
 
   test('setOptions', async ({ page }) => {
-    await page.goto('/')
-
     expect(await page.evaluate(async () => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(window.localforage)

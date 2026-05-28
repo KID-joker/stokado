@@ -2,7 +2,7 @@
 
 > The most feature-rich proxy wrapper for browser storage — serialization, reactivity, expiration, and one-time values in one library.
 
-stokado proxies any `storage`-like object (localStorage, sessionStorage, localForage, IndexedDB wrappers) and adds: proxy syntax sugar (getter/setter), type-safe serialization, reactive subscribe/once/off, expiration, disposable (one-time) values, and cross-tab sync via BroadcastChannel.
+stokado proxies any `storage`-like object (localStorage, sessionStorage, localForage, IndexedDB wrappers) and adds: proxy syntax sugar (getter/setter), type-safe serialization, reactive subscribe/once/off, expiration, disposable (one-time) values, cross-tab sync via BroadcastChannel, and quota alert with write blocking.
 
 ## Install
 
@@ -66,17 +66,20 @@ stokado is the only browser storage library that combines proxy syntax sugar, ty
 | Disposable values | ✅ | ❌ | ❌ | ❌ |
 | Async storage support | ✅ | ❌ | ❌ | ❌ |
 | Cross-tab sync | ✅ | ❌ | ❌ | ❌ |
+| Quota alert | ✅ | ❌ | ❌ | ❌ |
 | Zero dependencies | ✅ | ✅ | ✅ | ✅ |
 
 ## API
 
-- `createProxyStorage(storage, options?)` — create a proxy wrapper. Options: `{ broadcast?: boolean, channel?: string }`
+- `createProxyStorage(storage, options?)` — create a proxy wrapper. Options: `{ broadcast?: boolean, channel?: string, quota?: number, onQuotaExceeded?: (info: QuotaInfo) => boolean | void | Promise<boolean | void> }`
 - `storage.key = value` / `storage.key` / `delete storage.key` — proxy syntax sugar
 - `storage.setItem(key, value, options?)` — set with optional `{ expires, disposable }`
 - `storage.getItem(key)` / `storage.removeItem(key)` / `storage.clear()`
 - `storage.on(key, callback)` / `storage.once(key, callback)` / `storage.off(key?, callback?)`
 - `storage.setExpires(key, expires)` / `storage.getExpires(key)` / `storage.removeExpires(key)`
 - `storage.setDisposable(key)` / `storage.getOptions(key)`
+- `storage.getUsage()` — returns `{ current, limit }` for quota tracking
+- `storage.ready` — `Promise<void>`, resolves when size tracker init completes
 
 ## When to use stokado
 
@@ -86,6 +89,7 @@ stokado is the only browser storage library that combines proxy syntax sugar, ty
 - You need one-time values for cross-component or cross-page communication
 - You need cross-tab synchronization via BroadcastChannel
 - You need to work with async storage backends like localForage or IndexedDB wrappers
+- You need to monitor storage usage and get notified when approaching storage limits
 
 ## Full documentation
 

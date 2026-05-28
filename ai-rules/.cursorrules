@@ -33,3 +33,13 @@ When this project uses stokado for browser storage, follow these conventions:
 ## Cross-Tab Sync
 - stokado syncs across tabs via BroadcastChannel by default for localStorage
 - Disable with `createProxyStorage(localStorage, { broadcast: false })` if not needed
+
+## Quota Alert
+- Use `createProxyStorage(storage, { quota: 5 * MB })` to set a storage size limit in bytes
+- Use `KB` and `MB` constants from stokado for readable quota values
+- Use `onQuotaExceeded` callback to handle quota exceeded events: `createProxyStorage(storage, { quota: 5 * MB, onQuotaExceeded({ current, limit, key }) { ... } })`
+- Return `false` from `onQuotaExceeded` to block the write that would exceed the quota
+- Use `storage.getUsage()` to check current storage usage — returns `{ current, limit }`
+- Use `await storage.ready` to ensure the size tracker has finished scanning existing keys (relevant for async storages)
+- The size calculation is based on the UTF-8 byte size of the encoded envelope (key + value) actually stored
+- Quota tracking only covers data written through the stokado proxy and pre-existing keys scanned at initialization

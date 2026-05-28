@@ -29,6 +29,7 @@
 | 一次性值 | ✅ | ❌ | ❌ | ❌ |
 | 异步存储支持 | ✅ | ❌ | ❌ | ❌ |
 | 跨标签页同步 | ✅ | ❌ | ❌ | ❌ |
+| 内存告警 | ✅ | ❌ | ❌ | ❌ |
 | 零依赖 | ✅ | ✅ | ✅ | ✅ |
 
 ## 何时使用 stokado
@@ -39,6 +40,7 @@
 - **一次性值** — 你需要跨组件或跨页面的一次性通信值
 - **跨标签页同步** — 你需要浏览器标签页之间实时同步存储变化
 - **异步后端** — 你需要使用 localForage 或 IndexedDB 等异步存储，且保持相同 API
+- **内存告警** — 你需要监控存储用量并在接近存储限制时收到通知，可以选择阻止超出配额的写入
 
 ## Usage
 
@@ -58,9 +60,14 @@ const storage = createProxyStorage(localStorage)
 storage.getItem('test')
 ```
 
-#### createProxyStorage(storage[, name])
+#### createProxyStorage(storage[, options])
 
-`createProxyStorage` 接收两个参数：类 `storage` 对象和可选的 `name`。`name` 用于同步其他页面的 `storage` 修改。`localStorage` 默认存在同名的 `name`，`sessionStorage` 则没有，其他对象需自行传入。
+`createProxyStorage` 接收两个参数：类 `storage` 对象和可选的 `options`。`options` 对象支持以下字段：
+
+- `broadcast` — 是否同步其他页面的 `storage` 修改。`localStorage` 默认为 `true`，`sessionStorage` 默认为 `false`。
+- `channel` — 跨标签页同步的频道名称。`localStorage` 默认使用 `'localStorage'` 作为频道名。
+- `quota` — 存储大小限制，单位为字节。设置后，stokado 会追踪通过代理写入的所有数据大小，并在超出限制时触发回调。
+- `onQuotaExceeded` — 存储用量超出 `quota` 限制时触发的回调函数。接收 `QuotaInfo` 对象，包含 `{ current, limit, key, value }`。返回 `false` 可阻止写入，其他值允许写入。支持异步回调。
 
 ### Features
 
@@ -183,6 +190,40 @@ storage.getOptions(key)
 storage.setItem(key, value, { expires, disposable })
 ```
 
+#### 7. 内存告警
+
+监控存储用量，在接近限制时收到通知
+
+```js
+import { createProxyStorage, MB } from 'stokado'
+
+const storage = createProxyStorage(localStorage, {
+  quota: 5 * MB,
+  onQuotaExceeded({ current, limit, key }) {
+    console.warn(`存储配额超限：${current}/${limit} 字节，key: "${key}"`)
+    return false // 阻止写入
+  }
+})
+
+// 查看当前用量
+storage.getUsage() // { current: 1234, limit: 5242880 }
+
+// 等待初始化完成（异步存储如 localForage 需要等待）
+await storage.ready
+```
+
+- `quota`：存储大小限制，单位为字节。可使用 `KB` 和 `MB` 常量提高可读性。
+- `onQuotaExceeded`：超出限制时的回调。接收 `{ current, limit, key, value }`。返回 `false` 阻止写入。
+- `getUsage()`：返回 `{ current, limit }` — 当前用量和配置的限制。
+- `ready`：一个 `Promise`，在大小追踪器完成扫描已有 key 后 resolve。同步存储会立即 resolve。
+
+**注意：** 大小计算基于实际存储在底层存储中的编码信封（key + value）的 UTF-8 字节大小。这近似于但不一定完全等于浏览器内部的存储计算。
+
+**限制：**
+- 配额追踪覆盖通过 stokado 代理写入的数据和初始化时扫描的已有 key。
+- 同一标签页内绕过 stokado 直接操作底层存储的写入不会被追踪，可能导致实际用量超出配额而不触发告警。
+- 跨标签页的写入在启用广播时通过 `storage` 事件追踪，但可能有短暂延迟。
+
 ## AI 编码规则
 
 如果你使用 AI 编码工具（Cursor、Copilot、Windsurf 等），可以将 [`ai-rules/.cursorrules`](./ai-rules/.cursorrules) 中的规则复制到项目根目录的 `.cursorrules` 文件中，帮助 AI 助手遵循 stokado 最佳实践。
@@ -195,7 +236,7 @@ storage.setItem(key, value, { expires, disposable })
 import localForage from 'localforage'
 import { createProxyStorage } from 'stokado'
 
-const local = createProxyStorage(localForage, 'localForage')
+const local = createProxyStorage(localForage, { channel: 'localForage' })
 ```
 
 但是因为 `localForage` 采用异步的 API，所以需要使用 `Promise` 来调用它。
@@ -216,14 +257,14 @@ await local.setItem('test', 'hello localForage')
 const store = localforage.createInstance({
   name: 'nameHere'
 })
-const proxyStore = createProxyStorage(store, 'store')
+const proxyStore = createProxyStorage(store, { channel: 'store' })
 
 const otherStore = localforage.createInstance({
   name: 'otherName'
 })
-const proxyOtherStore = createProxyStorage(otherStore, 'otherStore')
+const proxyOtherStore = createProxyStorage(otherStore, { channel: 'otherStore' })
 ```
 
 ## 关键词
 
-stokado 是一个 localStorage 封装库、浏览器存储代理库、Web 存储工具库。提供 localStorage 序列化、存储响应式、存储订阅、存储过期、跨标签页存储同步、异步存储支持。store2、lscache、local-storage-fallback 的替代方案。支持 localStorage、sessionStorage、localForage 及任何类 storage 对象。
+stokado 是一个 localStorage 封装库、浏览器存储代理库、Web 存储工具库。提供 localStorage 序列化、存储响应式、存储订阅、存储过期、跨标签页存储同步、异步存储支持、存储配额告警。store2、lscache、local-storage-fallback 的替代方案。支持 localStorage、sessionStorage、localForage 及任何类 storage 对象。
