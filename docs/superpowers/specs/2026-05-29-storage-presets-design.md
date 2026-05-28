@@ -61,8 +61,9 @@ Each preset is a separate sub-path export for tree-shaking:
 | `stokado/presets/react-native` | `createReactNativeStorage` | Factory function | Requires AsyncStorage injection |
 | `stokado/presets/node` | `memoryStorage` | `SyncStorageLike` | In-memory Map-based |
 
-The generic factory functions are also exported from their respective files for advanced use:
-- `createMiniProgramStorage(api)` and `createMiniProgramStorageAsync(api)` from `stokado/presets/mini-program` (if we decide to expose this sub-path)
+The generic factory functions are also re-exported from each platform file for advanced use (e.g., when the global object is not available at import time or for testing):
+- `createMiniProgramStorage(api)` and `createMiniProgramStorageAsync(api)` are re-exported from `stokado/presets/wechat`, `stokado/presets/douyin`, and `stokado/presets/uni-app`
+- `mini-program.ts` is an internal module, not exposed as a separate sub-path export
 
 ## Type Definitions
 
