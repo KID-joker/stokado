@@ -1,7 +1,7 @@
 import type { AsyncStorageLike, SyncStorageLike } from '@/types'
 import { createMiniProgramStorage, createMiniProgramStorageAsync } from '@/presets/mini-program'
 
-declare const wx: {
+declare const uni: {
   getStorageSync: (key: string) => any
   setStorageSync: (key: string, data: any) => void
   removeStorageSync: (key: string) => void
@@ -14,6 +14,6 @@ declare const wx: {
   getStorageInfo: () => Promise<{ keys: string[], currentSize: number, limitSize: number }>
 }
 
-export const wechatStorage: SyncStorageLike = createMiniProgramStorage(wx)
-export const wechatStorageAsync: AsyncStorageLike = createMiniProgramStorageAsync(wx)
+export const uniStorage: SyncStorageLike = createMiniProgramStorage(uni)
+export const uniStorageAsync: AsyncStorageLike = createMiniProgramStorageAsync(uni)
 export { createMiniProgramStorage, createMiniProgramStorageAsync }
