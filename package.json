@@ -40,6 +40,41 @@
       "types": "./dist/stokado.d.ts",
       "import": "./dist/stokado.mjs",
       "require": "./dist/stokado.cjs"
+    },
+    "./presets/cookie": {
+      "types": "./dist/presets/cookie.d.ts",
+      "import": "./dist/presets/cookie.mjs",
+      "require": "./dist/presets/cookie.cjs"
+    },
+    "./presets/wechat": {
+      "types": "./dist/presets/wechat.d.ts",
+      "import": "./dist/presets/wechat.mjs",
+      "require": "./dist/presets/wechat.cjs"
+    },
+    "./presets/douyin": {
+      "types": "./dist/presets/douyin.d.ts",
+      "import": "./dist/presets/douyin.mjs",
+      "require": "./dist/presets/douyin.cjs"
+    },
+    "./presets/alipay": {
+      "types": "./dist/presets/alipay.d.ts",
+      "import": "./dist/presets/alipay.mjs",
+      "require": "./dist/presets/alipay.cjs"
+    },
+    "./presets/uni-app": {
+      "types": "./dist/presets/uni-app.d.ts",
+      "import": "./dist/presets/uni-app.mjs",
+      "require": "./dist/presets/uni-app.cjs"
+    },
+    "./presets/react-native": {
+      "types": "./dist/presets/react-native.d.ts",
+      "import": "./dist/presets/react-native.mjs",
+      "require": "./dist/presets/react-native.cjs"
+    },
+    "./presets/node": {
+      "types": "./dist/presets/node.d.ts",
+      "import": "./dist/presets/node.mjs",
+      "require": "./dist/presets/node.cjs"
     }
   },
   "main": "dist/stokado.cjs",

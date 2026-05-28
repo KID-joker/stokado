@@ -78,4 +78,41 @@ configs.push({
   plugins,
 })
 
+const presetEntries = [
+  'cookie',
+  'wechat',
+  'douyin',
+  'alipay',
+  'uni-app',
+  'react-native',
+  'node',
+]
+
+if (process.env.BUILD === 'prod') {
+  for (const preset of presetEntries) {
+    const presetInput = path.resolve(__dirname, `src/presets/${preset}.ts`)
+    configs.push({
+      input: presetInput,
+      output: [
+        {
+          file: `dist/presets/${preset}.mjs`,
+          format: 'es',
+        },
+        {
+          file: `dist/presets/${preset}.cjs`,
+          format: 'cjs',
+        },
+      ],
+      plugins: [pluginEsbuild, typescript({ declaration: false }), pluginAlias, nodeResolve()],
+    }, {
+      input: presetInput,
+      output: {
+        file: `dist/presets/${preset}.d.ts`,
+        format: 'es',
+      },
+      plugins: [dts(), pluginAlias],
+    })
+  }
+}
+
 export default configs
