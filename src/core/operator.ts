@@ -1,13 +1,14 @@
 import type { CacheStore } from '@/cache/store'
 import type { BroadcastMessage, StorageBroadcast } from '@/events/broadcast'
 import type { EventEmitter } from '@/events/emitter'
+import type { SizeTracker } from '@/quota/size-tracker'
 import type { Scheduler } from '@/scheduler/types'
 import type { DecodedItem } from '@/serializer/decode'
 import type { StorageStrategy } from '@/strategy/types'
 import type { StorageOptions } from '@/types'
 import { decode } from '@/serializer/decode'
 import { encode } from '@/serializer/encode'
-import { formatTime, getRawType, hasChanged, resolve } from '@/utils'
+import { formatTime, getRawType, hasChanged, isPromise, resolve } from '@/utils'
 import { createObjectProxy } from './proxy-object'
 
 export class StorageOperator {
@@ -18,6 +19,7 @@ export class StorageOperator {
     public readonly cache: CacheStore,
     public readonly emitter: EventEmitter,
     private broadcast: StorageBroadcast,
+    private sizeTracker: SizeTracker | null = null,
   ) {
   }
 
@@ -79,37 +81,57 @@ export class StorageOperator {
       const normalizedValue = toPrimitive(value)
       const oldCached = this.cache.get(key)
       const oldValue = oldCached?.value
-      let oldOptions = oldCached?.options ?? {}
+      const oldOptions = oldCached?.options ?? {}
 
       if (!oldCached) {
-        return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
-          if (raw !== null) {
-            const decoded = decode(raw)
-            if (decoded && typeof decoded !== 'string') {
-              oldOptions = (decoded as DecodedItem).options ?? {}
-            }
+        const mergedOptions = options ? { ...oldOptions, ...options } : (Object.keys(oldOptions).length > 0 ? oldOptions : {})
+        const encoded = encode(normalizedValue, Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined)
+
+        if (this.sizeTracker) {
+          const allowed = this.sizeTracker.check(key, encoded, normalizedValue)
+          if (isPromise(allowed)) {
+            return allowed.then((ok) => {
+              if (!ok)
+                return
+              return this._setItemNoCache(key, normalizedValue, oldOptions, options, encoded, oldValue)
+            })
           }
-          const mergedOptions = options ? { ...oldOptions, ...options } : (Object.keys(oldOptions).length > 0 ? oldOptions : {})
-          const encoded = encode(normalizedValue, Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined)
+          if (!allowed)
+            return
+        }
 
-          return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
-            this.cache.deleteObjectProxy(key)
-            this.cache.set(key, { value: normalizedValue, type: getRawType(normalizedValue), options: Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined })
-            if (hasChanged(normalizedValue, oldValue)) {
-              this.emitter.emit(key, normalizedValue, oldValue)
-              this.broadcast.post({ type: 'set', key, encoded })
-            }
-
-            if (Array.isArray(normalizedValue) && Array.isArray(oldValue) && normalizedValue.length !== oldValue.length) {
-              this.emitter.emit(`${key}.length`, normalizedValue.length, oldValue.length)
-            }
-          })
-        })
+        return this._setItemNoCache(key, normalizedValue, oldOptions, options, encoded, oldValue)
       }
 
       const mergedOptions = options ? { ...oldOptions, ...options } : oldOptions
       const encoded = encode(normalizedValue, Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined)
 
+      if (this.sizeTracker) {
+        const allowed = this.sizeTracker.check(key, encoded, normalizedValue)
+        if (isPromise(allowed)) {
+          return allowed.then((ok) => {
+            if (!ok)
+              return
+            return this._setItemCached(key, normalizedValue, oldOptions, options, encoded, oldValue)
+          })
+        }
+        if (!allowed)
+          return
+      }
+
+      return this._setItemCached(key, normalizedValue, oldOptions, options, encoded, oldValue)
+    })
+  }
+
+  private _setItemNoCache(key: string, normalizedValue: any, oldOptions: StorageOptions, options: StorageOptions | undefined, encoded: string, oldValue: any): any {
+    return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
+      if (raw !== null) {
+        const decoded = decode(raw)
+        if (decoded && typeof decoded !== 'string') {
+          oldOptions = (decoded as DecodedItem).options ?? {}
+        }
+      }
+      const mergedOptions = options ? { ...oldOptions, ...options } : (Object.keys(oldOptions).length > 0 ? oldOptions : {})
       return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
         this.cache.deleteObjectProxy(key)
         this.cache.set(key, { value: normalizedValue, type: getRawType(normalizedValue), options: Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined })
@@ -117,11 +139,27 @@ export class StorageOperator {
           this.emitter.emit(key, normalizedValue, oldValue)
           this.broadcast.post({ type: 'set', key, encoded })
         }
-
         if (Array.isArray(normalizedValue) && Array.isArray(oldValue) && normalizedValue.length !== oldValue.length) {
           this.emitter.emit(`${key}.length`, normalizedValue.length, oldValue.length)
         }
+        this.sizeTracker?.add(key, encoded)
       })
+    })
+  }
+
+  private _setItemCached(key: string, normalizedValue: any, oldOptions: StorageOptions, options: StorageOptions | undefined, encoded: string, oldValue: any): any {
+    const mergedOptions = options ? { ...oldOptions, ...options } : oldOptions
+    return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
+      this.cache.deleteObjectProxy(key)
+      this.cache.set(key, { value: normalizedValue, type: getRawType(normalizedValue), options: Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined })
+      if (hasChanged(normalizedValue, oldValue)) {
+        this.emitter.emit(key, normalizedValue, oldValue)
+        this.broadcast.post({ type: 'set', key, encoded })
+      }
+      if (Array.isArray(normalizedValue) && Array.isArray(oldValue) && normalizedValue.length !== oldValue.length) {
+        this.emitter.emit(`${key}.length`, normalizedValue.length, oldValue.length)
+      }
+      this.sizeTracker?.add(key, encoded)
     })
   }
 
@@ -133,6 +171,7 @@ export class StorageOperator {
         const oldValue = oldCached.value
         return resolve(this.strategy.removeItem(this.storage, key), () => {
           this.cache.delete(key)
+          this.sizeTracker?.remove(key)
           this.emitter.emit(key, undefined, oldValue)
           this.broadcast.post({ type: 'remove', key })
         })
@@ -144,6 +183,7 @@ export class StorageOperator {
 
         return resolve(this.strategy.removeItem(this.storage, key), () => {
           this.cache.delete(key)
+          this.sizeTracker?.remove(key)
           const decoded = decode(raw)
           const item = typeof decoded !== 'string' && decoded !== null ? decoded as DecodedItem : null
           const oldValue = item?.value ?? raw
@@ -161,6 +201,7 @@ export class StorageOperator {
       return resolve(this.strategy.clear(this.storage), () => {
         try {
           this.cache.clear()
+          this.sizeTracker?.clear()
           for (const [key, cached] of cachedEntries) {
             this.emitter.emit(key, undefined, cached.value)
           }
@@ -338,6 +379,7 @@ export class StorageOperator {
           const item = decoded as DecodedItem
           if (this.isExpired(item.options)) {
             this.cache.delete(msg.key)
+            this.sizeTracker?.remove(msg.key)
             break
           }
           const oldCached = this.cache.get(msg.key)
@@ -347,6 +389,7 @@ export class StorageOperator {
           if (Array.isArray(item.value) && oldCached && Array.isArray(oldCached.value) && item.value.length !== oldCached.value.length) {
             this.emitter.emit(`${msg.key}.length`, item.value.length, oldCached.value.length)
           }
+          this.sizeTracker?.add(msg.key, msg.encoded)
         }
         break
       }
@@ -356,11 +399,13 @@ export class StorageOperator {
           this.cache.delete(msg.key)
           this.emitter.emit(msg.key, undefined, oldCached.value)
         }
+        this.sizeTracker?.remove(msg.key)
         break
       }
       case 'clear': {
         const cachedEntries = Array.from(this.cache.entries())
         this.cache.clear()
+        this.sizeTracker?.clear()
         for (const [key, cached] of cachedEntries) {
           this.emitter.emit(key, undefined, cached.value)
         }
