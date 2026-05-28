@@ -30,9 +30,18 @@ export interface StorageOptions {
 
 export type ExpiresType = string | number | Date
 
+export interface QuotaInfo {
+  current: number
+  limit: number
+  key: string
+  value: any
+}
+
 export interface ProxyStorageOptions {
   broadcast?: boolean
   channel?: string
+  quota?: number
+  onQuotaExceeded?: (info: QuotaInfo) => boolean | void | Promise<boolean | void>
 }
 
 export interface ProxyStorage extends SyncStorageLike {
@@ -44,6 +53,8 @@ export interface ProxyStorage extends SyncStorageLike {
   removeExpires: (key: string) => void
   setDisposable: (key: string) => void
   getOptions: (key: string) => StorageOptions | null
+  getUsage: () => { current: number, limit: number }
+  ready: Promise<void>
 }
 
 export interface AsyncProxyStorage extends AsyncStorageLike {
@@ -55,6 +66,8 @@ export interface AsyncProxyStorage extends AsyncStorageLike {
   removeExpires: (key: string) => Promise<void>
   setDisposable: (key: string) => Promise<void>
   getOptions: (key: string) => Promise<StorageOptions | null>
+  getUsage: () => Promise<{ current: number, limit: number }>
+  ready: Promise<void>
 }
 
 export type Listener = (newValue: any, oldValue: any) => void
