@@ -132,17 +132,18 @@ export class StorageOperator {
         }
       }
       const mergedOptions = options ? { ...oldOptions, ...options } : (Object.keys(oldOptions).length > 0 ? oldOptions : {})
-      return resolve(this.strategy.setItem(this.storage, key, encoded), () => {
+      const finalEncoded = Object.keys(mergedOptions).length > 0 ? encode(normalizedValue, mergedOptions) : encoded
+      return resolve(this.strategy.setItem(this.storage, key, finalEncoded), () => {
         this.cache.deleteObjectProxy(key)
         this.cache.set(key, { value: normalizedValue, type: getRawType(normalizedValue), options: Object.keys(mergedOptions).length > 0 ? mergedOptions : undefined })
         if (hasChanged(normalizedValue, oldValue)) {
           this.emitter.emit(key, normalizedValue, oldValue)
-          this.broadcast.post({ type: 'set', key, encoded })
+          this.broadcast.post({ type: 'set', key, encoded: finalEncoded })
         }
         if (Array.isArray(normalizedValue) && Array.isArray(oldValue) && normalizedValue.length !== oldValue.length) {
           this.emitter.emit(`${key}.length`, normalizedValue.length, oldValue.length)
         }
-        this.sizeTracker?.add(key, encoded)
+        this.sizeTracker?.add(key, finalEncoded)
       })
     })
   }
