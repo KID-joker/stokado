@@ -4,6 +4,7 @@ import { StorageOperator } from '@/core/operator'
 import { createProxyHandler } from '@/core/proxy-handler'
 import { StorageBroadcast } from '@/events/broadcast'
 import { EventEmitter } from '@/events/emitter'
+import { SizeTracker } from '@/quota/size-tracker'
 import { AsyncScheduler } from '@/scheduler/async-scheduler'
 import { SyncScheduler } from '@/scheduler/sync-scheduler'
 import { AsyncStrategy } from '@/strategy/async-strategy'
@@ -11,9 +12,13 @@ import { SyncStrategy } from '@/strategy/sync-strategy'
 import { isFunction, isPromise } from '@/utils'
 
 export { StorageOperator } from '@/core/operator'
+export { SizeTracker } from '@/quota/size-tracker'
 export { decode } from '@/serializer/decode'
 export { encode } from '@/serializer/encode'
-export type { AsyncProxyStorage, AsyncStorageLike, Listener, ProxyStorage, ProxyStorageOptions, StorageLike, StorageOptions, SyncStorageLike } from '@/types'
+export type { AsyncProxyStorage, AsyncStorageLike, Listener, ProxyStorage, ProxyStorageOptions, QuotaInfo, StorageLike, StorageOptions, SyncStorageLike } from '@/types'
+
+export const KB = 1024
+export const MB = 1024 * KB
 
 export function createProxyStorage(storage: SyncStorageLike, options?: ProxyStorageOptions): ProxyStorage
 export function createProxyStorage(storage: AsyncStorageLike, options?: ProxyStorageOptions): AsyncProxyStorage
@@ -31,9 +36,16 @@ export function createProxyStorage(storage: StorageLike, options?: ProxyStorageO
   const emitter = new EventEmitter()
   const broadcast = new StorageBroadcast(channelId)
 
-  const operator = new StorageOperator(storage, scheduler, strategy, cache, emitter, broadcast)
+  const sizeTracker = options?.quota
+    ? new SizeTracker(options.quota, options.onQuotaExceeded)
+    : null
 
-  const proxy = new Proxy(storage, createProxyHandler(operator))
+  const operator = new StorageOperator(storage, scheduler, strategy, cache, emitter, broadcast, sizeTracker)
+
+  const initResult = sizeTracker?.init(storage, { isAsync })
+  const ready = initResult instanceof Promise ? initResult : Promise.resolve()
+
+  const proxy = new Proxy(storage, createProxyHandler(operator, sizeTracker, ready))
 
   broadcast.listen(msg => operator.handleBroadcast(msg))
 
