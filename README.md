@@ -226,6 +226,75 @@ await storage.ready
 
 If you're using AI coding tools (Cursor, Copilot, Windsurf, etc.), copy the rules from [`ai-rules/.cursorrules`](./ai-rules/.cursorrules) to your project root as `.cursorrules` to help your AI assistant follow stokado best practices.
 
+## Presets
+
+Stokado provides preset `StorageLike` adapters for common storage targets, so you can use `createProxyStorage` directly without implementing the interface yourself.
+
+### Cookie
+
+```js
+import { createProxyStorage } from 'stokado'
+import { cookieStorage } from 'stokado/presets/cookie'
+
+const storage = createProxyStorage(cookieStorage)
+```
+
+### WeChat Mini Program
+
+```js
+import { createProxyStorage } from 'stokado'
+import { wechatStorage } from 'stokado/presets/wechat'
+
+const storage = createProxyStorage(wechatStorage)
+```
+
+Async version:
+
+```js
+import { wechatStorageAsync } from 'stokado/presets/wechat'
+
+const storage = createProxyStorage(wechatStorageAsync)
+```
+
+### Douyin Mini Program
+
+```js
+import { douyinStorage, douyinStorageAsync } from 'stokado/presets/douyin'
+```
+
+### Alipay Mini Program
+
+```js
+import { alipayStorage, alipayStorageAsync } from 'stokado/presets/alipay'
+```
+
+### uni-app
+
+```js
+import { uniStorage, uniStorageAsync } from 'stokado/presets/uni-app'
+```
+
+### React Native
+
+React Native requires injecting the `AsyncStorage` instance:
+
+```js
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { createProxyStorage } from 'stokado'
+import { createReactNativeStorage } from 'stokado/presets/react-native'
+
+const storage = createProxyStorage(createReactNativeStorage(AsyncStorage))
+```
+
+### Node.js
+
+```js
+import { createProxyStorage } from 'stokado'
+import { memoryStorage } from 'stokado/presets/node'
+
+const storage = createProxyStorage(memoryStorage)
+```
+
 ## Work with localForage
 
 `localForage` provides the same API as `localStorage`, it can be used in conjunction with `stokado`.

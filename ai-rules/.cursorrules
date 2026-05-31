@@ -34,6 +34,17 @@ When this project uses stokado for browser storage, follow these conventions:
 - stokado syncs across tabs via BroadcastChannel by default for localStorage
 - Disable with `createProxyStorage(localStorage, { broadcast: false })` if not needed
 
+## Presets
+- Use preset adapters from `stokado/presets/*` instead of implementing `StorageLike` yourself
+- Cookie: `import { cookieStorage } from 'stokado/presets/cookie'`
+- WeChat Mini Program: `import { wechatStorage } from 'stokado/presets/wechat'` (sync) or `import { wechatStorageAsync } from 'stokado/presets/wechat'` (async)
+- Douyin Mini Program: `import { douyinStorage } from 'stokado/presets/douyin'` (sync) or `import { douyinStorageAsync } from 'stokado/presets/douyin'` (async)
+- Alipay Mini Program: `import { alipayStorage } from 'stokado/presets/alipay'` (sync) or `import { alipayStorageAsync } from 'stokado/presets/alipay'` (async)
+- uni-app: `import { uniStorage } from 'stokado/presets/uni-app'` (sync) or `import { uniStorageAsync } from 'stokado/presets/uni-app'` (async)
+- React Native: `import { createReactNativeStorage } from 'stokado/presets/react-native'` — requires injecting AsyncStorage: `createReactNativeStorage(AsyncStorage)`
+- Node.js: `import { memoryStorage } from 'stokado/presets/node'` — in-memory Map-based storage
+- Each preset is a separate sub-path export for tree-shaking
+
 ## Quota Alert
 - Use `createProxyStorage(storage, { quota: 5 * MB })` to set a storage size limit in bytes
 - Use `KB` and `MB` constants from stokado for readable quota values

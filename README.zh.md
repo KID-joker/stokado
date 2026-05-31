@@ -228,6 +228,75 @@ await storage.ready
 
 如果你使用 AI 编码工具（Cursor、Copilot、Windsurf 等），可以将 [`ai-rules/.cursorrules`](./ai-rules/.cursorrules) 中的规则复制到项目根目录的 `.cursorrules` 文件中，帮助 AI 助手遵循 stokado 最佳实践。
 
+## 预设适配器
+
+Stokado 为常见的存储目标提供了预设的 `StorageLike` 适配器，无需自行实现接口即可直接使用 `createProxyStorage`。
+
+### Cookie
+
+```js
+import { createProxyStorage } from 'stokado'
+import { cookieStorage } from 'stokado/presets/cookie'
+
+const storage = createProxyStorage(cookieStorage)
+```
+
+### 微信小程序
+
+```js
+import { createProxyStorage } from 'stokado'
+import { wechatStorage } from 'stokado/presets/wechat'
+
+const storage = createProxyStorage(wechatStorage)
+```
+
+异步版本：
+
+```js
+import { wechatStorageAsync } from 'stokado/presets/wechat'
+
+const storage = createProxyStorage(wechatStorageAsync)
+```
+
+### 抖音小程序
+
+```js
+import { douyinStorage, douyinStorageAsync } from 'stokado/presets/douyin'
+```
+
+### 支付宝小程序
+
+```js
+import { alipayStorage, alipayStorageAsync } from 'stokado/presets/alipay'
+```
+
+### uni-app
+
+```js
+import { uniStorage, uniStorageAsync } from 'stokado/presets/uni-app'
+```
+
+### React Native
+
+React Native 需要注入 `AsyncStorage` 实例：
+
+```js
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { createProxyStorage } from 'stokado'
+import { createReactNativeStorage } from 'stokado/presets/react-native'
+
+const storage = createProxyStorage(createReactNativeStorage(AsyncStorage))
+```
+
+### Node.js
+
+```js
+import { createProxyStorage } from 'stokado'
+import { memoryStorage } from 'stokado/presets/node'
+
+const storage = createProxyStorage(memoryStorage)
+```
+
 ## Work with localForage
 
 因为 `localForage` 提供了跟 `localStorage` 一样的 API，它是类 `storage` 对象，可以跟 `stokado` 配合使用。
