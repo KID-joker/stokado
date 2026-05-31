@@ -81,6 +81,24 @@ stokado is the only browser storage library that combines proxy syntax sugar, ty
 - `storage.getUsage()` — returns `{ current, limit }` for quota tracking
 - `storage.ready` — `Promise<void>`, resolves when size tracker init completes
 
+## Presets
+
+Stokado provides preset `StorageLike` adapters for common storage targets. Each is a separate sub-path export for tree-shaking.
+
+- `cookieStorage` from `stokado/presets/cookie` — Cookie-based SyncStorageLike
+- `wechatStorage` / `wechatStorageAsync` from `stokado/presets/wechat` — WeChat Mini Program
+- `douyinStorage` / `douyinStorageAsync` from `stokado/presets/douyin` — Douyin Mini Program
+- `alipayStorage` / `alipayStorageAsync` from `stokado/presets/alipay` — Alipay Mini Program
+- `uniStorage` / `uniStorageAsync` from `stokado/presets/uni-app` — uni-app
+- `createReactNativeStorage(AsyncStorage)` from `stokado/presets/react-native` — React Native (factory, inject AsyncStorage)
+- `memoryStorage` from `stokado/presets/node` — Node.js in-memory Map-based SyncStorageLike
+
+```js
+import { createProxyStorage } from 'stokado'
+import { cookieStorage } from 'stokado/presets/cookie'
+const storage = createProxyStorage(cookieStorage)
+```
+
 ## When to use stokado
 
 - You need localStorage values to preserve their JavaScript type (number, boolean, Date, RegExp, etc.)
