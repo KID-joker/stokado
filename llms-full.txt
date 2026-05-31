@@ -312,6 +312,125 @@ The size calculation is based on the UTF-8 byte size of the encoded envelope (ke
 - Direct writes to the underlying storage from the same tab (bypassing stokado) are not tracked and may cause actual usage to exceed the quota without triggering an alert.
 - Cross-tab writes are tracked through the `storage` event when broadcast is enabled, but there may be a brief delay.
 
+## Presets
+
+Stokado provides preset `StorageLike` adapters for common storage targets, so you can use `createProxyStorage` directly without implementing the interface yourself. Each preset is a separate sub-path export for tree-shaking.
+
+### Cookie
+
+```js
+import { createProxyStorage } from 'stokado'
+import { cookieStorage } from 'stokado/presets/cookie'
+
+const storage = createProxyStorage(cookieStorage)
+```
+
+### WeChat Mini Program
+
+```js
+import { createProxyStorage } from 'stokado'
+import { wechatStorage } from 'stokado/presets/wechat'
+
+const storage = createProxyStorage(wechatStorage)
+```
+
+Async version:
+
+```js
+import { wechatStorageAsync } from 'stokado/presets/wechat'
+
+const storage = createProxyStorage(wechatStorageAsync)
+```
+
+### Douyin Mini Program
+
+```js
+import { douyinStorage } from 'stokado/presets/douyin'
+import { douyinStorageAsync } from 'stokado/presets/douyin'
+```
+
+### Alipay Mini Program
+
+```js
+import { alipayStorage } from 'stokado/presets/alipay'
+import { alipayStorageAsync } from 'stokado/presets/alipay'
+```
+
+### uni-app
+
+```js
+import { uniStorage } from 'stokado/presets/uni-app'
+import { uniStorageAsync } from 'stokado/presets/uni-app'
+```
+
+### React Native
+
+React Native requires injecting the `AsyncStorage` instance:
+
+```js
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { createProxyStorage } from 'stokado'
+import { createReactNativeStorage } from 'stokado/presets/react-native'
+
+const storage = createProxyStorage(createReactNativeStorage(AsyncStorage))
+```
+
+### Node.js
+
+```js
+import { createProxyStorage } from 'stokado'
+import { memoryStorage } from 'stokado/presets/node'
+
+const storage = createProxyStorage(memoryStorage)
+```
+
+### Preset Type Definitions
+
+```typescript
+// Mini-program adapters (WeChat, Douyin, uni-app)
+interface MiniProgramSyncAPI {
+  getStorageSync(key: string): any
+  setStorageSync(key: string, data: any): void
+  removeStorageSync(key: string): void
+  clearStorageSync(): void
+  getStorageInfoSync(): { keys: string[]; currentSize: number; limitSize: number }
+}
+
+interface MiniProgramAsyncAPI {
+  getStorage(options: { key: string }): Promise<{ data: any }>
+  setStorage(options: { key: string; data: any }): Promise<void>
+  removeStorage(options: { key: string }): Promise<void>
+  clearStorage(): Promise<void>
+  getStorageInfo(): Promise<{ keys: string[]; currentSize: number; limitSize: number }>
+}
+
+// Alipay adapters
+interface AlipaySyncAPI {
+  getStorageSync(options: { key: string }): { data: any }
+  setStorageSync(options: { key: string; data: any }): void
+  removeStorageSync(options: { key: string }): void
+  clearStorageSync(): void
+  getStorageInfoSync(): { keys: string[]; currentSize: number; limitSize: number }
+}
+
+interface AlipayAsyncAPI {
+  getStorage(options: { key: string }): Promise<{ data: any }>
+  setStorage(options: { key: string; data: any }): Promise<void>
+  removeStorage(options: { key: string }): Promise<void>
+  clearStorage(): Promise<void>
+  getStorageInfo(): Promise<{ keys: string[]; currentSize: number; limitSize: number }>
+}
+
+// React Native adapter
+interface ReactNativeAsyncStorage {
+  getItem(key: string): Promise<string | null>
+  setItem(key: string, value: string): Promise<void>
+  removeItem(key: string): Promise<void>
+  clear(): Promise<void>
+  getAllKeys(): Promise<string[]>
+}
+```
+
 ## Async Storage (localForage, IndexedDB)
 
 stokado automatically detects async storage backends and returns Promises.
