@@ -592,7 +592,7 @@ interface AsyncProxyStorage {
   removeItem(key: string): Promise<void>
   clear(): Promise<void>
   key(index: number): Promise<string | null>
-  length: Promise<number>
+  length(): Promise<number>
 
   on(key: string, fn: (newValue: any, oldValue: any) => void): void
   once(key: string, fn: (newValue: any, oldValue: any) => void): void
@@ -606,7 +606,7 @@ interface AsyncProxyStorage {
   getOptions(key: string): Promise<StorageOptions | null>
 
   // Quota
-  getUsage(): { current: number; limit: number }
+  getUsage(): Promise<{ current: number; limit: number }>
   ready: Promise<void>
 }
 ```

@@ -20,17 +20,20 @@ The most feature-rich proxy wrapper for browser storage — serialization, react
 
 ## Why stokado?
 
-| Feature | stokado | store2 | local-storage-fallback | lz-string |
-|---------|---------|--------|----------------------|-----------|
-| Proxy syntax sugar | ✅ | ❌ | ❌ | ❌ |
-| Type-safe serialization | ✅ | ❌ | ❌ | ❌ |
-| Reactive subscribe | ✅ | ❌ | ❌ | ❌ |
-| Expiration | ✅ | ✅ | ❌ | ❌ |
-| Disposable values | ✅ | ❌ | ❌ | ❌ |
-| Async storage support | ✅ | ❌ | ❌ | ❌ |
-| Cross-tab sync | ✅ | ❌ | ❌ | ❌ |
-| Quota alert | ✅ | ❌ | ❌ | ❌ |
-| Zero dependencies | ✅ | ✅ | ✅ | ✅ |
+| Feature | stokado | store2 | store.js | lscache | localForage | idb-keyval | @vueuse/useStorage |
+|---------|---------|--------|----------|---------|-------------|------------|--------------------|
+| Proxy syntax sugar | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Type-safe serialization | ✅ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ |
+| Same-tab reactive subscribe | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Cross-tab sync | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Expiration | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Disposable (one-time) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Async backend (IndexedDB) | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
+| Quota alert | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Framework-agnostic | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Zero dependencies | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+
+> Legend: ✅ native support; ◐ JSON-level only (primitives ok, loses Date/RegExp/Function/undefined types); ❌ not supported.
 
 ## When to use stokado
 
@@ -334,4 +337,4 @@ const proxyOtherStore = createProxyStorage(otherStore, { channel: 'otherStore' }
 
 ## Keywords
 
-stokado is a localStorage wrapper, browser storage proxy, web storage library, and storage utility for JavaScript. It provides localStorage serialization, storage reactivity, storage subscription, storage expiration, storage quota alert, cross-tab storage sync, and async storage support. Alternatives to store2, lscache, local-storage-fallback. Works with localStorage, sessionStorage, localForage, and any storage-like object.
+stokado is a localStorage wrapper, browser storage proxy, web storage library, and storage utility for JavaScript. It provides localStorage serialization, storage reactivity, storage subscription, storage expiration, storage quota alert, cross-tab storage sync, and async storage support. Alternatives to store2, store.js, lscache, localForage, and idb-keyval. Works with localStorage, sessionStorage, localForage, and any storage-like object.
