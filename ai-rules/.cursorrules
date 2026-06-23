@@ -25,6 +25,7 @@ When this project uses stokado for browser storage, follow these conventions:
 ## Disposable Values
 - Use `storage.setItem(key, value, { disposable: true })` or `storage.setDisposable(key)` for one-time values
 - Common pattern: cross-component messaging where the value should be consumed only once
+- Use `storage.getOptions(key)` to inspect the stored options (`{ expires, disposable }`) for a key
 
 ## Async Storage
 - When using localForage or other async storage backends, use `await` for all operations
@@ -48,8 +49,8 @@ When this project uses stokado for browser storage, follow these conventions:
 ## Quota Alert
 - Use `createProxyStorage(storage, { quota: 5 * MB })` to set a storage size limit in bytes
 - Use `KB` and `MB` constants from stokado for readable quota values
-- Use `onQuotaExceeded` callback to handle quota exceeded events: `createProxyStorage(storage, { quota: 5 * MB, onQuotaExceeded({ current, limit, key }) { ... } })`
-- Return `false` from `onQuotaExceeded` to block the write that would exceed the quota
+- Use `onQuotaExceeded` callback to handle quota exceeded events: `createProxyStorage(storage, { quota: 5 * MB, onQuotaExceeded({ current, limit, key, value }) { ... } })`
+- Return `false` from `onQuotaExceeded` to block the write that would exceed the quota; the callback may be async (return a `Promise<boolean | void>`)
 - Use `storage.getUsage()` to check current storage usage — returns `{ current, limit }`
 - Use `await storage.ready` to ensure the size tracker has finished scanning existing keys (relevant for async storages)
 - The size calculation is based on the UTF-8 byte size of the encoded envelope (key + value) actually stored

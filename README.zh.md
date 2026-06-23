@@ -20,17 +20,20 @@
 
 ## 为什么选择 stokado？
 
-| 特性 | stokado | store2 | local-storage-fallback | lz-string |
-|------|---------|--------|----------------------|-----------|
-| Proxy 语法糖 | ✅ | ❌ | ❌ | ❌ |
-| 类型安全的序列化 | ✅ | ❌ | ❌ | ❌ |
-| 响应式订阅 | ✅ | ❌ | ❌ | ❌ |
-| 过期设置 | ✅ | ✅ | ❌ | ❌ |
-| 一次性值 | ✅ | ❌ | ❌ | ❌ |
-| 异步存储支持 | ✅ | ❌ | ❌ | ❌ |
-| 跨标签页同步 | ✅ | ❌ | ❌ | ❌ |
-| 内存告警 | ✅ | ❌ | ❌ | ❌ |
-| 零依赖 | ✅ | ✅ | ✅ | ✅ |
+| 特性 | stokado | store2 | store.js | lscache | localForage | idb-keyval | @vueuse/useStorage |
+|------|---------|--------|----------|---------|-------------|------------|--------------------|
+| Proxy 语法糖 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| 类型安全的序列化 | ✅ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ |
+| 同标签页响应式订阅 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| 跨标签页同步 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| 过期设置 | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| 一次性值 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| 异步后端(IndexedDB) | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
+| 内存告警 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| 框架无关 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| 零依赖 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+
+> 图例：✅ 原生支持；◐ 仅 JSON 级别（基本类型可，会丢失 Date/RegExp/Function/undefined 类型）；❌ 不支持。
 
 ## 何时使用 stokado
 
@@ -336,4 +339,4 @@ const proxyOtherStore = createProxyStorage(otherStore, { channel: 'otherStore' }
 
 ## 关键词
 
-stokado 是一个 localStorage 封装库、浏览器存储代理库、Web 存储工具库。提供 localStorage 序列化、存储响应式、存储订阅、存储过期、跨标签页存储同步、异步存储支持、存储配额告警。store2、lscache、local-storage-fallback 的替代方案。支持 localStorage、sessionStorage、localForage 及任何类 storage 对象。
+stokado 是一个 localStorage 封装库、浏览器存储代理库、Web 存储工具库。提供 localStorage 序列化、存储响应式、存储订阅、存储过期、跨标签页存储同步、异步存储支持、存储配额告警。store2、store.js、lscache、localForage、idb-keyval 的替代方案。支持 localStorage、sessionStorage、localForage 及任何类 storage 对象。

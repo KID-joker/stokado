@@ -57,17 +57,20 @@ await (asyncStorage.key = 'value')
 
 stokado is the only browser storage library that combines proxy syntax sugar, type-safe serialization, reactive subscriptions, expiration, disposable values, async storage support, and cross-tab sync — all with zero dependencies.
 
-| Feature | stokado | store2 | local-storage-fallback | lz-string |
-|---------|---------|--------|----------------------|-----------|
-| Proxy syntax sugar | ✅ | ❌ | ❌ | ❌ |
-| Type-safe serialization | ✅ | ❌ | ❌ | ❌ |
-| Reactive subscribe | ✅ | ❌ | ❌ | ❌ |
-| Expiration | ✅ | ✅ | ❌ | ❌ |
-| Disposable values | ✅ | ❌ | ❌ | ❌ |
-| Async storage support | ✅ | ❌ | ❌ | ❌ |
-| Cross-tab sync | ✅ | ❌ | ❌ | ❌ |
-| Quota alert | ✅ | ❌ | ❌ | ❌ |
-| Zero dependencies | ✅ | ✅ | ✅ | ✅ |
+| Feature | stokado | store2 | store.js | lscache | localForage | idb-keyval | @vueuse/useStorage |
+|---------|---------|--------|----------|---------|-------------|------------|--------------------|
+| Proxy syntax sugar | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Type-safe serialization | ✅ | ◐ | ◐ | ◐ | ◐ | ◐ | ◐ |
+| Same-tab reactive subscribe | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Cross-tab sync | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Expiration | ✅ | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| Disposable (one-time) | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Async backend (IndexedDB) | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ |
+| Quota alert | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Framework-agnostic | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Zero dependencies | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+
+> Legend: ✅ native support; ◐ JSON-level only (primitives ok, loses Date/RegExp/Function/undefined types); ❌ not supported.
 
 ## API
 
