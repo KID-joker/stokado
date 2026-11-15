@@ -129,8 +129,8 @@ test.describe('serialized value', () => {
       const { createProxyStorage } = window.stokado
       const local = createProxyStorage(localStorage)
       local.test = null
-      return local.getItem('test')
-    })).toBeNull()
+      return { property: local.test, method: local.getItem('test') }
+    })).toEqual({ property: null, method: null })
   })
 
   test('Object', async ({ page }) => {

@@ -60,11 +60,7 @@ export function createProxyHandler(operator: StorageOperator, sizeTracker: SizeT
         return isFunction(nativeValue) ? nativeValue.bind(target) : nativeValue
       }
 
-      const result = operator.getItem(prop)
-      if (operator.isAsync) {
-        return result.then((v: any) => v === null ? undefined : v)
-      }
-      return result === null ? undefined : result
+      return operator.getProperty(prop)
     },
 
     set(_target, prop: string, value) {

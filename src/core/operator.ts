@@ -28,13 +28,22 @@ export class StorageOperator {
   }
 
   getItem(key: string): any {
+    return this.readItem(key, null)
+  }
+
+  getProperty(key: string): any {
+    return this.readItem(key, undefined)
+  }
+
+  // Choose the missing-key value before decoding so stored null remains intact.
+  private readItem(key: string, missingValue: null | undefined): any {
     return this.scheduler.enqueue(key, () => {
       const cached = this.cache.get(key)
       if (cached !== undefined) {
         if (this.isExpired(cached.options)) {
           return resolve(this.strategy.removeItem(this.storage, key), () => {
             this.cache.delete(key)
-            return null
+            return missingValue
           })
         }
         if (cached.options?.disposable) {
@@ -48,7 +57,7 @@ export class StorageOperator {
 
       return resolve(this.strategy.getItem(this.storage, key), (raw: string | null) => {
         if (raw === null)
-          return null
+          return missingValue
 
         const decoded = decode(raw)
         if (decoded === null || typeof decoded === 'string')
@@ -60,7 +69,7 @@ export class StorageOperator {
         if (this.isExpired(item.options)) {
           return resolve(this.strategy.removeItem(this.storage, key), () => {
             this.cache.delete(key)
-            return null
+            return missingValue
           })
         }
 
